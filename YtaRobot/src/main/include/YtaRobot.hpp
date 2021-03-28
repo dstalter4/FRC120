@@ -206,7 +206,7 @@ private:
     inline void AutonomousDelay(double time);
 
     // Autonomous drive for a specified time
-    inline void AutonomousDriveSequence(RobotDirection direction, double speed, double time);
+    inline void AutonomousDriveSequence(RobotDirection direction, double speed, double time, bool bSwingTurn = false, double leftDiff = 0.0, double rightDiff = 0.0);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);

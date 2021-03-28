@@ -126,7 +126,7 @@ inline void YtaRobot::AutonomousDelay(double time)
 /// Drives during autonomous for a specified amount of time.
 ///
 ////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, double time)
+inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, double time, bool bSwingTurn, double leftDiff, double rightDiff)
 {
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
@@ -164,6 +164,12 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
             rightSpeed = 0.0;
             break;
         }
+    }
+
+    if (bSwingTurn)
+    {
+        leftSpeed += leftDiff;
+        rightSpeed += rightDiff;
     }
 
     // First turn the motors on
