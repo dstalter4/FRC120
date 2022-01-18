@@ -8,7 +8,7 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -36,7 +36,6 @@ YtaRobot * YtaRobot::m_pThis;
 ////////////////////////////////////////////////////////////////
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
-    m_pDriverStation                    (&DriverStation::GetInstance()),
     m_pDriveJoystick                    (nullptr),
     m_pControlJoystick                  (nullptr),
     m_pDriveCustomController            (new YtaController(DRIVE_CUSTOM_CONTROLLER_TYPE, DRIVE_JOYSTICK_PORT, true)),
@@ -67,7 +66,7 @@ YtaRobot::YtaRobot() :
     m_I2cThread                         (RobotI2c::I2cThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
-    m_AllianceColor                     (m_pDriverStation->GetAlliance()),
+    m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
     m_HeartBeat                         (0U)
 {
@@ -271,7 +270,7 @@ void YtaRobot::InitialStateSetup()
     m_pSafetyTimer->Reset();
     
     // Just in case constructor was called before these were set (likely the case)
-    m_AllianceColor = m_pDriverStation->GetAlliance();
+    m_AllianceColor = DriverStation::GetAlliance();
     
     // Clear the debug output pin
     m_pDebugOutput->Set(false);

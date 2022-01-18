@@ -5,18 +5,19 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTCAMERA_HPP
 #define ROBOTCAMERA_HPP
 
 // SYSTEM INCLUDES
-#include <iostream>                             // for cout
+// <none>
 
 // C INCLUDES
 #include "frc/smartdashboard/SmartDashboard.h"  // for smart dashboard support
 #include "frc/Timer.h"                          // for creating a Timer
+#include "networktables/NetworkTable.h"         // for interacting with network tables
 #include "cameraserver/CameraServer.h"          // for camera support
 
 // C++ INCLUDES
@@ -70,8 +71,8 @@ public:
         static Timer m_AutoCameraTimer;
         static double m_IntegralSum;
 
+        static constexpr units::second_t MAX_CAMERA_SEARCH_TIME_S = 5.0_s;
         static constexpr double MAX_SEEK_MOTOR_SPEED = 0.25;
-        static constexpr double MAX_CAMERA_SEARCH_TIME_S = 5.0;
         static constexpr double KI = 0.0001;
         static constexpr double KP = 0.001;
         static constexpr double INTEGRAL_SUM_LIMIT_VALUE = 10000.0;
@@ -211,7 +212,7 @@ private:
     };
     
     // Camera related variables
-    static std::shared_ptr<NetworkTable>        m_pLimelightNetworkTable;           // Network table for the limelight camera
+    static std::shared_ptr<nt::NetworkTable>    m_pLimelightNetworkTable;           // Network table for the limelight camera
     static UsbCameraStorage                     m_UsbCameras;                       // Memory for storing the USB camera objects
     static UsbCameraInfo *                      m_pCurrentUsbCamera;                // Pointer to the currently selected USB camera object   
     static cs::CvSource                         m_CameraOutput;                     // Output source for processed images

@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -201,10 +201,10 @@ private:
     int GetEncoderRotationsFromInches(int inches, double diameter, bool bUseQuadEncoding = true);
 
     // Autonomous wait for something to complete delay routine
-    inline void AutonomousDelay(double time);
+    inline void AutonomousDelay(units::second_t time);
 
     // Autonomous drive for a specified time
-    inline void AutonomousDriveSequence(RobotDirection direction, double speed, double time);
+    inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -271,7 +271,6 @@ private:
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
     
     // User Controls
-    DriverStation *                 m_pDriverStation;                       // Driver station object for getting selections
     GenericHID *                    m_pDriveJoystick;                       // Base class object for the driver operator
     GenericHID *                    m_pControlJoystick;                     // Base class object for the controller operator
     YtaController *                 m_pDriveCustomController;               // Option 1: Custom interface
@@ -517,11 +516,11 @@ private:
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
     static constexpr double         DRIVE_WHEEL_DIAMETER_INCHES             =  6.00;
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
-    static constexpr double         INCHING_DRIVE_DELAY_S                   =  0.10;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
-    static constexpr double         DIRECTIONAL_ALIGN_MAX_TIME_S            =  3.00;
-    
-    static constexpr double         SAFETY_TIMER_MAX_VALUE                  =  5.00;
+
+    static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
+    static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
+    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
     
     // This may seem backward, but the LEDS work by creating
     // a voltage differential.  The LED strip has four lines,

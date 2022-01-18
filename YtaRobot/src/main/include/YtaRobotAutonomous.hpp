@@ -6,7 +6,7 @@
 /// Contains the declarations for the autonomous portions of code ran in an FRC
 /// robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOTAUTONOMOUS_HPP
@@ -70,11 +70,11 @@ namespace YtaRobotAutonomous
     static const int        THREE_HUNDRED_SIXTY_DEGREES         = 360;
     
     // Autonomous delay constants
-    static constexpr double COUNTERACT_COAST_TIME_S             =  0.25;
-    static constexpr double ENCODER_DRIVE_MAX_DELAY_S           =  5.00;
-    static constexpr double DELAY_SHORT_S                       =  0.50;
-    static constexpr double DELAY_MEDIUM_S                      =  1.00;
-    static constexpr double DELAY_LONG_S                        =  2.00;
+    static constexpr units::second_t COUNTERACT_COAST_TIME_S    =  0.25_s;
+    static constexpr units::second_t ENCODER_DRIVE_MAX_DELAY_S  =  5.00_s;
+    static constexpr units::second_t DELAY_SHORT_S              =  0.50_s;
+    static constexpr units::second_t DELAY_MEDIUM_S             =  1.00_s;
+    static constexpr units::second_t DELAY_LONG_S               =  2.00_s;
     
     // Autonomous encoder drive constants
     static const int        ENCODER_DRIVE_STRAIGHT_IN           =  12*8;                    
@@ -110,7 +110,7 @@ namespace YtaRobotAutonomous
 /// nothing else needs to occur.
 ///
 ////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousDelay(double time)
+inline void YtaRobot::AutonomousDelay(units::second_t time)
 {
     m_pAutonomousTimer->Start();
     while (m_pAutonomousTimer->Get() < time) {}
@@ -126,7 +126,7 @@ inline void YtaRobot::AutonomousDelay(double time)
 /// Drives during autonomous for a specified amount of time.
 ///
 ////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, double time)
+inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time)
 {
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;

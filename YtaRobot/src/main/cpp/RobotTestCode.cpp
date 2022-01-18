@@ -6,7 +6,7 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -175,8 +175,8 @@ void YtaRobot::MotorTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::TankDrive()
 {
-    m_pLeftDriveMotors->Set(-m_pDriveJoystick->GetY());
-    m_pRightDriveMotors->Set(m_pControlJoystick->GetY());
+    m_pLeftDriveMotors->Set(-m_pDriveJoystick->GetRawAxis(1));
+    m_pRightDriveMotors->Set(m_pControlJoystick->GetRawAxis(5));
 }
 
 
