@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous routines for YtaRobot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -149,11 +149,11 @@ void YtaRobot::AutonomousPeriodic()
 void YtaRobot::AutonomousCommon()
 {
 
-    if (m_AllianceColor == Alliance::kRed)
+    if (m_AllianceColor == DriverStation::Alliance::kRed)
     {
         AutonomousCommonRed();
     }
-    else if (m_AllianceColor == Alliance::kBlue)
+    else if (m_AllianceColor == DriverStation::Alliance::kBlue)
     {
         AutonomousCommonBlue();
     }

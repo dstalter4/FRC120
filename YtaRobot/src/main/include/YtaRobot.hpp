@@ -87,7 +87,6 @@ public:
 private:
 
     // TYPEDEFS
-    typedef DriverStation::Alliance Alliance;
     typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
     typedef Yta::Controller::Config::Models ControllerModels;
     typedef Yta::Controller::Config::Mappings ControllerMappings;
@@ -295,14 +294,15 @@ private:
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
-    Alliance                        m_AllianceColor;                        // Color reported by driver station during a match
+    DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
     
     // Joysticks/Buttons
-    // @todo: Make this and the controller typedefs based on #defines in ControllerConfiguration.hpp.
+    // Note: Don't forget to update the controller object typedefs if
+    //       necessary when changing these types!
     static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_LOGITECH;
     static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_LOGITECH;
     static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL);
@@ -460,8 +460,8 @@ private:
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.10;
     static constexpr double         CONTROL_THROTTLE_VALUE_RANGE            =  0.65;
     static constexpr double         CONTROL_THROTTLE_VALUE_BASE             =  0.35;
-    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;//0.65;
-    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;//0.35;
+    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
+    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
