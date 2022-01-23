@@ -438,7 +438,7 @@ void YtaRobot::DriveControlSequence()
     }
 
     // By default, the drive equations cause the x-axis input
-    // to be flipped when going backward.  Correct that here,
+    // to be flipped when going reverse.  Correct that here,
     // if configured.  Remember, y-axis full forward is negative.
     if ((!USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
     {
@@ -496,7 +496,7 @@ bool YtaRobot::DirectionalInch()
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_BACKWARD_BUTTON))
+    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_REVERSE_BUTTON))
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;

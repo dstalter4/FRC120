@@ -321,7 +321,7 @@ private:
     static const int                DRIVE_CONTROLS_FORWARD_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_REVERSE_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_BACKWARD_BUTTON     = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
@@ -391,7 +391,7 @@ private:
     // Inputs from joystick:
     //
     // Forward:     (0, -1)
-    // Backward:    (0, +1)
+    // Reverse:     (0, +1)
     // Left:        (-1, 0)
     // Right:       (+1, 0)
     //
@@ -405,20 +405,20 @@ private:
     //
     // Output to motors:
     //
-    // Left forward/right = +1, Right forward/left = +1:
-    // Left backward/left = -1, Right backward/right = -1:
+    // Left forward/right = +1, Right forward/left  = +1:
+    // Left reverse/left  = -1, Right reverse/right = -1:
     // x-y, -x-y
     //
-    // Left forward/right = -1, Right forward/left = -1:
-    // Left backward/left = +1, Right backward/right = +1:
+    // Left forward/right = -1, Right forward/left  = -1:
+    // Left reverse/left  = +1, Right reverse/right = +1:
     // -x+y, x+y
     //
-    // Left forward/right = +1, Right forward/left = -1:
-    // Left backward/left = -1, Right backward/right = +1:
+    // Left forward/right = +1, Right forward/left  = -1:
+    // Left reverse/left  = -1, Right reverse/right = +1:
     // x-y, x+y
     //
-    // Left forward/right = -1, Right forward/left = +1:
-    // Left backward/left = +1, Right backward/right = -1:
+    // Left forward/right = -1, Right forward/left  = +1:
+    // Left reverse/left  = +1, Right reverse/right = -1:
     // -x+y, -x-y
     ////////////////////////////////////////////////////////////////
 

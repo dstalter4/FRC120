@@ -200,7 +200,7 @@ inline void YtaRobot::AutonomousBackDrive(RobotDirection currentDirection)
             rightSpeed *= RIGHT_DRIVE_REVERSE_SCALAR;
             break;
         }
-        // If we are currently going backward, back drive is forward
+        // If we are currently going reverse, back drive is forward
         case ROBOT_REVERSE:
         {
             leftSpeed *= LEFT_DRIVE_FORWARD_SCALAR;
