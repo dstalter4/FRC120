@@ -36,14 +36,8 @@ YtaRobot * YtaRobot::m_pThis;
 ////////////////////////////////////////////////////////////////
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
-    m_pDriveJoystick                    (nullptr),
-    m_pControlJoystick                  (nullptr),
-    m_pDriveCustomController            (new YtaController(DRIVE_CUSTOM_CONTROLLER_TYPE, DRIVE_JOYSTICK_PORT, true)),
-    m_pControlCustomController          (new YtaController(CONTROL_CUSTOM_CONTROLLER_TYPE, CONTROL_JOYSTICK_PORT, false)),
-    m_pDriveLogitechExtreme             (new Joystick(DRIVE_JOYSTICK_PORT)),
-    m_pControlLogitechExtreme           (new Joystick(CONTROL_JOYSTICK_PORT)),
-    m_pDriveXboxGameSir                 (new XboxController(DRIVE_JOYSTICK_PORT)),
-    m_pControlXboxGameSir               (new XboxController(CONTROL_JOYSTICK_PORT)),
+    m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
+    m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
@@ -59,8 +53,6 @@ YtaRobot::YtaRobot() :
     m_pAdxrs450Gyro                     (nullptr),
     m_Bno055Angle                       (),
     m_CameraThread                      (RobotCamera::LimelightThread),
-    m_pToggleFullProcessingTrigger      (nullptr),
-    m_pToggleProcessedImageTrigger      (nullptr),
     m_SerialPortBuffer                  (),
     m_pSerialPort                       (new SerialPort(SERIAL_PORT_BAUD_RATE, SerialPort::kMXP, SERIAL_PORT_NUM_DATA_BITS, SerialPort::kParity_None, SerialPort::kStopBits_One)),
     m_I2cThread                         (RobotI2c::I2cThread),
@@ -79,108 +71,9 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser.AddOption(AUTO_TEST_ROUTINE_STRING, AUTO_TEST_ROUTINE_STRING);
     SmartDashboard::PutData("Autonomous Modes", &m_AutonomousChooser);
     
-    // Set the driver input to the correct object
-    switch (DRIVE_CONTROLLER_TYPE)
-    {
-        case CUSTOM_CONTROLLER:
-        {
-            switch (DRIVE_CUSTOM_CONTROLLER_TYPE)
-            {
-                case YtaController::LOGITECH:
-                {
-                    RobotUtils::DisplayMessage("Driver controller: Custom Logitech");
-                    break;
-                }
-                case YtaController::PLAY_STATION:
-                {
-                    RobotUtils::DisplayMessage("Driver controller: Custom Play Station");
-                    break;
-                }
-                default:
-                {
-                    ASSERT(false);
-                    break;
-                }
-            }
-            m_pDriveJoystick = m_pDriveCustomController;
-            break;
-        }
-        case LOGITECH_EXTREME:
-        {
-            RobotUtils::DisplayMessage("Driver controller: Logitech Extreme");
-            m_pDriveJoystick = m_pDriveLogitechExtreme;
-            break;
-        }
-        case LOGITECH_GAMEPAD:
-        case XBOX_GAMESIR:
-        {
-            RobotUtils::DisplayMessage("Driver controller: Xbox");
-            m_pDriveJoystick = m_pDriveXboxGameSir;
-            break;
-        }
-        default:
-        {
-            // Deliberately crash - fix the configuration in the header and try again
-            ASSERT(false);
-            break;
-        }
-    }
-    
-    // Set the controller input to the correct object
-    switch (CONTROL_CONTROLLER_TYPE)
-    {
-        case CUSTOM_CONTROLLER:
-        {
-            switch (DRIVE_CUSTOM_CONTROLLER_TYPE)
-            {
-                case YtaController::LOGITECH:
-                {
-                    RobotUtils::DisplayMessage("Control controller: Custom Logitech");
-                    break;
-                }
-                case YtaController::PLAY_STATION:
-                {
-                    RobotUtils::DisplayMessage("Control controller: Custom Play Station");
-                    break;
-                }
-                default:
-                {
-                    ASSERT(false);
-                    break;
-                }
-            }
-            m_pControlJoystick = m_pControlCustomController;
-            break;
-        }
-        case LOGITECH_EXTREME:
-        {
-            RobotUtils::DisplayMessage("Control controller: Logitech Extreme");
-            m_pControlJoystick = m_pControlLogitechExtreme;
-            break;
-        }
-        case LOGITECH_GAMEPAD:
-        case XBOX_GAMESIR:
-        {
-            RobotUtils::DisplayMessage("Control controller: Xbox");
-            m_pControlJoystick = m_pControlXboxGameSir;
-            break;
-        }
-        default:
-        {
-            // Deliberately crash - fix the configuration in the header and try again
-            ASSERT(false);
-            break;
-        }
-    }
-
-    RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", YtaController::GetControllerMapping(DRIVE_CUSTOM_CONTROLLER_TYPE)->AXIS_MAPPINGS.RIGHT_TRIGGER);
-    RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", YtaController::GetControllerMapping(DRIVE_CUSTOM_CONTROLLER_TYPE)->AXIS_MAPPINGS.LEFT_TRIGGER);
-    RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", YtaController::GetControllerMapping(DRIVE_CUSTOM_CONTROLLER_TYPE)->AXIS_MAPPINGS.LEFT_X_AXIS);
-    
-    // @todo: Figure out how to assign these sooner to a valid joystick (pass by reference?).
-    // Since the triggers use a joystick object, they can't be created until the joysticks are assigned
-    m_pToggleFullProcessingTrigger  = new TriggerChangeValues(m_pDriveJoystick, CAMERA_TOGGLE_FULL_PROCESSING_BUTTON);
-    m_pToggleProcessedImageTrigger  = new TriggerChangeValues(m_pDriveJoystick, CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON);
+    RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
+    RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
+    RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_X_AXIS);
     
     // Construct the ADXRS450 gyro if configured
     if (ADXRS450_GYRO_PRESENT)
@@ -443,11 +336,11 @@ void YtaRobot::CameraSequence()
     // @note: Use std::chrono if precise time control is needed.
     
     // Check for any change in camera
-    if (m_pDriveJoystick->GetRawButton(SELECT_FRONT_CAMERA_BUTTON))
+    if (m_pDriveController->GetButtonState(SELECT_FRONT_CAMERA_BUTTON))
     {
         RobotCamera::SetCamera(RobotCamera::FRONT_USB);
     }
-    else if (m_pDriveJoystick->GetRawButton(SELECT_BACK_CAMERA_BUTTON))
+    else if (m_pDriveController->GetButtonState(SELECT_BACK_CAMERA_BUTTON))
     {
         RobotCamera::SetCamera(RobotCamera::BACK_USB);
     }
@@ -456,7 +349,7 @@ void YtaRobot::CameraSequence()
     }
     
     // Look for full processing to be enabled/disabled
-    if (m_pToggleFullProcessingTrigger->DetectChange())
+    if (m_pDriveController->DetectButtonChange(CAMERA_TOGGLE_FULL_PROCESSING_BUTTON))
     {
         // Change state first, because the default is set before this code runs
         bFullProcessing = !bFullProcessing;
@@ -464,7 +357,7 @@ void YtaRobot::CameraSequence()
     }
     
     // Look for the displayed processed image to be changed
-    if (m_pToggleProcessedImageTrigger->DetectChange())
+    if (m_pDriveController->DetectButtonChange(CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON))
     {
         RobotCamera::ToggleCameraProcessedImage();
     }
@@ -513,33 +406,7 @@ void YtaRobot::DriveControlSequence()
     // so we can't use the generic objects since the v-table layout
     // is not the same.  This means we have to manually get the throttle
     // based on the driver input type.
-    double throttleControl = 0.0;
-    switch (DRIVE_CONTROLLER_TYPE)
-    {
-        case CUSTOM_CONTROLLER:
-        {
-            throttleControl = GetThrottleControl(m_pDriveCustomController);
-            break;
-        }
-        case LOGITECH_EXTREME:
-        {
-            throttleControl = GetThrottleControl(m_pDriveLogitechExtreme);
-            break;
-        }
-        case LOGITECH_GAMEPAD:
-        case XBOX_GAMESIR:
-        {
-            // Xbox controllers have no GetThrottle method, default to max
-            throttleControl = 1.0;
-            break;
-        }
-        default:
-        {
-            // Deliberately crash - fix the configuration in the header and try again
-            ASSERT(false);
-            break;
-        }
-    }
+    double throttleControl = (m_pDriveController->GetThrottleControl() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
 
     // All the controllers are normalized
     // to represent the x and y axes with
@@ -551,8 +418,8 @@ void YtaRobot::DriveControlSequence()
     //   +1
     
     // Get driver X/Y inputs
-    double xAxisDrive = m_pDriveJoystick->GetX();
-    double yAxisDrive = m_pDriveJoystick->GetY();
+    double xAxisDrive = m_pDriveController->GetDriveXInput();
+    double yAxisDrive = m_pDriveController->GetDriveYInput();
 
     if (RobotUtils::DEBUG_PRINTS)
     {
@@ -581,7 +448,7 @@ void YtaRobot::DriveControlSequence()
     if (SLOW_DRIVE_ENABLED)
     {
         // Get the slow drive control joystick input
-        double xAxisSlowDrive = m_pDriveJoystick->GetRawAxis(DRIVE_SLOW_X_AXIS);
+        double xAxisSlowDrive = m_pDriveController->GetAxisValue(DRIVE_SLOW_X_AXIS);
         xAxisSlowDrive = RobotUtils::Trim((xAxisSlowDrive * DRIVE_SLOW_THROTTLE_VALUE), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
         
         // If the normal x-axis drive is non-zero, use it.  Otherwise use the slow drive input, which could also be zero.
@@ -624,22 +491,22 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_INCH_FORWARD_BUTTON))
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_FORWARD_BUTTON))
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_INCH_BACKWARD_BUTTON))
+    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_BACKWARD_BUTTON))
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_INCH_LEFT_BUTTON))
+    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_LEFT_BUTTON))
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_INCH_RIGHT_BUTTON))
+    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_RIGHT_BUTTON))
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
@@ -707,7 +574,7 @@ void YtaRobot::DirectionalAlign()
     static bool bStateChangeAllowed = false;
     
     // Get the current POV value
-    int povValue = m_pDriveJoystick->GetPOV();
+    int povValue = m_pDriveController->GetPovValue();
     
     // Check if it changed since last function call
     if (povValue != lastPovValue)

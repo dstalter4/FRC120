@@ -101,8 +101,7 @@ void YtaRobot::TeleopTestCode()
     RobotUtils::DisplayFormattedMessage("x: %f, y: %f, z: %f\n", x, y, z);
 
     // Sample code for testing the detect trigger change code
-    TriggerChangeValues testValues(m_pControlJoystick, 10);
-    if ( testValues.DetectChange() )
+    if (m_pDriveController->DetectButtonChange(1, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
     {
         RobotUtils::DisplayMessage("Trigger change detected!");
     }
@@ -120,7 +119,7 @@ void YtaRobot::TeleopTestCode()
 void YtaRobot::MotorTest()
 {
     static Joystick * pDriveJoystick = new Joystick(DRIVE_JOYSTICK_PORT);
-    static Joystick * pControlJoystick = new Joystick(CONTROL_JOYSTICK_PORT);
+    static Joystick * pControlJoystick = new Joystick(AUX_JOYSTICK_PORT);
     static TalonFX * pLeft1 = new TalonFX(LEFT_MOTORS_CAN_START_ID);
     static TalonFX * pLeft2 = new TalonFX(LEFT_MOTORS_CAN_START_ID + 1);
     static TalonFX * pRight1 = new TalonFX(RIGHT_MOTORS_CAN_START_ID);
@@ -175,8 +174,8 @@ void YtaRobot::MotorTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::TankDrive()
 {
-    m_pLeftDriveMotors->Set(-m_pDriveJoystick->GetRawAxis(1));
-    m_pRightDriveMotors->Set(m_pControlJoystick->GetRawAxis(5));
+    m_pLeftDriveMotors->Set(-m_pDriveController->GetAxisValue(1));
+    m_pRightDriveMotors->Set(m_pAuxController->GetAxisValue(5));
 }
 
 
