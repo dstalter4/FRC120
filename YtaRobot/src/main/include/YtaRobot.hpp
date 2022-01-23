@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -27,14 +27,11 @@
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
 #include "frc/DriverStation.h"                  // for interacting with the driver station
-#include "frc/GenericHID.h"                     // for base class declaration
-#include "frc/Joystick.h"                       // for interacting with joysticks
 #include "frc/Relay.h"                          // for Relay type
 #include "frc/SerialPort.h"                     // for interacting with a serial port
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
 #include "frc/Ultrasonic.h"                     // for Ultrasonic type
-#include "frc/XboxController.h"                 // for creating Xbox controller objects
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
@@ -42,7 +39,7 @@
 #include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
 #include "TalonMotorGroup.hpp"                  // for Talon group motor control
-#include "YtaController.hpp"                    // for custom controller interaction
+#include "YtaController.hpp"                    // for controller interaction
 
 using namespace frc;
 
@@ -90,11 +87,11 @@ public:
 private:
 
     // TYPEDEFS
-    typedef DriverStation::Alliance Alliance;
-    typedef GenericHID::JoystickHand JoystickHand;
     typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
-    typedef YtaController::CustomControllerType CustomControllerType;
-    typedef YtaController::ControllerMappings ControllerMappings;
+    typedef Yta::Controller::Config::Models ControllerModels;
+    typedef Yta::Controller::Config::Mappings ControllerMappings;
+    typedef YtaDriveController<YtaCustomController> DriveControllerType;
+    typedef YtaController<YtaCustomController> AuxControllerType;
     
     // ENUMS
     enum RobotMode
@@ -104,14 +101,6 @@ private:
         ROBOT_MODE_TEST,
         ROBOT_MODE_DISABLED,
         ROBOT_MODE_NOT_SET
-    };
-
-    enum ControllerType
-    {
-        CUSTOM_CONTROLLER,
-        LOGITECH_EXTREME,
-        LOGITECH_GAMEPAD,
-        XBOX_GAMESIR
     };
     
     enum DriveState
@@ -146,33 +135,7 @@ private:
     };
     
     // STRUCTS
-    struct TriggerChangeValues
-    {
-    public:
-        enum TriggerEdge
-        {
-            FALLING_EDGE_TRIGGER,
-            RISING_EDGE_TRIGGER
-        };
-        
-        // Constructor
-        TriggerChangeValues(GenericHID * rpJoystick, int button) :
-            m_pJoystick(rpJoystick),
-            m_ButtonNumber(button),
-            m_bCurrentValue(false),
-            m_bOldValue(false)
-        {
-        }
-        
-        // Detect that a button has been pressed or released (defaults to pressed)
-        inline bool DetectChange(TriggerEdge edge = RISING_EDGE_TRIGGER);
-        
-    private:
-        GenericHID * m_pJoystick;
-        int m_ButtonNumber;
-        bool m_bCurrentValue;
-        bool m_bOldValue;
-    };
+    // (none)
     
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
@@ -201,10 +164,10 @@ private:
     int GetEncoderRotationsFromInches(int inches, double diameter, bool bUseQuadEncoding = true);
 
     // Autonomous wait for something to complete delay routine
-    inline void AutonomousDelay(double time);
+    inline void AutonomousDelay(units::second_t time);
 
     // Autonomous drive for a specified time
-    inline void AutonomousDriveSequence(RobotDirection direction, double speed, double time);
+    inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -232,10 +195,6 @@ private:
 
     // Function to check for drive control direction swap
     inline void CheckForDriveSwap();
-    
-    // Get a throttle control value from a joystick
-    inline double GetThrottleControl(Joystick * pJoystick);
-    inline double GetThrottleControl(YtaController * pController);
     
     // Function to automate slightly moving the robot
     bool DirectionalInch();
@@ -271,15 +230,8 @@ private:
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
     
     // User Controls
-    DriverStation *                 m_pDriverStation;                       // Driver station object for getting selections
-    GenericHID *                    m_pDriveJoystick;                       // Base class object for the driver operator
-    GenericHID *                    m_pControlJoystick;                     // Base class object for the controller operator
-    YtaController *                 m_pDriveCustomController;               // Option 1: Custom interface
-    YtaController *                 m_pControlCustomController;             // Option 1: Custom interface
-    Joystick *                      m_pDriveLogitechExtreme;                // Option 2: Logitech Extreme can use the Joystick class
-    Joystick *                      m_pControlLogitechExtreme;              // Option 2: Logitech Extreme can use the Joystick class
-    XboxController *                m_pDriveXboxGameSir;                    // Option 3: Xbox-based controller (also works for Logitech Gamepad)
-    XboxController *                m_pControlXboxGameSir;                  // Option 3: Xbox-based controller (also works for Logitech Gamepad)
+    DriveControllerType *           m_pDriveController;                     // Drive controller
+    AuxControllerType *             m_pAuxController;                       // Auxillary input controller
     
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
@@ -323,8 +275,6 @@ private:
     // Note: Only need to have a thread here and tie it to
     // the RobotCamera class, which handles everything else.
     std::thread                     m_CameraThread;
-    TriggerChangeValues *           m_pToggleFullProcessingTrigger;
-    TriggerChangeValues *           m_pToggleProcessedImageTrigger;
 
     // Serial port configuration
     static const int                SERIAL_PORT_BUFFER_SIZE_BYTES           = 64;
@@ -344,39 +294,39 @@ private:
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
-    Alliance                        m_AllianceColor;                        // Color reported by driver station during a match
+    DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
     
     // Joysticks/Buttons
-    static const ControllerType     DRIVE_CONTROLLER_TYPE                   = CUSTOM_CONTROLLER;
-    static const ControllerType     CONTROL_CONTROLLER_TYPE                 = CUSTOM_CONTROLLER;
-    static const CustomControllerType DRIVE_CUSTOM_CONTROLLER_TYPE          = YtaController::PLAY_STATION;
-    static const CustomControllerType CONTROL_CUSTOM_CONTROLLER_TYPE        = YtaController::LOGITECH;
-    static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = YtaController::GetControllerMapping(DRIVE_CUSTOM_CONTROLLER_TYPE);
-    static constexpr const ControllerMappings * const CONTROL_CONTROLLER_MAPPINGS = YtaController::GetControllerMapping(CONTROL_CUSTOM_CONTROLLER_TYPE);
+    // Note: Don't forget to update the controller object typedefs if
+    //       necessary when changing these types!
+    static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_LOGITECH;
+    static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_LOGITECH;
+    static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL);
+    static constexpr const ControllerMappings * const AUX_CONTROLLER_MAPPINGS   = Yta::Controller::Config::GetControllerMapping(AUX_CONTROLLER_MODEL);
     
     static const int                DRIVE_JOYSTICK_PORT                     = 0;
-    static const int                CONTROL_JOYSTICK_PORT                   = 1;
+    static const int                AUX_JOYSTICK_PORT                       = 1;
 
     // Driver buttons
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
-    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 11 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
-    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 12 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
-    static const int                SELECT_FRONT_CAMERA_BUTTON              = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 13 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
-    static const int                SELECT_BACK_CAMERA_BUTTON               = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 14 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
-    static const int                DRIVE_CONTROLS_FORWARD_BUTTON           = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 15 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_REVERSE_BUTTON           = (DRIVE_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 16 : DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
+    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
+    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
+    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
+    static const int                DRIVE_CONTROLS_FORWARD_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                DRIVE_CONTROLS_REVERSE_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_BACKWARD_BUTTON     = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Control buttons
-    static const int                ESTOP_BUTTON                            = (CONTROL_CONTROLLER_TYPE == LOGITECH_EXTREME) ? 14 :  CONTROL_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
     static const int                LEFT_MOTORS_CAN_START_ID                = 1;
@@ -441,7 +391,7 @@ private:
     // Inputs from joystick:
     //
     // Forward:     (0, -1)
-    // Backward:    (0, +1)
+    // Reverse:     (0, +1)
     // Left:        (-1, 0)
     // Right:       (+1, 0)
     //
@@ -455,20 +405,20 @@ private:
     //
     // Output to motors:
     //
-    // Left forward/right = +1, Right forward/left = +1:
-    // Left backward/left = -1, Right backward/right = -1:
+    // Left forward/right = +1, Right forward/left  = +1:
+    // Left reverse/left  = -1, Right reverse/right = -1:
     // x-y, -x-y
     //
-    // Left forward/right = -1, Right forward/left = -1:
-    // Left backward/left = +1, Right backward/right = +1:
+    // Left forward/right = -1, Right forward/left  = -1:
+    // Left reverse/left  = +1, Right reverse/right = +1:
     // -x+y, x+y
     //
-    // Left forward/right = +1, Right forward/left = -1:
-    // Left backward/left = -1, Right backward/right = +1:
+    // Left forward/right = +1, Right forward/left  = -1:
+    // Left reverse/left  = -1, Right reverse/right = +1:
     // x-y, x+y
     //
-    // Left forward/right = -1, Right forward/left = +1:
-    // Left backward/left = +1, Right backward/right = -1:
+    // Left forward/right = -1, Right forward/left  = +1:
+    // Left reverse/left  = +1, Right reverse/right = -1:
     // -x+y, -x-y
     ////////////////////////////////////////////////////////////////
 
@@ -510,18 +460,18 @@ private:
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.10;
     static constexpr double         CONTROL_THROTTLE_VALUE_RANGE            =  0.65;
     static constexpr double         CONTROL_THROTTLE_VALUE_BASE             =  0.35;
-    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;//0.65;
-    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;//0.35;
+    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
+    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
     static constexpr double         DRIVE_WHEEL_DIAMETER_INCHES             =  6.00;
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
-    static constexpr double         INCHING_DRIVE_DELAY_S                   =  0.10;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
-    static constexpr double         DIRECTIONAL_ALIGN_MAX_TIME_S            =  3.00;
-    
-    static constexpr double         SAFETY_TIMER_MAX_VALUE                  =  5.00;
+
+    static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
+    static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
+    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
     
     // This may seem backward, but the LEDS work by creating
     // a voltage differential.  The LED strip has four lines,
@@ -564,58 +514,17 @@ inline void YtaRobot::CheckForDriveSwap()
 {
     // Check if the driver pushed the button to have
     // forward be reverse and vice versa
-    if ( m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_FORWARD_BUTTON) )
+    if ( m_pDriveController->GetButtonState(DRIVE_CONTROLS_FORWARD_BUTTON) )
     {
         m_bDriveSwap = false;
     }
-    else if ( m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_REVERSE_BUTTON) )
+    else if ( m_pDriveController->GetButtonState(DRIVE_CONTROLS_REVERSE_BUTTON) )
     {
         m_bDriveSwap = true;
     }
     else
     {
     }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetThrottleControl
-///
-/// Returns a throttle value based on input from the joystick.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetThrottleControl(Joystick * pJoystick)
-{
-    // Get throttle control
-    // The z axis goes from -1 to 1, so it needs to be normalized.
-    // Subtract one and negate to make it zero based to give a value
-    // between zero and two.  This will be used to scale the voltage
-    // to the motors.  It essentially computes the max speed value
-    // that can be reached.
-    if (pJoystick == m_pDriveJoystick)
-    {
-        return ((pJoystick->GetThrottle() - 1.0) / -2.0) * DRIVE_THROTTLE_VALUE_RANGE + DRIVE_THROTTLE_VALUE_BASE;
-    }
-    else
-    {
-        return ((pJoystick->GetThrottle() - 1.0) / -2.0) * CONTROL_THROTTLE_VALUE_RANGE + CONTROL_THROTTLE_VALUE_BASE;
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetThrottleControl
-///
-/// Returns a throttle value based on input from a Logitech
-/// Gamepad controller.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetThrottleControl(YtaController * pController)
-{
-    // Gamepad throttle already comes back between 0 and +1, so no need to normalize.
-    return (pController->GetThrottle() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
 }
 
 
@@ -751,64 +660,6 @@ void YtaRobot::CheckAndUpdateRobotMode(RobotMode robotMode)
         m_RobotMode = robotMode;
         RobotUtils::DisplayMessage(MODE_CHANGE_ENTER_MESSAGES[m_RobotMode]);
     }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::TriggerChangeValues::DetectChange
-///
-/// This method is used to check if a button has undergone a
-/// state change.  The same button can be used to reverse state
-/// of a particular part of the robot (such as a motor or
-/// solenoid).  If the state is reversed inside an 'if'
-/// statement that is part of a loop, the final state will be
-/// whatever transition just occurred, which could be back to
-/// the same state started in.  The intended use case is to
-/// have TriggerChangeValues variables in the code and update
-/// their 'current' value each time through the loop by reading
-/// the joystick input.  This input will then be checked against
-/// the old input and return 'true' if it detects an appropriate
-/// edge change.  This method is intended to be called inside
-/// 'if' statements for logic control.
-///
-////////////////////////////////////////////////////////////////
-inline bool YtaRobot::TriggerChangeValues::DetectChange(TriggerEdge edge)
-{
-    bool bTriggerChanged = false;
-    
-    // The trigger change objects are initially set to nullptr and then created
-    // after the robot joysticks are set.  While the window between the two is
-    // incredibly small (member initialization list -> constructor body), apparently
-    // it is still possible for something to try and use the objects in this window.
-    // Make sure assignment to a valid joystick has occurred.
-    if (m_pJoystick != nullptr)
-    {    
-        // First read the latest value from the joystick
-        this->m_bCurrentValue = m_pJoystick->GetRawButton(m_ButtonNumber);
-        
-        // Only report a change if the current value is different than the old value
-        if ( (this->m_bCurrentValue != this->m_bOldValue) )
-        {
-            // Also make sure the transition is to the correct edge
-            if ((edge == RISING_EDGE_TRIGGER) && this->m_bCurrentValue)
-            {
-                bTriggerChanged = true;
-            }
-            else if ((edge == FALLING_EDGE_TRIGGER) && !this->m_bCurrentValue)
-            {
-                bTriggerChanged = true;
-            }
-            else
-            {
-            }
-        }
-        
-        // Always update the old value
-        this->m_bOldValue = this->m_bCurrentValue;
-    }
-    
-    return bTriggerChanged;
 }
 
 #endif // YTAROBOT_HPP

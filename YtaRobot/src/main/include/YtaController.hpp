@@ -3,11 +3,11 @@
 /// @author David Stalter
 ///
 /// @details
-/// A class designed to interface to several controller types (Logitech Gamepad,
-/// Xbox GameSir) with custom responses.
+/// A class designed to interface to several controller types, such as a custom
+/// YTA controller implementation or the built-in FRC types.
 ///
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTACONTROLLER_HPP
@@ -18,278 +18,270 @@
 
 // C INCLUDES
 #include "frc/GenericHID.h"             // for base class declaration
+#include "frc/Joystick.h"               // for interacting with joysticks
+#include "frc/PS4Controller.h"          // for creating built-in PS4 controller objects
+#include "frc/XboxController.h"         // for creating built-in XBox controller objects
 
 // C++ INCLUDES
-// (none)
+#include "ControllerConfiguration.hpp"  // for the controller axis/button mappings
+#include "YtaCustomController.hpp"      // for creating custom YTA controllers
 
 using namespace frc;
 
 
 ////////////////////////////////////////////////////////////////
-/// @class YtaController
+/// @namespace Yta::Controller
 ///
-/// Class that provides methods for interacting with a Logitech
-/// Gamepad controller.  Derives from GenericHID.  Inheriting
-/// from GamepadBase.h is deprecated, so GenericHID is used
-/// directly.
+/// Provides generic declarations for YTA controller related
+/// functionality.
 ///
 ////////////////////////////////////////////////////////////////
-class YtaController : public GenericHID
+namespace Yta
 {
-    
+namespace Controller
+{
+    // Used to detect button state changes (such as released to
+    // pressed or vice-versa.  Each button is tracked as an
+    // individual bit in the uint32_t members.  This works
+    // because controllers have fewer than 32 available buttons.
+    struct ButtonStateChanges
+    {
+        enum Transitions
+        {
+            BUTTON_PRESSED,
+            BUTTON_RELEASED
+        };
+
+        ButtonStateChanges() :
+            m_CurrentValues(0U),
+            m_PreviousValues(0U)
+        {
+        }
+
+        uint32_t m_CurrentValues;
+        uint32_t m_PreviousValues;
+    };
+}
+}
+
+
+////////////////////////////////////////////////////////////////
+/// @class YtaController<ControllerType>
+///
+/// Template class that provides methods for interacting with a
+/// generic controller.  The theory behind this class is to
+/// enable easy switching of controller models from the primary
+/// robot code.  There are many different types of controller
+/// objects, most of which derive from GenericHID.  The derived
+/// classes may not implement all of the base class methods or
+/// can have custom ways of retrieving controller inputs (e.g.
+/// GetSquareButton() for a PS4 controller).  To preserve a
+/// common interface to robot code, controller objects are
+/// created through this template class, picking the correct
+/// model to instantiate.  The controller model object is
+/// created, stored and maintained through this class.  A
+/// common API is provided to access all inputs from the
+/// controllers.  These APIs are kept common if possible (by
+/// calling GenericHID base methods).  If non-common behavior
+/// is needed, the template method can be specialized.  The
+/// constructor for this class is an example of that.  Custom
+/// YTA controllers have a different constructor signature
+/// than the GenericHID derived objects.  It is specialized to
+/// provide the necessary custom functionality.
+///
+/// Examples of valid types to instantiate this class with:
+/// Joystick, PS4Controller, XboxController, YtaCustomController
+///
+////////////////////////////////////////////////////////////////
+template <class ControllerType>
+class YtaController
+{
 public:
-    
-    // Represents the possible custom controller configurations
-    enum CustomControllerType
-    {
-        LOGITECH,
-        PLAY_STATION
-    };
-    
-    // Structure representing the mapping of axes
-    struct AxisMappings
-    {
-        const unsigned LEFT_X_AXIS;
-        const unsigned LEFT_Y_AXIS;
-        const unsigned LEFT_TRIGGER;
-        const unsigned RIGHT_X_AXIS;
-        const unsigned RIGHT_Y_AXIS;
-        const unsigned RIGHT_TRIGGER;
-    };
+    // Constructor, which is specialized for some ControllerTypes
+    YtaController(Yta::Controller::Config::Models controllerModel, int controllerPort);
 
-    // Structure representing the mapping of buttons
-    struct ButtonMappings
+    // Methods to get input from the controller (not currently specialized anywhere)
+    double GetAxisValue(int axis)
     {
-        const unsigned NO_BUTTON;
-        const unsigned UP_BUTTON;
-        const unsigned DOWN_BUTTON;
-        const unsigned LEFT_BUTTON;
-        const unsigned RIGHT_BUTTON;
-        const unsigned SELECT;
-        const unsigned START;
-        const unsigned LEFT_BUMPER;
-        const unsigned RIGHT_BUMPER;
-        const unsigned LEFT_STICK_CLICK;
-        const unsigned RIGHT_STICK_CLICK;
-    };
+        return m_pController->GetRawAxis(axis);
+    }
 
-    // Mappings for a controller (axes and buttons)
-    struct ControllerMappings
+    bool GetButtonState(int button)
     {
-        const AxisMappings AXIS_MAPPINGS;
-        const ButtonMappings BUTTON_MAPPINGS;
-    };
-    
-    // Constant expression function to retrieve the mapping for a controller at compile time
-    static constexpr const ControllerMappings * GetControllerMapping(CustomControllerType controllerType)
+        return m_pController->GetRawButton(button);
+    }
+
+    int GetPovValue()
     {
-        switch (controllerType)
+        return m_pController->GetPOV();
+    }
+
+    // Methods to compute YTA specific parameters (may be specialized)
+    double GetThrottleControl();
+
+    ////////////////////////////////////////////////////////////////
+    /// @method YtaController<ControllerType>::DetectButtonChange
+    ///
+    /// This method is used to check if a button has undergone a
+    /// state change.  The same button can be used to reverse state
+    /// of a particular part of the robot (such as a motor or
+    /// solenoid).  If the state is reversed inside an 'if'
+    /// statement that is part of a loop, the final state will be
+    /// whatever transition just occurred, which could be back to
+    /// the same state started in.  The intended use case is to
+    /// have robot code call this function periodically through a
+    /// controller object as the condition of an 'if' statement.
+    /// It will read a current value which will then be checked
+    /// against the last input value read.  A value of 'true' will
+    /// be returned if an appropriate edge change is detected.
+    /// is detected (press or release).
+    ///
+    ////////////////////////////////////////////////////////////////
+    inline bool DetectButtonChange(int buttonNumber, Yta::Controller::ButtonStateChanges::Transitions transition = Yta::Controller::ButtonStateChanges::BUTTON_PRESSED)
+    {   
+        // Create the mask to the bit position for this button
+        const uint32_t BUTTON_BIT_POSITION_MASK = 1U << buttonNumber;
+
+        // First read the latest value from the joystick
+        if (m_pController->GetRawButton(buttonNumber))
         {
-            case LOGITECH:
+            // If it's a '1', it must be or'ed in
+            m_ButtonStateChanges.m_CurrentValues |= BUTTON_BIT_POSITION_MASK;
+        }
+        else
+        {
+            // If it's a '0', it must be and'ed in
+            m_ButtonStateChanges.m_CurrentValues &= ~BUTTON_BIT_POSITION_MASK;
+        }
+        
+        // Generates some values where only the bit of interest is preserved, in place (not shifted)
+        const uint32_t currentMaskedBit =  m_ButtonStateChanges.m_CurrentValues & BUTTON_BIT_POSITION_MASK;
+        const uint32_t previousMaskedBit = m_ButtonStateChanges.m_PreviousValues & BUTTON_BIT_POSITION_MASK;
+
+        bool bTriggerChanged = false;
+
+        // Only report a change if the current value is different than the old value
+        if ((currentMaskedBit ^ previousMaskedBit) != 0U)
+        {
+            // Also make sure the transition is to the correct edge
+            if ((transition == Yta::Controller::ButtonStateChanges::BUTTON_PRESSED) && (currentMaskedBit != 0U))
             {
-                return &LOGITECH_CONTROLLER_MAPPINGS;
-                break;
+                bTriggerChanged = true;
             }
-            case PLAY_STATION:
+            else if ((transition == Yta::Controller::ButtonStateChanges::BUTTON_RELEASED) && (currentMaskedBit == 0U))
             {
-                return &PLAY_STATION_CONTROLLER_MAPPINGS;
-                break;
+                bTriggerChanged = true;
             }
-            default:
+            else
             {
-                return nullptr;
-                break;
             }
         }
+        
+        // Always update the old value
+        m_ButtonStateChanges.m_PreviousValues = m_ButtonStateChanges.m_CurrentValues;
+        
+        return bTriggerChanged;
     }
-    
-    // Constructor/destructor
-    explicit YtaController(CustomControllerType controllerType, int port, bool bIsDriveController);
-    virtual ~YtaController() = default;
-    
-    virtual double GetX(JoystickHand hand = kLeftHand) const override;
-    virtual double GetY(JoystickHand hand = kLeftHand) const override;
-    
-    double GetThrottle() const;
-    
+
+protected:
+    // This is the actual controller object which will retrieve all input
+    ControllerType * m_pController;
+
+    // The model of controller being instantiated
+    Yta::Controller::Config::Models m_ControllerModel;
+
 private:
-    
-    // Structure representing a Logitech controller
-    struct LogitechController
-    {
-        // Joystick axes inputs are:
-        // LT: 0->+1, RT: 0->+1
-        // x-axis: -1    +1
-        
-        enum RawAxes
-        {
-            LEFT_X_AXIS         = 0,
-            LEFT_Y_AXIS         = 1,
-            LT                  = 2,
-            RT                  = 3,
-            RIGHT_X_AXIS        = 4,
-            RIGHT_Y_AXIS        = 5
-        };
-        
-        enum RawButtons
-        {
-            NO_BUTTON           = 0,
-            A                   = 1,
-            B                   = 2,
-            X                   = 3,
-            Y                   = 4,
-            LB                  = 5,
-            RB                  = 6,
-            SELECT              = 7,
-            START               = 8,
-            LEFT_STICK_CLICK    = 9,
-            RIGHT_STICK_CLICK   = 10
-        };
+    // Tracks the state of the buttons (pressed/released)
+    Yta::Controller::ButtonStateChanges m_ButtonStateChanges;
 
-        static void NormalizeTriggers(double & rLeftTrigger, double & rRightTrigger)
-        {
-            // LT: in 0->+1, out 0->+1
-            // RT: in 0->+1, out -1->0
-            rRightTrigger *= -1.0;
-        }
-    };
-
-    // Structure representing a PlayStation controller
-    struct PlayStationController
-    {
-        // Joystick axes inputs are:
-        // L2: -1->+1, R2: +1->-1
-        // x-axis: -1    +1
-        
-        enum RawAxes
-        {
-            LEFT_X_AXIS         = 0,
-            LEFT_Y_AXIS         = 1,
-            RIGHT_X_AXIS        = 2,
-            L2                  = 3,
-            R2                  = 4,
-            RIGHT_Y_AXIS        = 5
-        };
-        
-        enum RawButtons
-        {
-            NO_BUTTON           = 0,
-            SQUARE              = 1,
-            X                   = 2,
-            CIRCLE              = 3,
-            TRIANGLE            = 4,
-            L1                  = 5,
-            R1                  = 6,
-            SHARE               = 9,
-            OPTIONS             = 10,
-            LEFT_STICK_CLICK    = 11,
-            RIGHT_STICK_CLICK   = 12
-        };
-
-        static void NormalizeTriggers(double & rLeftTrigger, double & rRightTrigger)
-        {
-            // L2: in -1->+1, out 0->+1
-            // R2: in -1->+1, out -1->0
-            rLeftTrigger = (rLeftTrigger + 1.0) / 2.0;
-            rRightTrigger = (rRightTrigger + 1.0) / -2.0;
-        }
-    };
-    
-    // Constant expression mapping the Logitech controller axes/buttons
-    static constexpr const ControllerMappings LOGITECH_CONTROLLER_MAPPINGS =
-    {
-        {
-            LogitechController::RawAxes::LEFT_X_AXIS,
-            LogitechController::RawAxes::LEFT_Y_AXIS,
-            LogitechController::RawAxes::LT,
-            LogitechController::RawAxes::RIGHT_X_AXIS,
-            LogitechController::RawAxes::RIGHT_Y_AXIS,
-            LogitechController::RawAxes::RT
-        },
-        {
-            LogitechController::RawButtons::NO_BUTTON,
-            LogitechController::RawButtons::Y,
-            LogitechController::RawButtons::A,
-            LogitechController::RawButtons::X,
-            LogitechController::RawButtons::B,
-            LogitechController::RawButtons::SELECT,
-            LogitechController::RawButtons::START,
-            LogitechController::RawButtons::LB,
-            LogitechController::RawButtons::RB,
-            LogitechController::RawButtons::LEFT_STICK_CLICK,
-            LogitechController::RawButtons::RIGHT_STICK_CLICK
-        }
-    };
-
-    // Constant expression mapping the PlayStation controller axes/buttons
-    static constexpr const ControllerMappings PLAY_STATION_CONTROLLER_MAPPINGS =
-    {
-        {
-            PlayStationController::RawAxes::LEFT_X_AXIS,
-            PlayStationController::RawAxes::LEFT_Y_AXIS,
-            PlayStationController::RawAxes::L2,
-            PlayStationController::RawAxes::RIGHT_X_AXIS,
-            PlayStationController::RawAxes::RIGHT_Y_AXIS,
-            PlayStationController::RawAxes::R2
-        },
-        {
-            PlayStationController::RawButtons::NO_BUTTON,
-            PlayStationController::RawButtons::TRIANGLE,
-            PlayStationController::RawButtons::X,
-            PlayStationController::RawButtons::SQUARE,
-            PlayStationController::RawButtons::CIRCLE,
-            PlayStationController::RawButtons::SHARE,
-            PlayStationController::RawButtons::OPTIONS,
-            PlayStationController::RawButtons::L1,
-            PlayStationController::RawButtons::R1,
-            PlayStationController::RawButtons::LEFT_STICK_CLICK,
-            PlayStationController::RawButtons::RIGHT_STICK_CLICK,
-        }
-    };
-
-    ////////////////////////////////////////////////////////////////
-    /// @method YtaController::NormalizeTriggers
-    ///
-    /// Function to normalize the trigger inputs to expected output
-    /// ranges.  The controller logic wants the left trigger to be
-    /// a value between [-1:0] and the right trigger to be a value
-    /// between [0:+1].  This function will invoke code specific to
-    /// a controller to adjust the triggers since each controller
-    /// will be unique in how the axes values are reported.
-    ///
-    ////////////////////////////////////////////////////////////////
-    inline void NormalizeTriggers(double & rLeftTrigger, double & rRightTrigger) const
-    {
-        switch (CONTROLLER_TYPE)
-        {
-            case LOGITECH:
-            {
-                LogitechController::NormalizeTriggers(rLeftTrigger, rRightTrigger);
-                break;
-            }
-            case PLAY_STATION:
-            {
-                PlayStationController::NormalizeTriggers(rLeftTrigger, rRightTrigger);
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
-    }
-    
-    const CustomControllerType CONTROLLER_TYPE;
-    const ControllerMappings * const CONTROLLER_MAPPINGS;
-    const bool IS_DRIVE_CONTROLLER;
-    double m_ThrottleValue;
-    
-    static constexpr double X_AXIS_DRIVE_SENSITIVITY_SCALING = 0.75;
-    static constexpr double Y_AXIS_DRIVE_SENSITIVITY_SCALING = 1.00;
-    
     // Prevent copying/assignment
     YtaController(const YtaController&) = delete;
     YtaController& operator=(const YtaController&) = delete;
 };
+
+
+////////////////////////////////////////////////////////////////
+/// @class YtaDriveController<DriveControllerType>
+///
+/// Template class specifically for a drive controller.  It
+/// derives from the previously declared YtaController template
+/// class and behaves the same way, other than to provide some
+/// additional methods that are specific to drive controllers
+/// only (such as getting drive inputs as complex combinations
+/// instead of single axes).  The methods here are most likely
+/// to require specialization for custom behavior.
+///
+////////////////////////////////////////////////////////////////
+template <class DriveControllerType>
+class YtaDriveController : public YtaController<DriveControllerType>
+{
+public:
+    YtaDriveController(Yta::Controller::Config::Models controllerModel, int controllerPort) : YtaController<DriveControllerType>(controllerModel, controllerPort)
+    {
+    }
+
+    // Get drive x/y axis inputs
+    double GetDriveXInput();
+    double GetDriveYInput();
+
+private:
+    // Prevent copying/assignment
+    YtaDriveController(const YtaDriveController&) = delete;
+    YtaDriveController& operator=(const YtaDriveController&) = delete;
+};
+
+
+////////////////////////////////////////////////////////////////
+/// Template specialization declarations.
+///
+/// These specializations indicate which controllers will be
+/// implementing custom functionality.  They must be declared
+/// before the first time they would be required to be
+/// instantiated in the code.  They must also precede the
+/// generic template definitions, otherwise those would be used
+/// by the compiler instead.  This is why some template bodies
+/// appear *after* these declarations.
+///
+/// See ControllerTemplateSpecializations.cpp for the bodies of
+/// these functions.
+///
+////////////////////////////////////////////////////////////////
+
+// Specialization of the constructor for YtaCustomController type
+template <>
+YtaController<YtaCustomController>::YtaController(Yta::Controller::Config::Models controllerModel, int controllerPort);
+
+// Specialization of GetThrottleControl() for YtaCustomController type
+template <>
+double YtaController<YtaCustomController>::GetThrottleControl();
+
+// Specialization of GetDriveXInput() for YtaCustomController type
+template <>
+double YtaDriveController<YtaCustomController>::GetDriveXInput();
+
+// Specialization of GetDriveYInput() for YtaCustomController type
+template <>
+double YtaDriveController<YtaCustomController>::GetDriveYInput();
+
+
+////////////////////////////////////////////////////////////////
+/// Non-specialized template definitions.
+///
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+/// @method YtaController<ControllerType>::YtaCustomController
+///
+/// Constructor.  Instantiates the actual controller object that
+/// receives input.
+///
+////////////////////////////////////////////////////////////////
+template <class ControllerType>
+YtaController<ControllerType>::YtaController(Yta::Controller::Config::Models controllerModel, int controllerPort) :
+    m_pController(new ControllerType(controllerPort)),
+    m_ControllerModel(controllerModel),
+    m_ButtonStateChanges()
+{
+}
 
 #endif // YTACONTROLLER_HPP

@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous encoder based routines.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -96,7 +96,7 @@ void YtaRobot::AutonomousEncoderDrive(double speed, double distance, RobotDirect
     
     do
     {
-        if (!m_pDriverStation->IsAutonomous())
+        if (!DriverStation::IsAutonomous())
         {
             break;
         }

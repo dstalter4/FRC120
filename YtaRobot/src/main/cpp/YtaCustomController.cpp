@@ -4,9 +4,9 @@
 ///
 /// @details
 /// A class designed to interface to several controller types (Logitech Gamepad,
-/// Xbox GameSir) with custom responses.
+/// Xbox GameSir, PS4, etc.) with custom responses.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -23,18 +23,16 @@
 // (none)
 
 
-
 ////////////////////////////////////////////////////////////////
-/// @method YtaController::YtaController
+/// @method YtaCustomController::YtaCustomController
 ///
 /// Constructor.
 ///
 ////////////////////////////////////////////////////////////////
-YtaController::YtaController(CustomControllerType controllerType, int port, bool bIsDriveController)
-: GenericHID(port)
-, CONTROLLER_TYPE(controllerType)
-, CONTROLLER_MAPPINGS(GetControllerMapping(controllerType))
-, IS_DRIVE_CONTROLLER(bIsDriveController)
+YtaCustomController::YtaCustomController(Yta::Controller::Config::Models controllerModel, int controllerPort)
+: GenericHID(controllerPort)
+, CONTROLLER_MODEL(controllerModel)
+, CONTROLLER_MAPPINGS(GetControllerMapping(controllerModel))
 , m_ThrottleValue(1.0)
 {
     ASSERT(CONTROLLER_MAPPINGS != nullptr);
@@ -43,22 +41,17 @@ YtaController::YtaController(CustomControllerType controllerType, int port, bool
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaController::GetX
+/// @method YtaCustomController::GetDriveX
 ///
-/// Returns x-axis input.  This method is pure virtual in the
-/// base class and must be implemented.
+/// Returns x-axis drive input.
 ///
 ////////////////////////////////////////////////////////////////
-double YtaController::GetX(JoystickHand hand) const
+double YtaCustomController::GetDriveX() const
 {
-    // x-axis controls are very sensitive on this
-    // controller, so scale them back.
-    double xAxisValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS);
-    
-    if (IS_DRIVE_CONTROLLER)
-    {
-        xAxisValue *= X_AXIS_DRIVE_SENSITIVITY_SCALING;
-    }
+    double xAxisValue = GenericHID::GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS);
+ 
+    // x-axis controls are usually very sensitive, so scale them back   
+    xAxisValue *= X_AXIS_DRIVE_SENSITIVITY_SCALING;
 
     return xAxisValue;
 }
@@ -66,17 +59,21 @@ double YtaController::GetX(JoystickHand hand) const
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaController::GetY
+/// @method YtaCustomController::GetDriveY
 ///
-/// Returns y-axis input.  This method is pure virtual in the
-/// base class and must be implemented.
+/// Returns y-axis drive input.
 ///
 ////////////////////////////////////////////////////////////////
-double YtaController::GetY(JoystickHand hand) const
+double YtaCustomController::GetDriveY() const
 {
     // In order to keep the drive logic the same across
-    // all joysticks, full forward is represented by -1
-    // and full reverse is represented by +1.
+    // all controller models, full forward is represented
+    // by -1 and full reverse is represented by +1.
+    //   -1
+    //    |
+    // -1---+1
+    //    |
+    //   +1
     
     // Left trigger is the 'reverse' value input.
     double leftTriggerValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER);
@@ -104,10 +101,7 @@ double YtaController::GetY(JoystickHand hand) const
     // case both are being pressed, the value will be combined.
     double yAxisValue =  leftTriggerValue + rightTriggerValue;
     
-    if (IS_DRIVE_CONTROLLER)
-    {
-        yAxisValue *= Y_AXIS_DRIVE_SENSITIVITY_SCALING;
-    }
+    yAxisValue *= Y_AXIS_DRIVE_SENSITIVITY_SCALING;
 
     return yAxisValue;
 }
@@ -115,7 +109,7 @@ double YtaController::GetY(JoystickHand hand) const
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaController::GetThrottle
+/// @method YtaCustomController::GetThrottle
 ///
 /// Returns throttle control.  Most controllers do not have an
 /// axis that retains its position when not being manipulated by
@@ -123,8 +117,16 @@ double YtaController::GetY(JoystickHand hand) const
 /// and remembered in software.
 ///
 ////////////////////////////////////////////////////////////////
-double YtaController::GetThrottle() const
+double YtaCustomController::GetThrottle() const
 {
     // Not implemented yet, just return the default value
     return m_ThrottleValue;
+
+    // Get throttle control for generic Joystick implementation (e.g.
+    // Logitech Extreme).  The z axis goes from -1 to 1, so it needs
+    // to be normalized.  Subtract one and negate to make it zero
+    // based to give a value between zero and two.  Divide by two to
+    // get a value between 0 and 1.
+    //
+    // ((pJoystick->GetThrottle() - 1.0) / -2.0)
 }

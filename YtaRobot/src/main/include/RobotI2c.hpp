@@ -5,14 +5,14 @@
 /// @details
 /// Contains declarations for interacting with and controlling I2C on the robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTI2C_HPP
 #define ROBOTI2C_HPP
 
 // SYSTEM INCLUDES
-// <none>
+#include <cstring>                                          // for std::memset()
 
 // C INCLUDES
 #include "frc/DigitalInput.h"                               // for DigitalInput type

@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous gyroscope routines.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -39,9 +39,9 @@ bool YtaRobot::AutonomousGyroLeftTurn(double destAngle, double turnSpeed)
     
     // Angle will be decreasing.  Assumption: Robot orientation is 0 -> 90 -> 180 -> 270 -> 360.
     // @todo: This needs improvements for figuring out fastest way to turn and crossing the 0/360 boundary.
-    while ((GetGyroValue(BNO055) > destAngle) && (m_pSafetyTimer->Get() <= SAFETY_TIMER_MAX_VALUE))
+    while ((GetGyroValue(BNO055) > destAngle) && (m_pSafetyTimer->Get() <= SAFETY_TIMER_MAX_VALUE_S))
     {
-        if (!m_pDriverStation->IsAutonomous())
+        if (!DriverStation::IsAutonomous())
         {
             break;
         }
@@ -53,7 +53,7 @@ bool YtaRobot::AutonomousGyroLeftTurn(double destAngle, double turnSpeed)
     m_pRightDriveMotors->Set(OFF);
     
     m_pSafetyTimer->Stop();
-    if (m_pSafetyTimer->Get() > SAFETY_TIMER_MAX_VALUE)
+    if (m_pSafetyTimer->Get() > SAFETY_TIMER_MAX_VALUE_S)
     {
         m_pSafetyTimer->Reset();
         return false;
@@ -88,9 +88,9 @@ bool YtaRobot::AutonomousGyroRightTurn(double destAngle, double turnSpeed)
     
     // Angle will be increasing.  Assumption: Robot orientation is 0 -> 90 -> 180 -> 270 -> 360.
     // @todo: This needs improvements for figuring out fastest way to turn and crossing the 0/360 boundary.
-    while ((GetGyroValue(BNO055) < destAngle) && (m_pSafetyTimer->Get() <= SAFETY_TIMER_MAX_VALUE))
+    while ((GetGyroValue(BNO055) < destAngle) && (m_pSafetyTimer->Get() <= SAFETY_TIMER_MAX_VALUE_S))
     {
-        if (!m_pDriverStation->IsAutonomous())
+        if (!DriverStation::IsAutonomous())
         {
             break;
         }
@@ -102,7 +102,7 @@ bool YtaRobot::AutonomousGyroRightTurn(double destAngle, double turnSpeed)
     m_pRightDriveMotors->Set(OFF);
     
     m_pSafetyTimer->Stop();
-    if (m_pSafetyTimer->Get() > SAFETY_TIMER_MAX_VALUE)
+    if (m_pSafetyTimer->Get() > SAFETY_TIMER_MAX_VALUE_S)
     {
         m_pSafetyTimer->Reset();
         return false;

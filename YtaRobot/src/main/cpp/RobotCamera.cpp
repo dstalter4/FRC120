@@ -5,7 +5,7 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -22,7 +22,7 @@
 #include "YtaRobot.hpp"                         // for GetRobotInstance()
 
 // STATIC MEMBER DATA
-std::shared_ptr<NetworkTable>                   RobotCamera::m_pLimelightNetworkTable;
+std::shared_ptr<nt::NetworkTable>               RobotCamera::m_pLimelightNetworkTable;
 RobotCamera::UsbCameraStorage                   RobotCamera::m_UsbCameras;
 RobotCamera::UsbCameraInfo *                    RobotCamera::m_pCurrentUsbCamera;
 cs::CvSource                                    RobotCamera::m_CameraOutput;
@@ -187,10 +187,10 @@ RobotCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, 
     RobotUtils::DisplayFormattedMessage("Creating camera %d.\n", devNum);
 
     // Start image capture, set the resolution and connect the sink
-    m_UsbCam = CameraServer::GetInstance()->StartAutomaticCapture();
+    m_UsbCam = CameraServer::StartAutomaticCapture();
     m_UsbCam.SetResolution(xRes, yRes);
     m_UsbCam.SetFPS(fps);
-    m_CamSink = CameraServer::GetInstance()->GetVideo(m_UsbCam);
+    m_CamSink = CameraServer::GetVideo(m_UsbCam);
 }
 
 
@@ -267,11 +267,11 @@ void RobotCamera::VisionThread()
     
     /*
     // Me
-    cs::UsbCamera usbCam = CameraServer::GetInstance()->StartAutomaticCapture();
+    cs::UsbCamera usbCam = CameraServer::StartAutomaticCapture();
     usbCam.SetResolution(640, 480);
     usbCam.SetFPS(30);
-    cs::CvSink usbSink = CameraServer::GetInstance()->GetVideo(usbCam);
-    cs::CvSource outputSource = CameraServer::GetInstance()->PutVideo(CAMERA_OUTPUT_NAME, 640, 480);
+    cs::CvSink usbSink = CameraServer::GetVideo(usbCam);
+    cs::CvSource outputSource = CameraServer::PutVideo(CAMERA_OUTPUT_NAME, 640, 480);
     while (true)
     {
         //usbSink.GrabFrame(m_SourceMat);
@@ -280,11 +280,11 @@ void RobotCamera::VisionThread()
     */
     
     // Sample WPI code
-    cs::UsbCamera camera = CameraServer::GetInstance()->StartAutomaticCapture();
+    cs::UsbCamera camera = CameraServer::StartAutomaticCapture();
     camera.SetResolution(160, 120);
     camera.SetFPS(30);
-    cs::CvSink cvSink = CameraServer::GetInstance()->GetVideo();
-    cs::CvSource outputStreamStd = CameraServer::GetInstance()->PutVideo("Camera Output", 160, 120);    // "Gray"
+    cs::CvSink cvSink = CameraServer::GetVideo();
+    cs::CvSource outputStreamStd = CameraServer::PutVideo("Camera Output", 160, 120);    // "Gray"
     //cv::Mat source;
     //cv::Mat output;
     cv::Mat frame;
@@ -316,7 +316,7 @@ void RobotCamera::VisionThread()
     m_pCurrentUsbCamera = &m_UsbCameras.m_CamerasInfo[FRONT_USB];
     
     // Connect the output
-    m_CameraOutput = CameraServer::GetInstance()->PutVideo(CAMERA_OUTPUT_NAME, m_pCurrentUsbCamera->X_RESOLUTION, m_pCurrentUsbCamera->Y_RESOLUTION);
+    m_CameraOutput = CameraServer::PutVideo(CAMERA_OUTPUT_NAME, m_pCurrentUsbCamera->X_RESOLUTION, m_pCurrentUsbCamera->Y_RESOLUTION);
     
     // Set the default image to display
     m_pDashboardMat = &m_SourceMat;
