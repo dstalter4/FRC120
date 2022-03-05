@@ -63,8 +63,9 @@ private:
         switch (CONTROLLER_MODEL)
         {
             case Yta::Controller::Config::Models::CUSTOM_LOGITECH:
+            case Yta::Controller::Config::Models::CUSTOM_XBOX:
             {
-                // Logitech joystick axes inputs are:
+                // Logitech and Xbox joystick axes inputs are:
                 // LT: 0->+1, RT: 0->+1
                 // x-axis: -1    +1
 
