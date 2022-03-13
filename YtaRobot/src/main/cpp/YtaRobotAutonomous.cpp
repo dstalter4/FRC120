@@ -115,7 +115,7 @@ void YtaRobot::AutonomousPeriodic()
     else if (selectedAutoRoutineString == AUTO_TEST_ROUTINE_STRING)
     {
         RobotUtils::DisplayMessage("Auto test code.");
-        AutonomousTestCode();
+        AutonomousTestRoutine();
     }
 
     else
