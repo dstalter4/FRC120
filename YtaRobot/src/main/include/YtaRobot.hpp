@@ -306,21 +306,20 @@ private:
     static const int                DRIVE_JOYSTICK_PORT                     = 0;
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
-    // Driver buttons
+    // Driver inputs
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
+    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
     static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
-    static const int                DRIVE_CONTROLS_FORWARD_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_REVERSE_BUTTON           = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
-    // Control buttons
+    // Aux inputs
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
@@ -354,6 +353,7 @@ private:
     static const int                OFF                                     = 0;
     static const int                ON                                      = 1;
     static const int                SINGLE_MOTOR                            = 1;
+    static const int                TWO_MOTORS                              = 2;
     static const int                NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const int                NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const int                ANGLE_90_DEGREES                        = 90;
@@ -453,8 +453,6 @@ private:
     
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.10;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.10;
-    static constexpr double         CONTROL_THROTTLE_VALUE_RANGE            =  0.65;
-    static constexpr double         CONTROL_THROTTLE_VALUE_BASE             =  0.35;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
     static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
@@ -509,16 +507,9 @@ inline void YtaRobot::CheckForDriveSwap()
 {
     // Check if the driver pushed the button to have
     // forward be reverse and vice versa
-    if ( m_pDriveController->GetButtonState(DRIVE_CONTROLS_FORWARD_BUTTON) )
+    if (m_pDriveController->DetectButtonChange(DRIVE_SWAP_BUTTON))
     {
-        m_bDriveSwap = false;
-    }
-    else if ( m_pDriveController->GetButtonState(DRIVE_CONTROLS_REVERSE_BUTTON) )
-    {
-        m_bDriveSwap = true;
-    }
-    else
-    {
+        m_bDriveSwap = !m_bDriveSwap;
     }
 }
 
