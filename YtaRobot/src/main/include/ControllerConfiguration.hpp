@@ -43,7 +43,8 @@ namespace Config
         BUILT_IN_XBOX,
         CUSTOM_LOGITECH,
         CUSTOM_LOGITECH_EXTREME,
-        CUSTOM_PLAY_STATION
+        CUSTOM_PLAY_STATION,
+        CUSTOM_XBOX
     };
 
     ////////////////////////////////////////////////////////////////
@@ -149,11 +150,38 @@ namespace Config
             LEFT_STICK_CLICK    = 11,
             RIGHT_STICK_CLICK   = 12
         };
+    }
 
         
-        ////////////////////////////////////////////////////////////////
-        /// @todo: Add XBox controller mappings.
-        ////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////
+    /// Xbox controller mappings.
+    ////////////////////////////////////////////////////////////////
+    namespace Xbox
+    {
+        enum RawAxes
+        {
+            LEFT_X_AXIS         = 0,
+            LEFT_Y_AXIS         = 1,
+            LT                  = 2,
+            RT                  = 3,
+            RIGHT_X_AXIS        = 4,
+            RIGHT_Y_AXIS        = 5
+        };
+        
+        enum RawButtons
+        {
+            NO_BUTTON           = 0,
+            A                   = 1,
+            B                   = 2,
+            X                   = 3,
+            Y                   = 4,
+            LB                  = 5,
+            RB                  = 6,
+            BACK                = 7,
+            START               = 8,
+            LEFT_STICK_CLICK    = 9,
+            RIGHT_STICK_CLICK   = 10
+        };
     }
 
 
@@ -207,7 +235,33 @@ namespace Config
             PlayStation::RawButtons::L1,
             PlayStation::RawButtons::R1,
             PlayStation::RawButtons::LEFT_STICK_CLICK,
-            PlayStation::RawButtons::RIGHT_STICK_CLICK,
+            PlayStation::RawButtons::RIGHT_STICK_CLICK
+        }
+    };
+
+    // Constant expression mapping the Xbox controller axes/buttons
+    static constexpr const Mappings XBOX_CONTROLLER_MAPPINGS =
+    {
+        {
+            Xbox::RawAxes::LEFT_X_AXIS,
+            Xbox::RawAxes::LEFT_Y_AXIS,
+            Xbox::RawAxes::LT,
+            Xbox::RawAxes::RIGHT_X_AXIS,
+            Xbox::RawAxes::RIGHT_Y_AXIS,
+            Xbox::RawAxes::RT
+        },
+        {
+            Xbox::RawButtons::NO_BUTTON,
+            Xbox::RawButtons::Y,
+            Xbox::RawButtons::A,
+            Xbox::RawButtons::X,
+            Xbox::RawButtons::B,
+            Xbox::RawButtons::BACK,
+            Xbox::RawButtons::START,
+            Xbox::RawButtons::LB,
+            Xbox::RawButtons::RB,
+            Xbox::RawButtons::LEFT_STICK_CLICK,
+            Xbox::RawButtons::RIGHT_STICK_CLICK
         }
     };
     
@@ -226,6 +280,11 @@ namespace Config
             {
                 return &PLAY_STATION_CONTROLLER_MAPPINGS;
                 break;
+            }
+            case BUILT_IN_XBOX:
+            case CUSTOM_XBOX:
+            {
+                return &XBOX_CONTROLLER_MAPPINGS;
             }
             default:
             {

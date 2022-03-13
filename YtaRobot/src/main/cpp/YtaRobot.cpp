@@ -140,7 +140,7 @@ void YtaRobot::InitialStateSetup()
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
     
-    // Configure brake or coast for the drive motors
+    // Configure brake or coast for the motors
     m_pLeftDriveMotors->SetBrakeMode();
     m_pRightDriveMotors->SetBrakeMode();
     
@@ -237,7 +237,6 @@ void YtaRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::LedSequence()
 {
-    LedsTest();
 }
 
 
@@ -400,12 +399,7 @@ void YtaRobot::DriveControlSequence()
 
     //CheckForDriveSwap();
     
-    // Computes what the maximum drive speed could be.
-    // It's a little unfortunate we have to handle throttle this way,
-    // but GetThrottle is not a member of the GenericHID base class,
-    // so we can't use the generic objects since the v-table layout
-    // is not the same.  This means we have to manually get the throttle
-    // based on the driver input type.
+    // Computes what the maximum drive speed could be
     double throttleControl = (m_pDriveController->GetThrottleControl() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
 
     // All the controllers are normalized
