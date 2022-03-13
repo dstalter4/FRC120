@@ -237,7 +237,6 @@ void YtaRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::LedSequence()
 {
-    LedsTest();
 }
 
 

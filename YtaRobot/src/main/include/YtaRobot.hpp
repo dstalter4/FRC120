@@ -55,6 +55,7 @@ class YtaRobot : public TimedRobot
 {
 public:
     friend class RobotCamera;
+    friend class YtaRobotTest;
 
     // MEMBER FUNCTIONS
     
@@ -178,6 +179,7 @@ private:
     void AutonomousRoutine1();
     void AutonomousRoutine2();
     void AutonomousRoutine3();
+    void AutonomousTestRoutine();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
@@ -216,13 +218,6 @@ private:
     
     // Main sequence for vision processing
     void CameraSequence();
-    
-    // Test routines for trying out experimental code
-    void AutonomousTestCode();
-    void TeleopTestCode();
-    void MotorTest();
-    void TankDrive();
-    void LedsTest();
     
     // MEMBER VARIABLES
     

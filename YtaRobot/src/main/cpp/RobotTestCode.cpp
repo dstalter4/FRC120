@@ -13,11 +13,73 @@
 // <none>
 
 // C INCLUDES
-// (none)
+#include "rev/CANSparkMax.h"    // for interacting with spark max motor controllers
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"       // for DisplayMessage(), DisplayFormattedMessage()
 #include "YtaRobot.hpp"         // for robot class declaration
+
+
+// Helper macro to get the robot object, only for use in test class code
+#define YTA_ROBOT_OBJ() YtaRobot::GetRobotInstance()
+
+
+////////////////////////////////////////////////////////////////
+/// @class YtaRobotTest
+///
+/// A class used to test robot functionality.  The intention of
+/// this class is to enable quick tests or rapid prototypes.
+/// It leverages the YtaRobot 'Test' mode functions to execute
+/// routines.  Since it is separate from the 'product' robot
+/// code (in YtaRobot), it cannot directly use the various
+/// member objects from that code.  Instead they can be accessed
+/// through the YTA_ROBOT_OBJ() macro.
+///
+/// A second, but currently unused, test approach is also
+/// presented.  This approach attempts to mimic direct use of
+/// the YtaRobot object members by binding references to them.
+///
+////////////////////////////////////////////////////////////////
+class YtaRobotTest
+{
+public:
+    static void InitializeCommonPointers();
+    static void QuickTestCode();
+
+    static void CtreSpeedControllerTest();
+    static void RevSpeedControllerTest();
+    static void TankDrive();
+
+    static void TimeTest();
+    static void ButtonChangeTest();
+    static void AccelerometerTest();
+    static void LedsTest();
+
+private:
+    // Objects for use in test routines
+    static Joystick * m_pJoystick;
+
+    // Alternate test approach (not currently used):
+    // Singleton test object with members bound by reference to YtaRobot member objects.
+    /*
+    YtaRobotTest() :
+        m_pAccelerometer(YtaRobot::GetRobotInstance()->m_pAccelerometer)
+    {
+    }
+    static YtaRobotTest * GetInstance() { return m_pRobotTestObj; }
+    static void CreateInstance()
+    {
+        m_pRobotTestObj = new YtaRobotTest();
+    }
+
+    static YtaRobotTest * m_pRobotTestObj;
+    BuiltInAccelerometer *& m_pAccelerometer;
+    */
+};
+
+// STATIC MEMBER DATA
+Joystick * YtaRobotTest::m_pJoystick = nullptr;
+
 
 
 ////////////////////////////////////////////////////////////////
@@ -30,6 +92,8 @@
 void YtaRobot::TestInit()
 {
     RobotUtils::DisplayMessage("TestInit called.");
+
+    YtaRobotTest::InitializeCommonPointers();
 }
 
 
@@ -46,9 +110,149 @@ void YtaRobot::TestPeriodic()
     // Log a mode change if one occurred
     CheckAndUpdateRobotMode(ROBOT_MODE_TEST);
 
-    //AutonomousTestCode();
-    TeleopTestCode();
+    // Enable or disable routines for testing
+    YtaRobotTest::QuickTestCode();
+    //YtaRobotTest::CtreSpeedControllerTest();
+    //YtaRobotTest::RevSpeedControllerTest();
+    //YtaRobotTest::TankDrive();
+    //YtaRobotTest::TimeTest();
+    //YtaRobotTest::ButtonChangeTest();
+    //YtaRobotTest::AccelerometerTest();
+    //YtaRobotTest::LedsTest();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::InitializeCommonPointers
+///
+/// Initializes any common test pointers by creating objects
+/// for them to use.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::InitializeCommonPointers()
+{
+    static bool bPointersInitialized = false;
+    if (!bPointersInitialized)
+    {
+        // Only support one joystick in test code
+        m_pJoystick = new Joystick(0);
+        bPointersInitialized = true;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::QuickTestCode
+///
+/// Test code to try out for rapid prototyping.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::QuickTestCode()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::CtreSpeedControllerTest
+///
+/// Test code for CTRE speed controllers.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::CtreSpeedControllerTest()
+{
+    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID);
+    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID + 1);
+    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID);
+    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID + 1);
     
+    while (m_pJoystick->GetRawButton(1))
+    {
+        pLeft1->Set(ControlMode::PercentOutput, 1.0);
+        pLeft2->Set(ControlMode::PercentOutput, 1.0);
+    }
+    while (m_pJoystick->GetRawButton(2))
+    {
+        pLeft1->Set(ControlMode::PercentOutput, -1.0);
+        pLeft2->Set(ControlMode::PercentOutput, -1.0);
+    }
+    while (m_pJoystick->GetRawButton(3))
+    {
+        pRight1->Set(ControlMode::PercentOutput, 1.0);
+        pRight2->Set(ControlMode::PercentOutput, 1.0);
+    }
+    while (m_pJoystick->GetRawButton(4))
+    {
+        pRight1->Set(ControlMode::PercentOutput, -1.0);
+        pRight2->Set(ControlMode::PercentOutput, -1.0);
+    }
+    
+    pLeft1->Set(ControlMode::PercentOutput, 0.0);
+    pLeft2->Set(ControlMode::PercentOutput, 0.0);
+    pRight1->Set(ControlMode::PercentOutput, 0.0);
+    pRight2->Set(ControlMode::PercentOutput, 0.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::RevSpeedControllerTest
+///
+/// Test code for REV speed controllers.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::RevSpeedControllerTest()
+{
+    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
+    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
+
+    while (m_pJoystick->GetRawButton(1))
+    {
+        pLeftNeo->Set(1.0);
+    }
+    while (m_pJoystick->GetRawButton(2))
+    {
+        pLeftNeo->Set(-1.0);
+    }
+    while (m_pJoystick->GetRawButton(3))
+    {
+        pRightNeo->Set(1.0);
+    }
+    while (m_pJoystick->GetRawButton(4))
+    {
+        pRightNeo->Set(-1.0);
+    }
+
+    pLeftNeo->Set(0.0);
+    pRightNeo->Set(0.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::TankDrive
+///
+/// Test code for tank drive of the robot.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::TankDrive()
+{
+    YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
+    YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::TimeTest
+///
+/// Test code for manually managing timing (including threads).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::TimeTest()
+{
     // Example code using standard library delays and time tracking
     static std::chrono::time_point<std::chrono::high_resolution_clock> currentTime;
     static std::chrono::time_point<std::chrono::high_resolution_clock> oldTime;
@@ -72,36 +276,15 @@ void YtaRobot::TestPeriodic()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::AutonomousTestCode
+/// @method YtaRobotTest::ButtonChangeTest
 ///
-/// Test code to try out for autonomous mode.
+/// Test code to verify button state change detection works.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::AutonomousTestCode()
+void YtaRobotTest::ButtonChangeTest()
 {
-    // Motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::TeleopTestCode
-///
-/// Test code to try out for operator control mode.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::TeleopTestCode()
-{
-    // Test code for reading the built in accelerometer
-    double x = m_pAccelerometer->GetX();
-    double y = m_pAccelerometer->GetY();
-    double z = m_pAccelerometer->GetZ();
-    RobotUtils::DisplayFormattedMessage("x: %f, y: %f, z: %f\n", x, y, z);
-
     // Sample code for testing the detect trigger change code
-    if (m_pDriveController->DetectButtonChange(1, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(1, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
     {
         RobotUtils::DisplayMessage("Trigger change detected!");
     }
@@ -110,83 +293,29 @@ void YtaRobot::TeleopTestCode()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::MotorTest
+/// @method YtaRobotTest::AccelerometerTest
 ///
-/// Motor test code to make sure they aren't driving against
-/// each other.
+/// Test code to verify the built in accelerometer.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::MotorTest()
+void YtaRobotTest::AccelerometerTest()
 {
-    static Joystick * pDriveJoystick = new Joystick(DRIVE_JOYSTICK_PORT);
-    static Joystick * pControlJoystick = new Joystick(AUX_JOYSTICK_PORT);
-    static TalonFX * pLeft1 = new TalonFX(LEFT_MOTORS_CAN_START_ID);
-    static TalonFX * pLeft2 = new TalonFX(LEFT_MOTORS_CAN_START_ID + 1);
-    static TalonFX * pRight1 = new TalonFX(RIGHT_MOTORS_CAN_START_ID);
-    static TalonFX * pRight2 = new TalonFX(RIGHT_MOTORS_CAN_START_ID + 1);
-    
-    while (pDriveJoystick->GetRawButton(6))
-    {
-        pLeft1->Set(ControlMode::PercentOutput, 1);
-    }
-    while (pDriveJoystick->GetRawButton(7))
-    {
-        pLeft1->Set(ControlMode::PercentOutput, -1);
-    }
-    while (pDriveJoystick->GetRawButton(8))
-    {
-        pLeft2->Set(ControlMode::PercentOutput, 1);
-    }
-    while (pDriveJoystick->GetRawButton(9))
-    {
-        pLeft2->Set(ControlMode::PercentOutput, -1);
-    }
-    while (pControlJoystick->GetRawButton(6))
-    {
-        pRight1->Set(ControlMode::PercentOutput, 1);
-    }
-    while (pControlJoystick->GetRawButton(7))
-    {
-        pRight1->Set(ControlMode::PercentOutput, -1);
-    }
-    while (pControlJoystick->GetRawButton(8))
-    {
-        pRight2->Set(ControlMode::PercentOutput, 1);
-    }
-    while (pControlJoystick->GetRawButton(9))
-    {
-        pRight2->Set(ControlMode::PercentOutput, -1);
-    }
-    
-    pLeft1->Set(ControlMode::PercentOutput, 0);
-    pLeft2->Set(ControlMode::PercentOutput, 0);
-    pRight1->Set(ControlMode::PercentOutput, 0);
-    pRight2->Set(ControlMode::PercentOutput, 0);
+    // Test code for reading the built in accelerometer
+    double x = YTA_ROBOT_OBJ()->m_pAccelerometer->GetX();
+    double y = YTA_ROBOT_OBJ()->m_pAccelerometer->GetY();
+    double z = YTA_ROBOT_OBJ()->m_pAccelerometer->GetZ();
+    RobotUtils::DisplayFormattedMessage("x: %f, y: %f, z: %f\n", x, y, z);
 }
 
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::TankDrive
-///
-/// Test code for tank drive of the robot.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::TankDrive()
-{
-    m_pLeftDriveMotors->Set(-m_pDriveController->GetAxisValue(1));
-    m_pRightDriveMotors->Set(m_pAuxController->GetAxisValue(5));
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::LedsTest
+/// @method YtaRobotTest::LedsTest
 ///
 /// Test code to verify functionality of RGB LED strips.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::LedsTest()
+void YtaRobotTest::LedsTest()
 {
     enum LedDisplayState
     {
@@ -213,65 +342,65 @@ void YtaRobot::LedsTest()
         {
             case NONE:
             {
-                m_pRedLedRelay->Set(LEDS_OFF);
-                m_pGreenLedRelay->Set(LEDS_OFF);
-                m_pBlueLedRelay->Set(LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
                 displayState = RED_ONLY;
                 break;
             }
             case RED_ONLY:
             {
-                m_pRedLedRelay->Set(LEDS_ON);
-                m_pGreenLedRelay->Set(LEDS_OFF);
-                m_pBlueLedRelay->Set(LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
                 displayState = GREEN_ONLY;
                 break;
             }
             case GREEN_ONLY:
             {
-                m_pRedLedRelay->Set(LEDS_OFF);
-                m_pGreenLedRelay->Set(LEDS_ON);
-                m_pBlueLedRelay->Set(LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
                 displayState = BLUE_ONLY;
                 break;
             }
             case BLUE_ONLY:
             {
-                m_pRedLedRelay->Set(LEDS_OFF);
-                m_pGreenLedRelay->Set(LEDS_OFF);
-                m_pBlueLedRelay->Set(LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
                 displayState = RED_GREEN;
                 break;
             }
             case RED_GREEN:
             {
-                m_pRedLedRelay->Set(LEDS_ON);
-                m_pGreenLedRelay->Set(LEDS_ON);
-                m_pBlueLedRelay->Set(LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
                 displayState = RED_BLUE;
                 break;
             }
             case RED_BLUE:
             {
-                m_pRedLedRelay->Set(LEDS_ON);
-                m_pGreenLedRelay->Set(LEDS_OFF);
-                m_pBlueLedRelay->Set(LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
                 displayState = GREEN_BLUE;
                 break;
             }
             case GREEN_BLUE:
             {
-                m_pRedLedRelay->Set(LEDS_OFF);
-                m_pGreenLedRelay->Set(LEDS_ON);
-                m_pBlueLedRelay->Set(LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
                 displayState = RED_GREEN_BLUE;
                 break;
             }
             case RED_GREEN_BLUE:
             {
-                m_pRedLedRelay->Set(LEDS_ON);
-                m_pGreenLedRelay->Set(LEDS_ON);
-                m_pBlueLedRelay->Set(LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
+                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
                 displayState = NONE;
                 break;
             }
