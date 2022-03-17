@@ -40,11 +40,16 @@ YtaRobot::YtaRobot() :
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
+    m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
+    m_pFeederMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>(TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
+    m_pIntakeSolenoid                   (new DoubleSolenoid(frc::PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
+    m_pShootMotorSpinUpTimer            (new Timer()),
     m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
     m_pDirectionalAlignTimer            (new Timer()),
@@ -60,6 +65,7 @@ YtaRobot::YtaRobot() :
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
+    m_bUnjamming                        (false),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -139,10 +145,19 @@ void YtaRobot::InitialStateSetup()
     // Start with motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
+    m_pIntakeMotors->Set(OFF);
+    m_pFeederMotors->Set(OFF);
+    m_pShooterMotors->Set(OFF);
     
     // Configure brake or coast for the motors
     m_pLeftDriveMotors->SetBrakeMode();
     m_pRightDriveMotors->SetBrakeMode();
+    m_pIntakeMotors->SetBrakeMode();
+    m_pFeederMotors->SetBrakeMode();
+    m_pShooterMotors->SetCoastMode();
+
+    // Solenoids to known state
+    m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
     
     // Tare encoders
     m_pLeftDriveMotors->TareEncoder();
@@ -155,6 +170,8 @@ void YtaRobot::InitialStateSetup()
     m_pBlueLedRelay->Set(LEDS_OFF);
     
     // Stop/clear any timers, just in case
+    m_pShootMotorSpinUpTimer->Stop();
+    m_pShootMotorSpinUpTimer->Reset();
     m_pInchingDriveTimer->Stop();
     m_pInchingDriveTimer->Reset();
     m_pDirectionalAlignTimer->Stop();
@@ -215,6 +232,12 @@ void YtaRobot::TeleopPeriodic()
 
     DriveControlSequence();
 
+    IntakeSequence();
+
+    FeedAndShootSequence();
+
+    UnjamSequence();
+
     //PneumaticSequence();
 
     //SerialPortSequence();
@@ -224,6 +247,175 @@ void YtaRobot::TeleopPeriodic()
     //CameraSequence();
 
     //LedSequence();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::IntakeSequence
+///
+/// Controls the intake.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::IntakeSequence()
+{
+    // Only spin the intake if we are not unjamming
+    if (!m_bUnjamming)
+    {
+        // First do a check if shooting is in progress, which indicates a special intake motor state
+        bool bIntakeWhileShooting = false;
+        if (m_pDriveController->GetButtonState(DRIVE_SHOOT_BUTTON) || m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS))
+        {
+            bIntakeWhileShooting = true;
+        }
+        
+        // Check intake buttons
+        if (m_pDriveController->GetButtonState(DRIVE_INTAKE_BUTTON) || m_pAuxController->GetButtonState(AUX_INTAKE_BUTTON))
+        {
+            // Normal request, intake down, motor on
+            m_pIntakeSolenoid->Set(INTAKE_DOWN_SOLENOID_VALUE);
+            m_pIntakeMotors->Set(INTAKE_MOTOR_SPEED);
+        }
+        else
+        {
+            // If a normal intake request is not in process, the intake should always be up
+            m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
+
+            // No intake request, not shooting, intake motor off
+            if (!bIntakeWhileShooting)
+            {
+                m_pIntakeMotors->Set(OFF);
+            }
+            // No intake request, but shooting
+            else
+            {
+                // Spin only the intake motor in the feeder chassis
+                m_pIntakeMotors->GetMotorObject()->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+            }
+        }
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::FeedAndShootSequence
+///
+/// Moves cargo through the feeder and shoots it.  This method
+/// has two primary responsibilities: It first determines the
+/// speed at which to shoot and then utilizes a basic state
+/// machine to shoot.  Shooting requires a delay initially to
+/// allow the shooter motors to get up to speed.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::FeedAndShootSequence()
+{
+    // First determine and set the shooter speed
+    static double shootSpeed = SHOOTER_75_MOTOR_SPEED;
+    if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_100_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_100_BUTTON))
+    {
+        shootSpeed = SHOOTER_100_MOTOR_SPEED;
+    }
+    else if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_75_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_75_BUTTON))
+    {
+        shootSpeed = SHOOTER_75_MOTOR_SPEED;
+    }
+    else if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_60_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_60_BUTTON))
+    {
+        shootSpeed = SHOOTER_60_MOTOR_SPEED;
+    }
+    else if (m_pAuxController->GetButtonState(AUX_SET_SHOOT_35_BUTTON))
+    {
+        shootSpeed = SHOOTER_35_MOTOR_SPEED;
+    }
+    else
+    {
+    }
+
+    // Give the drive team some state information
+    SmartDashboard::PutNumber("Shooter speed", shootSpeed);
+    SmartDashboard::PutBoolean("Unjamming", m_bUnjamming);
+
+    enum ShootState
+    {
+        NO_SHOT,
+        SPIN_UP,
+        SHOOTING
+    };
+    static ShootState shootState = NO_SHOT;
+
+    // Only feed and shoot if we are not unjamming
+    if (!m_bUnjamming)
+    {
+        // Look for a request to shoot
+        if (m_pDriveController->GetButtonState(DRIVE_SHOOT_BUTTON) || m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS))
+        {
+            // Simple state machine to control shooting
+            switch (shootState)
+            {
+                // State which spins up the shooter motors before enabling the feeder
+                case NO_SHOT:
+                {
+                    // Nothing fancy, just start a timer
+                    m_pShooterMotors->Set(shootSpeed);
+                    m_pShootMotorSpinUpTimer->Start();
+                    shootState = SPIN_UP;
+                    break;
+                }
+                // State that checks if the shooter motors are at speed
+                case SPIN_UP:
+                {
+                    // Is the time delay up?
+                    if (m_pShootMotorSpinUpTimer->Get() > SHOOTING_SPIN_UP_DELAY_S)
+                    {
+                        // Start the feeders too
+                        m_pFeederMotors->Set(FEEDER_MOTOR_SPEED);
+                        m_pShootMotorSpinUpTimer->Stop();
+                        m_pShootMotorSpinUpTimer->Reset();
+                        shootState = SHOOTING;
+                    }
+                    break;
+                }
+                case SHOOTING:
+                default:
+                {
+                    // The shooting state requires no changes
+                    break;
+                }
+            }
+        }
+        // No request, motors off
+        else
+        {
+            m_pFeederMotors->Set(OFF);
+            m_pShooterMotors->Set(OFF);
+            shootState = NO_SHOT;
+        }
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::UnjamSequence
+///
+/// Provides a way to move cargo out of the feeder chassis.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::UnjamSequence()
+{
+    if (m_pAuxController->GetAxisValue(AUX_UNJAM_AXIS) > 0.0)
+    {
+        m_bUnjamming = true;
+        m_pIntakeSolenoid->Set(INTAKE_DOWN_SOLENOID_VALUE);
+        m_pIntakeMotors->Set(-INTAKE_MOTOR_SPEED);
+        m_pFeederMotors->Set(-FEEDER_MOTOR_SPEED);
+        m_pShooterMotors->Set(OFF);
+    }
+    else
+    {
+        m_bUnjamming = false;
+    }
 }
 
 
