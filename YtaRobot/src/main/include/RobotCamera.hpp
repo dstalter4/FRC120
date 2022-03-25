@@ -53,6 +53,15 @@ public:
         VISION_PROCESSOR    = 0,
         DRIVER_CAMERA       = 1
     };
+
+    enum LimelightLedMode
+    {
+        // Values taken from the limelight documentation
+        PIPELINE            = 0,
+        ARRAY_OFF           = 1,
+        ARRAY_BLINK         = 2,
+        ARRAY_ON            = 3
+    };
     
     // A structure for autonomous camera seeking operations
     struct AutonomousCamera
@@ -67,7 +76,6 @@ public:
         static bool AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors = true);
 
     private:
-
         static Timer m_AutoCameraTimer;
         static double m_IntegralSum;
 
@@ -89,6 +97,9 @@ public:
 
     // Set the limelight mode
     inline static void SetLimelightMode(LimelightMode mode);
+
+    // Set the state of the limelight LED array
+    inline static void SetLimelightLedMode(LimelightLedMode ledMode);
     
     // Toggle between what processed image is shown on the dashboard
     static void ToggleCameraProcessedImage();
@@ -240,6 +251,7 @@ private:
     
     // CONSTANTS
     
+    static const unsigned                       CAMERA_THREAD_SLEEP_TIME_MS         = 100U;
     static const bool                           FRONT_USB_CAMERA_SUPPORTED          = true;
     static const bool                           BACK_USB_CAMERA_SUPPORTED           = false;
     static const char *                         CAMERA_OUTPUT_NAME;
@@ -270,6 +282,19 @@ private:
 inline void RobotCamera::SetLimelightMode(LimelightMode mode)
 {
     m_pLimelightNetworkTable->PutNumber("camMode", static_cast<int>(mode));
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method RobotCamera::SetLimelightLedMode
+///
+/// This method sets the mode of the limelight camera.
+///
+////////////////////////////////////////////////////////////////
+inline void RobotCamera::SetLimelightLedMode(LimelightLedMode ledMode)
+{
+    m_pLimelightNetworkTable->PutNumber("ledMode", static_cast<int>(ledMode));
 }
 
 

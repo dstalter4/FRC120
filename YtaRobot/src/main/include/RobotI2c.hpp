@@ -116,6 +116,8 @@ private:
     static const int        RIODUINO_SIGNAL_DIO_PIN = 9;
     static const uint8_t    I2C_BUFFER_MARKER       = 0xAA;
     static const bool       DEBUG_I2C_TRANSACTIONS  = false;
+    static const bool       I2C_THREAD_ENABLED      = false;
+    static const unsigned   NO_I2C_SLEEP_TIME_MS    = 1000U * 60U;
     static const unsigned   DEFAULT_UPDATE_RATE_MS  = 60U;
     static const unsigned   INITIALIZING_DELAY_MS   = 20U;
 };

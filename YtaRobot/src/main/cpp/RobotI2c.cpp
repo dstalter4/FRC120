@@ -6,7 +6,7 @@
 /// Contains function definitions for interacting with and controlling I2C on
 /// the robot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -101,7 +101,15 @@ void RobotI2c::I2cThread()
 {
     // @todo: Port BNO055 driver from Arduino to roboRIO.
     RobotUtils::DisplayMessage("I2C thread detached.");
-    while (true) {}
+
+    // If the thread isn't configured to do anything, just sleep
+    if (!I2C_THREAD_ENABLED)
+    {
+        while (true)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(NO_I2C_SLEEP_TIME_MS));
+        }
+    }
     
     // The RIOduino will have booted well before this.
     // Trigger both of its loop control variables to make
