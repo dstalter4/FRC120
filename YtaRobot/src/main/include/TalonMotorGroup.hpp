@@ -89,6 +89,14 @@ public:
     void TareEncoder();
     
 private:
+
+    // Helper routine for configuring some settings on follower talons
+    void SetFollowerUpdateRates(TalonType * pTalon)
+    {
+        // This helps decrease CAN bus utilization
+        pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, TALON_FOLLOWER_FRAME_RATE_MS);
+        pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, TALON_FOLLOWER_FRAME_RATE_MS);
+    }
     
     // Represents information about a single motor in a group
     struct MotorInfo
@@ -107,6 +115,7 @@ private:
 
     static const int MAX_NUMBER_OF_MOTORS = 4;
     static const int GROUP_MASTER_CAN_ID = 0xFF;
+    static const uint8_t TALON_FOLLOWER_FRAME_RATE_MS = 100U;
 
     // Member variables
     int m_NumMotors;                                        // Number of motors in the group
@@ -206,6 +215,7 @@ TalonMotorGroup<TalonType>::TalonMotorGroup( int numMotors, int masterCanId, Mot
             if (nonMasterControlMode == YtaTalon::FOLLOW)
             {
                 m_pMotorsInfo[i]->m_pTalon->Set(ControlMode::Follower, masterCanId);
+                SetFollowerUpdateRates(m_pMotorsInfo[i]->m_pTalon);
             }
         }
         
@@ -240,6 +250,7 @@ bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMo
         if (controlMode == YtaTalon::FOLLOW)
         {
             m_pMotorsInfo[m_NumMotors]->m_pTalon->Set(ControlMode::Follower, m_MasterCanId);
+            SetFollowerUpdateRates(m_pMotorsInfo[m_NumMotors]->m_pTalon);
         }
 
         // Increase the number of motors
@@ -278,6 +289,7 @@ bool TalonMotorGroup<TalonType>::SetMotorInGroupControlMode(int canId, MotorGrou
             if (controlMode == YtaTalon::FOLLOW)
             {
                 m_pMotorsInfo[i]->m_pTalon->Set(ControlMode::Follower, m_MasterCanId);
+                SetFollowerUpdateRates(m_pMotorsInfo[i]->m_pTalon);
             }
             
             // Indicate success
