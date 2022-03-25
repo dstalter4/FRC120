@@ -40,6 +40,17 @@ namespace Yta
 {
 namespace Controller
 {
+    // These values are deliberately selected to simplify the
+    // logic and math in routines dependent on them.
+    enum PovDirections
+    {
+        POV_UP          = 0,
+        POV_RIGHT       = 1,
+        POV_DOWN        = 2,
+        POV_LEFT        = 3,
+        POV_NOT_PRESSED = 0xF
+    };
+
     // Used to detect button state changes (such as released to
     // pressed or vice-versa.  Each button is tracked as an
     // individual bit in the uint32_t members.  This works
@@ -118,6 +129,48 @@ public:
 
     // Methods to compute YTA specific parameters (may be specialized)
     double GetThrottleControl();
+
+    ////////////////////////////////////////////////////////////////
+    /// @method YtaController<ControllerType>::GetPovAsDirection
+    ///
+    /// Retrieves the POV value as a more easily usable enum value
+    /// that represents a direction.
+    ///
+    /// Note: This function is closely coupled to the PovDirections
+    /// enum.  Use caution when modifying!
+    ///
+    ////////////////////////////////////////////////////////////////
+    inline Yta::Controller::PovDirections GetPovAsDirection()
+    {
+        const int POV_NORMALIZATION_ANGLE = 45;
+        const int ANGLE_90_DEGREES = 90;
+        const int ANGLE_360_DEGREES = 360;
+
+        Yta::Controller::PovDirections povDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
+
+        int povValue = GetPovValue();
+        
+        if (povValue != -1)
+        {
+            // This gives a value between 45 -> 405
+            povValue += POV_NORMALIZATION_ANGLE;
+            
+            // Normalize between 0 -> 360 (maps controller 0:360 in to 45:360:0:45 out)
+            povValue %= ANGLE_360_DEGREES;
+            
+            // The zero point is now at compass heading 315, where:
+            // 0 -> 89 = up
+            // 90 -> 179 = right
+            // 180 -> 269 = down
+            // 270 -> 359 = left
+            // Use integer division to get a single value that represents the
+            // entire range, which can then be directly converted to the enum type.
+            // This cast is risky, but the enum was deliberately crafted to support it.
+            povDirection = static_cast<Yta::Controller::PovDirections>(povValue / ANGLE_90_DEGREES);
+        }
+
+        return povDirection;
+    }
 
     ////////////////////////////////////////////////////////////////
     /// @method YtaController<ControllerType>::DetectButtonChange
