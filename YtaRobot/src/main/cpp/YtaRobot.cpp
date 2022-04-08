@@ -70,6 +70,9 @@ YtaRobot::YtaRobot() :
 {
     RobotUtils::DisplayMessage("Robot constructor.");
     
+    // LiveWindow is not used
+    LiveWindow::SetEnabled(false);
+    
     // Set the autonomous options
     m_AutonomousChooser.SetDefaultOption(AUTO_ROUTINE_1_STRING, AUTO_ROUTINE_1_STRING);
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_2_STRING, AUTO_ROUTINE_2_STRING);

@@ -32,6 +32,7 @@
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
 #include "frc/Ultrasonic.h"                     // for Ultrasonic type
+#include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
