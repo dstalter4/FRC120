@@ -273,7 +273,7 @@ void YtaRobotTest::PneumaticsTest()
     // when creating the object.  The test code either has to pick
     // channels not in use (likely 6/7) or grab a reference to some
     // solenoid object from the actual robot code.
-    //static DoubleSolenoid *& rpSolenoid = YTA_ROBOT_OBJ()->m_p<Name>;
+    //static DoubleSolenoid *& rpSolenoid = YTA_ROBOT_OBJ()->m_pTalonCoolingSolenoid;
     static DoubleSolenoid * pSolenoid = new DoubleSolenoid(PneumaticsModuleType::CTREPCM, 6, 7);
     
     if (m_pJoystick->GetRawButton(1))

@@ -597,6 +597,7 @@ inline void YtaRobot::CheckForDriveSwap()
     if (m_pDriveController->DetectButtonChange(DRIVE_SWAP_BUTTON))
     {
         m_bDriveSwap = !m_bDriveSwap;
+        SmartDashboard::PutBoolean("Drive swap", m_bDriveSwap);
     }
 }
 
