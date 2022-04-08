@@ -56,6 +56,7 @@ YtaRobot::YtaRobot() :
     m_pShootMotorSpinUpTimer            (new Timer()),
     m_pIntakePulseTimer                 (new Timer()),
     m_pDriveMotorCoolTimer              (new Timer()),
+    m_pMatchModeTimer                   (new Timer()),
     m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
     m_pDirectionalAlignTimer            (new Timer()),
@@ -221,6 +222,8 @@ void YtaRobot::InitialStateSetup()
     m_pIntakePulseTimer->Reset();
     m_pDriveMotorCoolTimer->Stop();
     m_pDriveMotorCoolTimer->Reset();
+    m_pMatchModeTimer->Stop();
+    m_pMatchModeTimer->Reset();
     m_pInchingDriveTimer->Stop();
     m_pInchingDriveTimer->Reset();
     m_pDirectionalAlignTimer->Stop();
@@ -254,6 +257,10 @@ void YtaRobot::TeleopInit()
     // Autonomous should have left things in a known state, but
     // just in case clear everything.
     InitialStateSetup();
+
+    // 2022: Maybe help with overheating?  Doing it here to leave autonomous on brake.
+    m_pLeftDriveMotors->SetCoastMode();
+    m_pRightDriveMotors->SetCoastMode();
     
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
@@ -262,6 +269,9 @@ void YtaRobot::TeleopInit()
     
     // Indicate to the I2C thread to get data less often
     RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
+
+    // Start the mode timer for teleop
+    m_pMatchModeTimer->Start();
 
     // Start the drive motor cooling timer
     m_pDriveMotorCoolTimer->Reset();
@@ -709,6 +719,16 @@ void YtaRobot::CameraSequence()
 void YtaRobot::DriveMotorsCool()
 {
     SmartDashboard::PutBoolean("Drive motor cooling", m_bCoolingDriveMotors);
+
+    // 2022: The talons seem to overheat at the end of the match.
+    //       Constantly cool them for the last 40s.
+    units::second_t matchModeTime = m_pMatchModeTimer->Get();
+    if ((matchModeTime > DRIVE_MOTOR_COOL_ALWAYS_ON_TIME) && (matchModeTime < (DRIVE_MOTOR_COOL_ALWAYS_ON_TIME + 40_s)))
+    {
+        m_pTalonCoolingSolenoid->Set(TALON_COOLING_ON_SOLENOID_VALUE);
+        m_bCoolingDriveMotors = true;
+        return;
+    }
 
     // Get the current time
     units::second_t currentTime = m_pDriveMotorCoolTimer->Get();
