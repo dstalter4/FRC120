@@ -317,7 +317,7 @@ private:
     SerialPort *                    m_pSerialPort;
     
     // I2C configuration
-    std::thread                     m_I2cThread;
+    //std::thread                     m_I2cThread;
     
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
@@ -340,8 +340,8 @@ private:
     // Joysticks/Buttons
     // Note: Don't forget to update the controller object typedefs if
     //       necessary when changing these types!
-    static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_LOGITECH;
-    static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_LOGITECH;
+    static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_XBOX;
+    static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_XBOX;
     static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL);
     static constexpr const ControllerMappings * const AUX_CONTROLLER_MAPPINGS   = Yta::Controller::Config::GetControllerMapping(AUX_CONTROLLER_MODEL);
     
@@ -404,8 +404,8 @@ private:
     // Solenoid Signals
     static const int                INTAKE_SOLENOID_FWD_CHANNEL             = 0;
     static const int                INTAKE_SOLENOID_REV_CHANNEL             = 1;
-    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
-    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
+    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 2;
+    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 3;
     static const int                HANGER_SOLENOID_FWD_CHANNEL             = 4;
     static const int                HANGER_SOLENOID_REV_CHANNEL             = 5;
 
@@ -436,11 +436,11 @@ private:
     static const char               NULL_CHARACTER                          = '\0';
     
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
-    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = false;
+    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
     static const bool               DRIVE_SWAP_ENABLED                      = true;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
-    static const bool               DIRECTIONAL_INCH_ENABLED                = false;
+    static const bool               DIRECTIONAL_INCH_ENABLED                = true;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
     static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
     
@@ -451,6 +451,7 @@ private:
     // forward/reverse in the robot.  They are used to keep
     // autonomous movement code common without yearly updates.
 
+    // 2022: Practice is + - - +
     static constexpr double         LEFT_DRIVE_FORWARD_SCALAR               = -1.00;
     static constexpr double         LEFT_DRIVE_REVERSE_SCALAR               = +1.00;
     static constexpr double         RIGHT_DRIVE_FORWARD_SCALAR              = +1.00;

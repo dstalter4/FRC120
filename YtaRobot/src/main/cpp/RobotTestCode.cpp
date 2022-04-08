@@ -167,6 +167,63 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SuperstructureTest()
 {
+    // Intakes run opposite each other
+    static TalonFX * pIntake1 = new TalonFX(5);
+    static TalonFX * pIntake2 = new TalonFX(6);
+    // Feeders run opposite each other
+    static TalonFX * pFeeder1 = new TalonFX(7);
+    static TalonFX * pFeeder2 = new TalonFX(8);
+    // Shooters run opposite each other
+    static TalonFX * pShooter1 = new TalonFX(9);
+    static TalonFX * pShooter2 = new TalonFX(10);
+    // Hanger
+    static TalonFX * pWinch = new TalonFX(11);
+    
+    while (m_pJoystick->GetRawButton(1))
+    {
+        pIntake1->Set(ControlMode::PercentOutput, 0.3);
+        pIntake2->Set(ControlMode::PercentOutput, 0.3);
+    }
+    pIntake1->Set(ControlMode::PercentOutput, 0.0);
+    pIntake2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(2))
+    {
+        pFeeder1->Set(ControlMode::PercentOutput, -0.3);
+        pFeeder2->Set(ControlMode::PercentOutput, 0.3);
+    }
+    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(3))
+    {
+        pShooter1->Set(ControlMode::PercentOutput, 0.3);
+        pShooter2->Set(ControlMode::PercentOutput, -0.3);
+    }
+    pShooter1->Set(ControlMode::PercentOutput, 0.0);
+    pShooter2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(4))
+    {
+        pIntake1->Set(ControlMode::PercentOutput, 0.3);
+        pIntake1->Set(ControlMode::PercentOutput, -0.3);
+        pFeeder1->Set(ControlMode::PercentOutput, -0.5);
+        pFeeder2->Set(ControlMode::PercentOutput, 0.5);
+        pShooter1->Set(ControlMode::PercentOutput, 1.0);
+        pShooter2->Set(ControlMode::PercentOutput, -1.0);
+    }
+    pIntake1->Set(ControlMode::PercentOutput, 0.0);
+    pIntake2->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
+    pShooter1->Set(ControlMode::PercentOutput, 0.0);
+    pShooter2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(5))
+    {
+        pWinch->Set(ControlMode::PercentOutput, 1.0);
+    }
+    while (m_pJoystick->GetRawButton(6))
+    {
+        pWinch->Set(ControlMode::PercentOutput, -1.0);
+    }
+    pWinch->Set(ControlMode::PercentOutput, 0.0);
 }
 
 

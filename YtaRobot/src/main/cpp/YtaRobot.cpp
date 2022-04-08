@@ -66,7 +66,7 @@ YtaRobot::YtaRobot() :
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_SerialPortBuffer                  (),
     m_pSerialPort                       (new SerialPort(SERIAL_PORT_BAUD_RATE, SerialPort::kMXP, SERIAL_PORT_NUM_DATA_BITS, SerialPort::kParity_None, SerialPort::kStopBits_One)),
-    m_I2cThread                         (RobotI2c::I2cThread),
+    //m_I2cThread                         (RobotI2c::I2cThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
@@ -111,7 +111,7 @@ YtaRobot::YtaRobot() :
     // Spawn the vision and I2C threads
     // @todo: Use a control variable to prevent the threads from executing too soon.
     m_CameraThread.detach();
-    m_I2cThread.detach();
+    //m_I2cThread.detach();
 }
 
 
@@ -329,6 +329,13 @@ void YtaRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::UpdateSmartDashboard()
 {
+    // Give the drive team some state information
+    SmartDashboard::PutNumber("Shooter speed", m_ShootingSpeed);
+    SmartDashboard::PutNumber("Feeder speed", m_FeederSpeed);
+    SmartDashboard::PutBoolean("Unjamming", m_bUnjamming);
+    SmartDashboard::PutBoolean("Shot in progress", m_bShotInProgress);
+    SmartDashboard::PutBoolean("Intake pulse enabled", m_bIntakePulsingEnabled);
+    SmartDashboard::PutBoolean("Intake pulsing", m_bIntakePulsing);
 }
 
 
@@ -851,22 +858,24 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
+    // 2022 Note: These are deliberately inverted for inching while facing the hub!
+
+    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
