@@ -157,6 +157,9 @@ private:
     // Checks for a robot state change and logs a message if so
     inline void CheckAndUpdateRobotMode(RobotMode robotMode);
 
+    // Updates information on the smart dashboard for the drive team
+    void UpdateSmartDashboard();
+
     // Grabs a value from a sonar sensor individually
     inline double GetSonarValue(Ultrasonic * pSensor);
    
@@ -189,6 +192,9 @@ private:
     bool AutonomousGyroRightTurn(double destAngle, double turnSpeed);
     void AutonomousEncoderDrive(double speed, double distance, RobotDirection direction);
     bool AutonomousSonarDrive(RobotDirection direction, SonarDriveState driveState, uint32_t destLateralDist, uint32_t destSideDist);
+
+    // Resets member variables
+    void ResetMemberData();
 
     // Routine to put things in a known state
     void InitialStateSetup();
@@ -404,10 +410,12 @@ private:
     static const char               NULL_CHARACTER                          = '\0';
     
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
+    static const bool               DRIVE_SWAP_ENABLED                      = true;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
     static const bool               DIRECTIONAL_INCH_ENABLED                = false;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
+    static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
     
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
@@ -497,8 +505,8 @@ private:
     static constexpr double         SHOOTER_60_MOTOR_SPEED                  =  0.60;
     static constexpr double         SHOOTER_35_MOTOR_SPEED                  =  0.35;
     
-    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.10;
-    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.10;
+    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
+    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
     static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;

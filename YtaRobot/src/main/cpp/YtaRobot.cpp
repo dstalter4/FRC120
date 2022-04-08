@@ -104,6 +104,26 @@ YtaRobot::YtaRobot() :
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ResetMemberData
+///
+/// This method resets relevant member data variables.  Since
+/// the robot object is only constructed once, it may be
+/// necessary/helpful to return to a state similar to when the
+/// constructor first ran (e.g. when enabling/disabling robot
+/// states).  Only variables that need to be reset are modified
+/// here.  This also works around the issue where non-member
+/// static data cannot be easily reinitialized (since clearing
+/// the .bss and running static constructors will only happen
+/// once on program start up).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ResetMemberData()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::RobotInit
 ///
 /// This method is run when initializing the robot.
@@ -146,6 +166,9 @@ void YtaRobot::RobotPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::InitialStateSetup()
 {
+    // First reset any member data
+    ResetMemberData();
+
     // Start with motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
@@ -252,6 +275,20 @@ void YtaRobot::TeleopPeriodic()
     //CameraSequence();
 
     //LedSequence();
+
+    UpdateSmartDashboard();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::UpdateSmartDashboard
+///
+/// Updates values in the smart dashboard.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::UpdateSmartDashboard()
+{
 }
 
 
@@ -596,7 +633,10 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    //CheckForDriveSwap();
+    if (DRIVE_SWAP_ENABLED)
+    {
+        CheckForDriveSwap();
+    }
     
     // Computes what the maximum drive speed could be
     double throttleControl = (m_pDriveController->GetThrottleControl() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
