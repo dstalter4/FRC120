@@ -40,6 +40,14 @@ namespace Yta
 {
 namespace Controller
 {
+    // For enabling rumble on a controller
+    enum RumbleLocation
+    {
+        RUMBLE_LEFT,
+        RUMBLE_RIGHT,
+        RUMBLE_BOTH
+    };
+    
     // These values are deliberately selected to simplify the
     // logic and math in routines dependent on them.
     enum PovDirections
@@ -111,7 +119,10 @@ public:
     // Constructor, which is specialized for some ControllerTypes
     YtaController(Yta::Controller::Config::Models controllerModel, int controllerPort);
 
+    ////////////////////////////////////////////////////////////////
     // Methods to get input from the controller (not currently specialized anywhere)
+    ////////////////////////////////////////////////////////////////
+
     double GetAxisValue(int axis)
     {
         return m_pController->GetRawAxis(axis);
@@ -127,8 +138,44 @@ public:
         return m_pController->GetPOV();
     }
 
+    ////////////////////////////////////////////////////////////////
     // Methods to compute YTA specific parameters (may be specialized)
+    ////////////////////////////////////////////////////////////////
+
     double GetThrottleControl();
+
+    ////////////////////////////////////////////////////////////////
+    /// @method YtaController<ControllerType>::Rumble
+    ///
+    /// Turns on the controller's rumble feature.
+    ///
+    ////////////////////////////////////////////////////////////////
+    void Rumble(Yta::Controller::RumbleLocation location)
+    {
+        switch (location)
+        {
+            case Yta::Controller::RumbleLocation::RUMBLE_LEFT:
+            {
+                m_pController->SetRumble(GenericHID::RumbleType::kLeftRumble);
+                break;
+            }
+            case Yta::Controller::RumbleLocation::RUMBLE_RIGHT:
+            {
+                m_pController->SetRumble(GenericHID::RumbleType::kRightRumble);
+                break;
+            }
+            case Yta::Controller::RumbleLocation::RUMBLE_BOTH:
+            {
+                m_pController->SetRumble(GenericHID::RumbleType::kLeftRumble);
+                m_pController->SetRumble(GenericHID::RumbleType::kRightRumble);
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
 
     ////////////////////////////////////////////////////////////////
     /// @method YtaController<ControllerType>::GetPovAsDirection
