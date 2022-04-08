@@ -43,12 +43,14 @@ YtaRobot::YtaRobot() :
     m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
     m_pFeederMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX>(TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
+    m_pWinchMotor                       (new TalonFX(WINCH_MOTOR_CAN_ID)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pIntakeSolenoid                   (new DoubleSolenoid(frc::PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
+    m_pHangerSolenoid                   (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, HANGER_SOLENOID_FWD_CHANNEL, HANGER_SOLENOID_REV_CHANNEL)),
     m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pShootMotorSpinUpTimer            (new Timer()),
@@ -179,6 +181,7 @@ void YtaRobot::InitialStateSetup()
     m_pIntakeMotors->Set(OFF);
     m_pFeederMotors->Set(OFF);
     m_pShooterMotors->Set(OFF);
+    m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     
     // Configure brake or coast for the motors
     m_pLeftDriveMotors->SetBrakeMode();
@@ -186,10 +189,12 @@ void YtaRobot::InitialStateSetup()
     m_pIntakeMotors->SetBrakeMode();
     m_pFeederMotors->SetBrakeMode();
     m_pShooterMotors->SetCoastMode();
+    m_pWinchMotor->SetNeutralMode(NeutralMode::Brake);
 
     // Solenoids to known state
     m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
+    m_pHangerSolenoid->Set(DoubleSolenoid::kOff);
     
     // Tare encoders
     m_pLeftDriveMotors->TareEncoder();
@@ -279,7 +284,9 @@ void YtaRobot::TeleopPeriodic()
 
     UnjamSequence();
 
-    //PneumaticSequence();
+    HangSequence();
+
+    PneumaticSequence();
 
     //SerialPortSequence();
     
@@ -470,6 +477,35 @@ void YtaRobot::UnjamSequence()
     else
     {
         m_bUnjamming = false;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::HangSequence
+///
+/// Controls the hanging mechanisms.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::HangSequence()
+{
+    Yta::Controller::PovDirections povDirection = m_pAuxController->GetPovAsDirection();
+
+    if (povDirection == Yta::Controller::PovDirections::POV_UP)
+    {
+        //SmartDashboard::PutNumber("Aux POV input", 1);
+        m_pWinchMotor->Set(ControlMode::PercentOutput, ON);
+    }
+    else if (povDirection == Yta::Controller::PovDirections::POV_DOWN)
+    {
+        //SmartDashboard::PutNumber("Aux POV input", -1);
+        m_pWinchMotor->Set(ControlMode::PercentOutput, -ON);
+    }
+    else
+    {
+        //SmartDashboard::PutNumber("Aux POV input", 0);
+        m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     }
 }
 

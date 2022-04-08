@@ -224,6 +224,9 @@ private:
     // Function to unjam the cargo
     void UnjamSequence();
 
+    // Function to control hanging
+    void HangSequence();
+
     // Main sequence for LED control
     void LedSequence();
 
@@ -254,6 +257,7 @@ private:
     TalonMotorGroup<TalonFX> *      m_pIntakeMotors;                        // Intake motor control
     TalonMotorGroup<TalonFX> *      m_pFeederMotors;                        // Feeder motor control
     TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
+    TalonFX *                       m_pWinchMotor;                          // Winch motor control
     
     // Spike Relays
     Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all
@@ -269,6 +273,7 @@ private:
     
     // Solenoids
     DoubleSolenoid *                m_pIntakeSolenoid;                      // Controls the intake solenoid state
+    DoubleSolenoid *                m_pHangerSolenoid;                      // Controls the hanger solenoid state
     DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
@@ -372,6 +377,7 @@ private:
     static const int                INTAKE_MOTORS_CAN_START_ID              = 5;
     static const int                FEEDER_MOTORS_CAN_START_ID              = 7;
     static const int                SHOOTER_MOTORS_CAN_START_ID             = 9;
+    static const int                WINCH_MOTOR_CAN_ID                      = 11;
 
     // PWM Signals
     // (none)
@@ -393,6 +399,8 @@ private:
     static const int                INTAKE_SOLENOID_REV_CHANNEL             = 1;
     static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
     static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
+    static const int                HANGER_SOLENOID_FWD_CHANNEL             = 4;
+    static const int                HANGER_SOLENOID_REV_CHANNEL             = 5;
 
     // Solenoids
     static const DoubleSolenoid::Value  INTAKE_DOWN_SOLENOID_VALUE          = DoubleSolenoid::kReverse;
