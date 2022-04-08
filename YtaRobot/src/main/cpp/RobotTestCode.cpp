@@ -49,6 +49,8 @@ public:
     static void CtreSpeedControllerTest();
     static void RevSpeedControllerTest();
     static void TankDrive();
+    static void SuperstructureTest();
+    static void PneumaticsTest();
 
     static void TimeTest();
     static void ButtonChangeTest();
@@ -115,6 +117,8 @@ void YtaRobot::TestPeriodic()
     //YtaRobotTest::CtreSpeedControllerTest();
     //YtaRobotTest::RevSpeedControllerTest();
     //YtaRobotTest::TankDrive();
+    //YtaRobotTest::PneumaticsTest();
+    //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
     //YtaRobotTest::AccelerometerTest();
@@ -150,6 +154,18 @@ void YtaRobotTest::InitializeCommonPointers()
 ///
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::QuickTestCode()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::SuperstructureTest
+///
+/// Test code to try out functionality on the superstructure.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::SuperstructureTest()
 {
 }
 
@@ -241,6 +257,40 @@ void YtaRobotTest::TankDrive()
 {
     YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
     YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::PneumaticsTest
+///
+/// Test code for validating pneumatics.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::PneumaticsTest()
+{
+    // The pneumatics library checks if channels are already in use
+    // when creating the object.  The test code either has to pick
+    // channels not in use (likely 6/7) or grab a reference to some
+    // solenoid object from the actual robot code.
+    //static DoubleSolenoid *& rpSolenoid = YTA_ROBOT_OBJ()->m_p<Name>;
+    static DoubleSolenoid * pSolenoid = new DoubleSolenoid(PneumaticsModuleType::CTREPCM, 6, 7);
+    
+    if (m_pJoystick->GetRawButton(1))
+    {
+        pSolenoid->Set(DoubleSolenoid::kForward);
+    }
+    else if (m_pJoystick->GetRawButton(2))
+    {
+        pSolenoid->Set(DoubleSolenoid::kReverse);
+    }
+    else if (m_pJoystick->GetRawButton(3))
+    {
+        pSolenoid->Set(DoubleSolenoid::kOff);
+    }
+    else
+    {
+    }
 }
 
 
