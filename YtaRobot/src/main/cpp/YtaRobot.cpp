@@ -49,11 +49,12 @@ YtaRobot::YtaRobot() :
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
-    m_pIntakeSolenoid                   (new DoubleSolenoid(frc::PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
+    m_pIntakeSolenoid                   (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
     m_pHangerSolenoid                   (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, HANGER_SOLENOID_FWD_CHANNEL, HANGER_SOLENOID_REV_CHANNEL)),
     m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pShootMotorSpinUpTimer            (new Timer()),
+    m_pIntakePulseTimer                 (new Timer()),
     m_pDriveMotorCoolTimer              (new Timer()),
     m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
@@ -71,8 +72,14 @@ YtaRobot::YtaRobot() :
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
     m_bUnjamming                        (false),
+    m_bShotInProgress                   (false),
+    m_bIntakePulsingEnabled             (true),
+    m_bIntakePulsing                    (false),
     m_bCoolingDriveMotors               (true),
+    m_ShootingSpeed                     (SHOOTER_75_MOTOR_SPEED),
+    m_FeederSpeed                       (FEEDER_MOTOR_SPEED),
     m_LastDriveMotorCoolTime            (0_s),
+    m_LastIntakePulseTime               (0_s),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -187,6 +194,7 @@ void YtaRobot::InitialStateSetup()
     m_pLeftDriveMotors->SetBrakeMode();
     m_pRightDriveMotors->SetBrakeMode();
     m_pIntakeMotors->SetBrakeMode();
+    m_pIntakeMotors->GetMotorObject()->SetNeutralMode(NeutralMode::Coast);
     m_pFeederMotors->SetBrakeMode();
     m_pShooterMotors->SetCoastMode();
     m_pWinchMotor->SetNeutralMode(NeutralMode::Brake);
@@ -209,6 +217,8 @@ void YtaRobot::InitialStateSetup()
     // Stop/clear any timers, just in case
     m_pShootMotorSpinUpTimer->Stop();
     m_pShootMotorSpinUpTimer->Reset();
+    m_pIntakePulseTimer->Stop();
+    m_pIntakePulseTimer->Reset();
     m_pDriveMotorCoolTimer->Stop();
     m_pDriveMotorCoolTimer->Reset();
     m_pInchingDriveTimer->Stop();
@@ -258,6 +268,16 @@ void YtaRobot::TeleopInit()
     m_pDriveMotorCoolTimer->Start();
     m_LastDriveMotorCoolTime = 0_s;
     m_bCoolingDriveMotors = true;
+
+    m_ShootingSpeed = SHOOTER_75_MOTOR_SPEED;
+    m_FeederSpeed = FEEDER_MOTOR_SPEED;
+
+    // Start the intake pulse timer, which will just free run
+    m_pIntakePulseTimer->Reset();
+    m_pIntakePulseTimer->Start();
+    m_LastIntakePulseTime = 0_s;
+    m_bIntakePulsingEnabled = true;
+    m_bIntakePulsing = true;
 }
 
 
@@ -324,13 +344,6 @@ void YtaRobot::IntakeSequence()
     // Only spin the intake if we are not unjamming
     if (!m_bUnjamming)
     {
-        // First do a check if shooting is in progress, which indicates a special intake motor state
-        bool bIntakeWhileShooting = false;
-        if (m_pDriveController->GetButtonState(DRIVE_SHOOT_BUTTON) || m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS))
-        {
-            bIntakeWhileShooting = true;
-        }
-        
         // Check intake buttons
         if (m_pDriveController->GetButtonState(DRIVE_INTAKE_BUTTON) || m_pAuxController->GetButtonState(AUX_INTAKE_BUTTON))
         {
@@ -344,15 +357,38 @@ void YtaRobot::IntakeSequence()
             m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
 
             // No intake request, not shooting, intake motor off
-            if (!bIntakeWhileShooting)
+            if (!m_bShotInProgress)
             {
                 m_pIntakeMotors->Set(OFF);
             }
             // No intake request, but shooting
             else
             {
-                // Spin only the intake motor in the feeder chassis
-                m_pIntakeMotors->GetMotorObject()->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+                // Check if this shooting speed should pulse
+                if (m_bIntakePulsingEnabled)
+                {
+                    units::second_t currentTime = m_pIntakePulseTimer->Get();
+                    if ((currentTime - m_LastIntakePulseTime) > INTAKE_PULSE_TIME_S)
+                    {
+                        if (m_bIntakePulsing)
+                        {
+                            // When pulsing, first state is off
+                            m_pIntakeMotors->GetMotorObject()->Set(ControlMode::PercentOutput, OFF);
+                        }
+                        else
+                        {
+                            m_pIntakeMotors->GetMotorObject()->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+                        }
+                        m_bIntakePulsing = !m_bIntakePulsing;
+                        m_LastIntakePulseTime = currentTime;
+                    }
+                }
+                // This shooting speed is continuous
+                else
+                {
+                    // Spin only the intake motor in the feeder chassis
+                    m_pIntakeMotors->GetMotorObject()->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+                }
             }
         }
     }
@@ -373,30 +409,33 @@ void YtaRobot::IntakeSequence()
 void YtaRobot::FeedAndShootSequence()
 {
     // First determine and set the shooter speed
-    static double shootSpeed = SHOOTER_75_MOTOR_SPEED;
-    if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_100_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_100_BUTTON))
+    if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_75_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_75_BUTTON))
     {
-        shootSpeed = SHOOTER_100_MOTOR_SPEED;
+        m_ShootingSpeed = SHOOTER_75_MOTOR_SPEED;
+        m_FeederSpeed = FEEDER_MOTOR_SPEED;
+        m_bIntakePulsingEnabled = true;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_75_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_75_BUTTON))
+    else if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_65_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_65_BUTTON))
     {
-        shootSpeed = SHOOTER_75_MOTOR_SPEED;
+        m_ShootingSpeed = SHOOTER_65_MOTOR_SPEED;
+        m_FeederSpeed = FEEDER_MOTOR_SPEED;
+        m_bIntakePulsingEnabled = true;
     }
     else if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_60_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_60_BUTTON))
     {
-        shootSpeed = SHOOTER_60_MOTOR_SPEED;
+        m_ShootingSpeed = SHOOTER_60_MOTOR_SPEED;
+        m_FeederSpeed = FEEDER_MOTOR_SPEED;
+        m_bIntakePulsingEnabled = true;
     }
     else if (m_pAuxController->GetButtonState(AUX_SET_SHOOT_35_BUTTON))
     {
-        shootSpeed = SHOOTER_35_MOTOR_SPEED;
+        m_ShootingSpeed = SHOOTER_35_MOTOR_SPEED;
+        m_FeederSpeed = FEEDER_QUICK_MOTOR_SPEED;
+        m_bIntakePulsingEnabled = false;
     }
     else
     {
     }
-
-    // Give the drive team some state information
-    SmartDashboard::PutNumber("Shooter speed", shootSpeed);
-    SmartDashboard::PutBoolean("Unjamming", m_bUnjamming);
 
     enum ShootState
     {
@@ -410,7 +449,7 @@ void YtaRobot::FeedAndShootSequence()
     if (!m_bUnjamming)
     {
         // Look for a request to shoot
-        if (m_pDriveController->GetButtonState(DRIVE_SHOOT_BUTTON) || m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS))
+        if (m_pDriveController->GetButtonState(DRIVE_SHOOT_BUTTON) || (m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS) != 0))
         {
             // Simple state machine to control shooting
             switch (shootState)
@@ -419,7 +458,7 @@ void YtaRobot::FeedAndShootSequence()
                 case NO_SHOT:
                 {
                     // Nothing fancy, just start a timer
-                    m_pShooterMotors->Set(shootSpeed);
+                    m_pShooterMotors->Set(m_ShootingSpeed);
                     m_pShootMotorSpinUpTimer->Start();
                     shootState = SPIN_UP;
                     break;
@@ -431,9 +470,11 @@ void YtaRobot::FeedAndShootSequence()
                     if (m_pShootMotorSpinUpTimer->Get() > SHOOTING_SPIN_UP_DELAY_S)
                     {
                         // Start the feeders too
-                        m_pFeederMotors->Set(FEEDER_MOTOR_SPEED);
+                        m_pFeederMotors->Set(m_FeederSpeed);
                         m_pShootMotorSpinUpTimer->Stop();
                         m_pShootMotorSpinUpTimer->Reset();
+                        m_bIntakePulsing = true;
+                        m_bShotInProgress = true;
                         shootState = SHOOTING;
                     }
                     break;
@@ -451,6 +492,7 @@ void YtaRobot::FeedAndShootSequence()
         {
             m_pFeederMotors->Set(OFF);
             m_pShooterMotors->Set(OFF);
+            m_bShotInProgress = false;
             shootState = NO_SHOT;
         }
     }
@@ -469,9 +511,10 @@ void YtaRobot::UnjamSequence()
     if (m_pAuxController->GetAxisValue(AUX_UNJAM_AXIS) > 0.0)
     {
         m_bUnjamming = true;
+        m_bShotInProgress = false;
         m_pIntakeSolenoid->Set(INTAKE_DOWN_SOLENOID_VALUE);
         m_pIntakeMotors->Set(-INTAKE_MOTOR_SPEED);
-        m_pFeederMotors->Set(-FEEDER_MOTOR_SPEED);
+        m_pFeederMotors->Set(-FEEDER_QUICK_MOTOR_SPEED);
         m_pShooterMotors->Set(OFF);
     }
     else

@@ -285,6 +285,7 @@ private:
     
     // Timers
     Timer *                         m_pShootMotorSpinUpTimer;               // Timer to allow the shooter motors to get up to speed
+    Timer *                         m_pIntakePulseTimer;                    // Timer to track pulsing the intake motor during a shot
     Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pAutonomousTimer;                     // Time things during autonomous
     Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
@@ -323,9 +324,15 @@ private:
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
-    bool                            m_bUnjamming;                           // Indicate we are unjamming the cargo
+    bool                            m_bUnjamming;                           // Indicates if cargo is being unjammed
+    bool                            m_bShotInProgress;                      // Indicates if a shot is in progress
+    bool                            m_bIntakePulsingEnabled;                // Indicates if intake pulsing should be enabled
+    bool                            m_bIntakePulsing;                       // Indicates if the intake is pulsing
     bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
+    double                          m_ShootingSpeed;                        // The current speed the shooter is configured to
+    double                          m_FeederSpeed;                          // The current speed the feeder is configured to
     units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
+    units::second_t                 m_LastIntakePulseTime;                  // The last time an intake pulse state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -344,8 +351,8 @@ private:
     // Driver inputs
     static const int                DRIVE_INTAKE_BUTTON                     = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                DRIVE_SET_SHOOT_60_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                DRIVE_SET_SHOOT_75_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
-    static const int                DRIVE_SET_SHOOT_100_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
+    static const int                DRIVE_SET_SHOOT_65_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
+    static const int                DRIVE_SET_SHOOT_75_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                DRIVE_SHOOT_BUTTON                      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
@@ -363,8 +370,8 @@ private:
     // Aux inputs
     static const int                AUX_SET_SHOOT_35_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_SET_SHOOT_60_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
-    static const int                AUX_SET_SHOOT_75_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
-    static const int                AUX_SET_SHOOT_100_BUTTON                = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
+    static const int                AUX_SET_SHOOT_65_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
+    static const int                AUX_SET_SHOOT_75_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
     static const int                AUX_INTAKE_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
 
     static const int                AUX_UNJAM_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
@@ -519,9 +526,10 @@ private:
     inline constexpr double ConvertCelsiusToFahrenheit(double degreesC) { return ((degreesC * 9.0/5.0) + 32.0); }
     
     static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
-    static constexpr double         FEEDER_MOTOR_SPEED                      = -0.30;
-    static constexpr double         SHOOTER_100_MOTOR_SPEED                 =  1.00;
+    static constexpr double         FEEDER_MOTOR_SPEED                      = -0.50;
+    static constexpr double         FEEDER_QUICK_MOTOR_SPEED                = -0.30;
     static constexpr double         SHOOTER_75_MOTOR_SPEED                  =  0.75;
+    static constexpr double         SHOOTER_65_MOTOR_SPEED                  =  0.65;
     static constexpr double         SHOOTER_60_MOTOR_SPEED                  =  0.60;
     static constexpr double         SHOOTER_35_MOTOR_SPEED                  =  0.35;
     
@@ -536,9 +544,11 @@ private:
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
 
+    static constexpr units::second_t    INTAKE_PULSE_TIME_S                 =  1.0_s;
+    static constexpr units::second_t    SHOOTING_SPIN_UP_DELAY_S            =  1.00_s;
+
     static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
     static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
-    static constexpr units::second_t    SHOOTING_SPIN_UP_DELAY_S            =  1.00_s;
     static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
     static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
