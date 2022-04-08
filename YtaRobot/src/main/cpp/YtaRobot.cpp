@@ -554,17 +554,14 @@ void YtaRobot::HangSequence()
 
     if (povDirection == Yta::Controller::PovDirections::POV_UP)
     {
-        //SmartDashboard::PutNumber("Aux POV input", 1);
         m_pWinchMotor->Set(ControlMode::PercentOutput, ON);
     }
     else if (povDirection == Yta::Controller::PovDirections::POV_DOWN)
     {
-        //SmartDashboard::PutNumber("Aux POV input", -1);
         m_pWinchMotor->Set(ControlMode::PercentOutput, -ON);
     }
     else
     {
-        //SmartDashboard::PutNumber("Aux POV input", 0);
         m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     }
 }
