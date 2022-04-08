@@ -23,6 +23,7 @@
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
 #include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
+#include "frc/Compressor.h"                     // for retrieving info on the compressor
 #include "frc/DigitalInput.h"                   // for DigitalInput type
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
@@ -259,6 +260,7 @@ private:
     
     // Solenoids
     DoubleSolenoid *                m_pIntakeSolenoid;                      // Controls the intake solenoid state
+    Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
     // Servos
     // (none)

@@ -49,6 +49,7 @@ YtaRobot::YtaRobot() :
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pIntakeSolenoid                   (new DoubleSolenoid(frc::PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
+    m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pShootMotorSpinUpTimer            (new Timer()),
     m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
@@ -446,6 +447,8 @@ void YtaRobot::LedSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::PneumaticSequence()
 {
+    // @todo: Monitor other compressor API data?
+    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->Enabled());
 }
 
 
