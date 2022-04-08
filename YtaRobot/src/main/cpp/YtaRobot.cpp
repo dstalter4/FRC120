@@ -851,22 +851,22 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_FORWARD_BUTTON))
+    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_REVERSE_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_LEFT_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_RIGHT_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
@@ -985,6 +985,8 @@ void YtaRobot::DirectionalAlign()
             // Only start an align if a state change is allowed
             if (bStateChangeAllowed)
             {                
+                // @todo: Switch this logic to use GetPovAsDirection()
+
                 // This gives a value between 45 -> 405
                 povValue += POV_NORMALIZATION_ANGLE;
                 
