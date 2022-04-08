@@ -380,8 +380,8 @@ private:
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
-    static const int                LEFT_MOTORS_CAN_START_ID                = 1;
-    static const int                RIGHT_MOTORS_CAN_START_ID               = 3;
+    static const int                LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
+    static const int                RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
     static const int                INTAKE_MOTORS_CAN_START_ID              = 5;
     static const int                FEEDER_MOTORS_CAN_START_ID              = 7;
     static const int                SHOOTER_MOTORS_CAN_START_ID             = 9;

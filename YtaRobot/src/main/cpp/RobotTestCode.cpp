@@ -236,10 +236,10 @@ void YtaRobotTest::SuperstructureTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::CtreSpeedControllerTest()
 {
-    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID);
-    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID + 1);
-    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID);
-    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID + 1);
+    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
+    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
+    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
+    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
     
     while (m_pJoystick->GetRawButton(1))
     {
