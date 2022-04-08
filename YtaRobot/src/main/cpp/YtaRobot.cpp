@@ -49,8 +49,10 @@ YtaRobot::YtaRobot() :
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pIntakeSolenoid                   (new DoubleSolenoid(frc::PneumaticsModuleType::CTREPCM, INTAKE_SOLENOID_FWD_CHANNEL, INTAKE_SOLENOID_REV_CHANNEL)),
+    m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pShootMotorSpinUpTimer            (new Timer()),
+    m_pDriveMotorCoolTimer              (new Timer()),
     m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
     m_pDirectionalAlignTimer            (new Timer()),
@@ -67,6 +69,8 @@ YtaRobot::YtaRobot() :
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
     m_bUnjamming                        (false),
+    m_bCoolingDriveMotors               (true),
+    m_LastDriveMotorCoolTime            (0_s),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -185,6 +189,7 @@ void YtaRobot::InitialStateSetup()
 
     // Solenoids to known state
     m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
+    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
     
     // Tare encoders
     m_pLeftDriveMotors->TareEncoder();
@@ -199,6 +204,8 @@ void YtaRobot::InitialStateSetup()
     // Stop/clear any timers, just in case
     m_pShootMotorSpinUpTimer->Stop();
     m_pShootMotorSpinUpTimer->Reset();
+    m_pDriveMotorCoolTimer->Stop();
+    m_pDriveMotorCoolTimer->Reset();
     m_pInchingDriveTimer->Stop();
     m_pInchingDriveTimer->Reset();
     m_pDirectionalAlignTimer->Stop();
@@ -240,6 +247,12 @@ void YtaRobot::TeleopInit()
     
     // Indicate to the I2C thread to get data less often
     RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
+
+    // Start the drive motor cooling timer
+    m_pDriveMotorCoolTimer->Reset();
+    m_pDriveMotorCoolTimer->Start();
+    m_LastDriveMotorCoolTime = 0_s;
+    m_bCoolingDriveMotors = true;
 }
 
 
@@ -601,6 +614,36 @@ void YtaRobot::CameraSequence()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::DriveMotorsCool
+///
+/// This method controls active or passive cooling of the drive
+/// motors.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::DriveMotorsCool()
+{
+    SmartDashboard::PutBoolean("Drive motor cooling", m_bCoolingDriveMotors);
+
+    // Get the current time
+    units::second_t currentTime = m_pDriveMotorCoolTimer->Get();
+
+    // Set some values for the common logic based on whether or not cooling is currently active or passive
+    units::second_t timerLimit = m_bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
+    DoubleSolenoid::Value solenoidValue = m_bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
+
+    // If the time until the next state change has elapsed
+    if ((currentTime - m_LastDriveMotorCoolTime) > timerLimit)
+    {
+        // Change solenoid state, update control variables
+        m_pTalonCoolingSolenoid->Set(solenoidValue);
+        m_bCoolingDriveMotors = !m_bCoolingDriveMotors;
+        m_LastDriveMotorCoolTime = currentTime;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::DriveControlSequence
 ///
 /// This method contains the main workflow for drive control.
@@ -612,6 +655,11 @@ void YtaRobot::CameraSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
+    if (DRIVE_MOTOR_COOLING_ENABLED)
+    {
+        DriveMotorsCool();
+    }
+
     if (DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
@@ -1002,6 +1050,9 @@ void YtaRobot::DisabledInit()
     // All motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
+
+    // Motor cooling off
+    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
     
     // Even though 'Disable' shuts off the relay signals, explitily turn the LEDs off
     m_pLedsEnableRelay->Set(LEDS_DISABLED);

@@ -212,6 +212,9 @@ private:
     // Function to automatically align the robot to a certain point
     void DirectionalAlign();
 
+    // Function to periodically cool the drive talons
+    void DriveMotorsCool();
+
     // Function to control intake
     void IntakeSequence();
 
@@ -266,6 +269,7 @@ private:
     
     // Solenoids
     DoubleSolenoid *                m_pIntakeSolenoid;                      // Controls the intake solenoid state
+    DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
     // Servos
@@ -276,6 +280,7 @@ private:
     
     // Timers
     Timer *                         m_pShootMotorSpinUpTimer;               // Timer to allow the shooter motors to get up to speed
+    Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pAutonomousTimer;                     // Time things during autonomous
     Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
     Timer *                         m_pDirectionalAlignTimer;               // Keep track of a directional align operation
@@ -314,6 +319,8 @@ private:
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bUnjamming;                           // Indicate we are unjamming the cargo
+    bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
+    units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -384,10 +391,14 @@ private:
     // Solenoid Signals
     static const int                INTAKE_SOLENOID_FWD_CHANNEL             = 0;
     static const int                INTAKE_SOLENOID_REV_CHANNEL             = 1;
+    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
+    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
 
     // Solenoids
     static const DoubleSolenoid::Value  INTAKE_DOWN_SOLENOID_VALUE          = DoubleSolenoid::kReverse;
     static const DoubleSolenoid::Value  INTAKE_UP_SOLENOID_VALUE            = DoubleSolenoid::kForward;
+    static const DoubleSolenoid::Value  TALON_COOLING_ON_SOLENOID_VALUE     = DoubleSolenoid::kReverse;
+    static const DoubleSolenoid::Value  TALON_COOLING_OFF_SOLENOID_VALUE    = DoubleSolenoid::kForward;
     
     // Misc
     const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
@@ -410,6 +421,7 @@ private:
     static const char               NULL_CHARACTER                          = '\0';
     
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
+    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = false;
     static const bool               DRIVE_SWAP_ENABLED                      = true;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
@@ -516,6 +528,8 @@ private:
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
 
+    static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
+    static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
     static constexpr units::second_t    SHOOTING_SPIN_UP_DELAY_S            =  1.00_s;
     static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
     static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
