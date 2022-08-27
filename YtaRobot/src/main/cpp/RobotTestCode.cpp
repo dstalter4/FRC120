@@ -49,6 +49,8 @@ public:
     static void CtreSpeedControllerTest();
     static void RevSpeedControllerTest();
     static void TankDrive();
+    static void SuperstructureTest();
+    static void PneumaticsTest();
 
     static void TimeTest();
     static void ButtonChangeTest();
@@ -115,6 +117,8 @@ void YtaRobot::TestPeriodic()
     //YtaRobotTest::CtreSpeedControllerTest();
     //YtaRobotTest::RevSpeedControllerTest();
     //YtaRobotTest::TankDrive();
+    //YtaRobotTest::PneumaticsTest();
+    //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
     //YtaRobotTest::AccelerometerTest();
@@ -156,6 +160,75 @@ void YtaRobotTest::QuickTestCode()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::SuperstructureTest
+///
+/// Test code to try out functionality on the superstructure.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::SuperstructureTest()
+{
+    // Intakes run opposite each other
+    static TalonFX * pIntake1 = new TalonFX(5);
+    static TalonFX * pIntake2 = new TalonFX(6);
+    // Feeders run opposite each other
+    static TalonFX * pFeeder1 = new TalonFX(7);
+    static TalonFX * pFeeder2 = new TalonFX(8);
+    // Shooters run opposite each other
+    static TalonFX * pShooter1 = new TalonFX(9);
+    static TalonFX * pShooter2 = new TalonFX(10);
+    // Hanger
+    static TalonFX * pWinch = new TalonFX(11);
+    
+    while (m_pJoystick->GetRawButton(1))
+    {
+        pIntake1->Set(ControlMode::PercentOutput, 0.3);
+        pIntake2->Set(ControlMode::PercentOutput, 0.3);
+    }
+    pIntake1->Set(ControlMode::PercentOutput, 0.0);
+    pIntake2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(2))
+    {
+        pFeeder1->Set(ControlMode::PercentOutput, -0.3);
+        pFeeder2->Set(ControlMode::PercentOutput, 0.3);
+    }
+    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(3))
+    {
+        pShooter1->Set(ControlMode::PercentOutput, 0.3);
+        pShooter2->Set(ControlMode::PercentOutput, -0.3);
+    }
+    pShooter1->Set(ControlMode::PercentOutput, 0.0);
+    pShooter2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(4))
+    {
+        pIntake1->Set(ControlMode::PercentOutput, 0.3);
+        pIntake1->Set(ControlMode::PercentOutput, -0.3);
+        pFeeder1->Set(ControlMode::PercentOutput, -0.5);
+        pFeeder2->Set(ControlMode::PercentOutput, 0.5);
+        pShooter1->Set(ControlMode::PercentOutput, 1.0);
+        pShooter2->Set(ControlMode::PercentOutput, -1.0);
+    }
+    pIntake1->Set(ControlMode::PercentOutput, 0.0);
+    pIntake2->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
+    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
+    pShooter1->Set(ControlMode::PercentOutput, 0.0);
+    pShooter2->Set(ControlMode::PercentOutput, 0.0);
+    while (m_pJoystick->GetRawButton(5))
+    {
+        pWinch->Set(ControlMode::PercentOutput, 1.0);
+    }
+    while (m_pJoystick->GetRawButton(6))
+    {
+        pWinch->Set(ControlMode::PercentOutput, -1.0);
+    }
+    pWinch->Set(ControlMode::PercentOutput, 0.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobotTest::CtreSpeedControllerTest
 ///
 /// Test code for CTRE speed controllers.
@@ -163,10 +236,10 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::CtreSpeedControllerTest()
 {
-    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID);
-    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_MOTORS_CAN_START_ID + 1);
-    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID);
-    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_MOTORS_CAN_START_ID + 1);
+    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
+    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
+    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
+    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
     
     while (m_pJoystick->GetRawButton(1))
     {
@@ -241,6 +314,40 @@ void YtaRobotTest::TankDrive()
 {
     YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
     YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::PneumaticsTest
+///
+/// Test code for validating pneumatics.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::PneumaticsTest()
+{
+    // The pneumatics library checks if channels are already in use
+    // when creating the object.  The test code either has to pick
+    // channels not in use (likely 6/7) or grab a reference to some
+    // solenoid object from the actual robot code.
+    //static DoubleSolenoid *& rpSolenoid = YTA_ROBOT_OBJ()->m_pTalonCoolingSolenoid;
+    static DoubleSolenoid * pSolenoid = new DoubleSolenoid(PneumaticsModuleType::CTREPCM, 6, 7);
+    
+    if (m_pJoystick->GetRawButton(1))
+    {
+        pSolenoid->Set(DoubleSolenoid::kForward);
+    }
+    else if (m_pJoystick->GetRawButton(2))
+    {
+        pSolenoid->Set(DoubleSolenoid::kReverse);
+    }
+    else if (m_pJoystick->GetRawButton(3))
+    {
+        pSolenoid->Set(DoubleSolenoid::kOff);
+    }
+    else
+    {
+    }
 }
 
 

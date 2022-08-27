@@ -112,10 +112,7 @@ namespace YtaRobotAutonomous
 ////////////////////////////////////////////////////////////////
 inline void YtaRobot::AutonomousDelay(units::second_t time)
 {
-    m_pAutonomousTimer->Start();
-    while (m_pAutonomousTimer->Get() < time) {}
-    m_pAutonomousTimer->Stop();
-    m_pAutonomousTimer->Reset();
+    Wait(time);
 }
 
 

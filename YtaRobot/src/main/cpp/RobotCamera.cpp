@@ -43,7 +43,7 @@ std::vector<std::vector<cv::Point>>             RobotCamera::m_FilteredContours;
 std::vector<RobotCamera::VisionTargetReport>    RobotCamera::m_ContourTargetReports;
 RobotCamera::VisionTargetReport                 RobotCamera::m_VisionTargetReport;
 bool                                            RobotCamera::m_bDoFullProcessing;
-int                                             RobotCamera::m_HeartBeat;
+unsigned                                        RobotCamera::m_CameraHeartBeat;
 const char *                                    RobotCamera::CAMERA_OUTPUT_NAME = "Camera Output";
 
 Timer                                           RobotCamera::AutonomousCamera::m_AutoCameraTimer;
@@ -243,11 +243,15 @@ void RobotCamera::LimelightThread()
     {
         m_pLimelightNetworkTable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
     }
+
+    RobotUtils::DisplayMessage("Limelight network table found.");
     
     // The limelight camera mode will be set by autonomous or teleop
     
     while (true)
     {
+        // Be sure to relinquish the CPU when done
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
     }
 }
 
@@ -263,7 +267,11 @@ void RobotCamera::VisionThread()
 {
     // Indicate the thread has been started
     RobotUtils::DisplayMessage("Vision thread detached.");
-    while (true) {}
+    while (true)
+    {
+        // Be sure to relinquish the CPU when done
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
+    }
     
     /*
     // Me
@@ -368,7 +376,7 @@ void RobotCamera::VisionThread()
 ////////////////////////////////////////////////////////////////
 void RobotCamera::UpdateSmartDashboard()
 {
-    SmartDashboard::PutNumber("HeartBeat",                  m_HeartBeat++);
+    SmartDashboard::PutNumber("Camera HeartBeat",           m_CameraHeartBeat++);
     
     SmartDashboard::PutNumber("Bounding rect X",            m_VisionTargetReport.m_BoundingRectX);
     SmartDashboard::PutNumber("Bounding rect Y",            m_VisionTargetReport.m_BoundingRectY);

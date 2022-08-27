@@ -23,6 +23,7 @@
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
 #include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
+#include "frc/Compressor.h"                     // for retrieving info on the compressor
 #include "frc/DigitalInput.h"                   // for DigitalInput type
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
@@ -32,6 +33,7 @@
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
 #include "frc/Ultrasonic.h"                     // for Ultrasonic type
+#include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
@@ -155,6 +157,9 @@ private:
     // Checks for a robot state change and logs a message if so
     inline void CheckAndUpdateRobotMode(RobotMode robotMode);
 
+    // Updates information on the smart dashboard for the drive team
+    void UpdateSmartDashboard();
+
     // Grabs a value from a sonar sensor individually
     inline double GetSonarValue(Ultrasonic * pSensor);
    
@@ -188,6 +193,9 @@ private:
     void AutonomousEncoderDrive(double speed, double distance, RobotDirection direction);
     bool AutonomousSonarDrive(RobotDirection direction, SonarDriveState driveState, uint32_t destLateralDist, uint32_t destSideDist);
 
+    // Resets member variables
+    void ResetMemberData();
+
     // Routine to put things in a known state
     void InitialStateSetup();
 
@@ -203,6 +211,9 @@ private:
     
     // Function to automatically align the robot to a certain point
     void DirectionalAlign();
+
+    // Function to periodically cool the drive talons
+    void DriveMotorsCool();
 
     // Main sequence for LED control
     void LedSequence();
@@ -237,15 +248,19 @@ private:
     Relay *                         m_pRedLedRelay;                         // Controls whether or not the red LEDs are lit up
     Relay *                         m_pGreenLedRelay;                       // Controls whether or not the green LEDs are lit up
     Relay *                         m_pBlueLedRelay;                        // Controls whether or not the blue LEDs are lit up
-    
+
+    // Interrupts
+    // (none)
+
     // Digital I/O
     DigitalOutput *                 m_pDebugOutput;                         // Debug assist output
     
     // Analog I/O
     // (none)
     
-    // Solenoids
-    // (none)
+    // Pneumatics
+    DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
+    Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
     // Servos
     // (none)
@@ -254,7 +269,8 @@ private:
     // (none)
     
     // Timers
-    Timer *                         m_pAutonomousTimer;                     // Time things during autonomous
+    Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
+    Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
     Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
     Timer *                         m_pDirectionalAlignTimer;               // Keep track of a directional align operation
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
@@ -291,6 +307,8 @@ private:
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
+    bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
+    units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -298,8 +316,8 @@ private:
     // Joysticks/Buttons
     // Note: Don't forget to update the controller object typedefs if
     //       necessary when changing these types!
-    static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_LOGITECH;
-    static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_LOGITECH;
+    static const ControllerModels DRIVE_CONTROLLER_MODEL                        = ControllerModels::CUSTOM_XBOX;
+    static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_XBOX;
     static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL);
     static constexpr const ControllerMappings * const AUX_CONTROLLER_MAPPINGS   = Yta::Controller::Config::GetControllerMapping(AUX_CONTROLLER_MODEL);
     
@@ -309,7 +327,7 @@ private:
     // Driver inputs
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
-    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
+    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
@@ -323,8 +341,8 @@ private:
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
-    static const int                LEFT_MOTORS_CAN_START_ID                = 1;
-    static const int                RIGHT_MOTORS_CAN_START_ID               = 3;
+    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
+    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
 
     // PWM Signals
     // (none)
@@ -342,7 +360,12 @@ private:
     // (none)
     
     // Solenoid Signals
-    // (none)
+    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
+    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
+
+    // Solenoids
+    static const DoubleSolenoid::Value  TALON_COOLING_ON_SOLENOID_VALUE     = DoubleSolenoid::kReverse;
+    static const DoubleSolenoid::Value  TALON_COOLING_OFF_SOLENOID_VALUE    = DoubleSolenoid::kForward;
     
     // Misc
     const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
@@ -352,23 +375,27 @@ private:
 
     static const int                OFF                                     = 0;
     static const int                ON                                      = 1;
-    static const int                SINGLE_MOTOR                            = 1;
-    static const int                TWO_MOTORS                              = 2;
-    static const int                NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
-    static const int                NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const int                ANGLE_90_DEGREES                        = 90;
     static const int                ANGLE_180_DEGREES                       = 180;
     static const int                ANGLE_360_DEGREES                       = 360;
     static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
     static const int                QUADRATURE_ENCODING_ROTATIONS           = 4096;
+    static const unsigned           SINGLE_MOTOR                            = 1;
+    static const unsigned           TWO_MOTORS                              = 2;
+    static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
+    static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const char               NULL_CHARACTER                          = '\0';
     
+    // @todo: Move these to RobotConfig
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
+    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
+    static const bool               DRIVE_SWAP_ENABLED                      = false;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
     static const bool               DIRECTIONAL_INCH_ENABLED                = false;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
+    static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
     
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
@@ -448,11 +475,9 @@ private:
         
         return rightValue;
     }
-
-    inline constexpr double ConvertCelsiusToFahrenheit(double degreesC) { return ((degreesC * 9.0/5.0) + 32.0); }
     
-    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.10;
-    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.10;
+    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
+    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
     static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
@@ -462,6 +487,8 @@ private:
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
 
+    static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
+    static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
     static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
     static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
@@ -510,6 +537,7 @@ inline void YtaRobot::CheckForDriveSwap()
     if (m_pDriveController->DetectButtonChange(DRIVE_SWAP_BUTTON))
     {
         m_bDriveSwap = !m_bDriveSwap;
+        SmartDashboard::PutBoolean("Drive swap", m_bDriveSwap);
     }
 }
 

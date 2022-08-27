@@ -38,14 +38,17 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
+    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
     m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
-    m_pAutonomousTimer                  (new Timer()),
+    m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
+    m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
+    m_pDriveMotorCoolTimer              (new Timer()),
+    m_pMatchModeTimer                   (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
     m_pDirectionalAlignTimer            (new Timer()),
     m_pSafetyTimer                      (new Timer()),
@@ -60,9 +63,14 @@ YtaRobot::YtaRobot() :
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
+    m_bCoolingDriveMotors               (true),
+    m_LastDriveMotorCoolTime            (0_s),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
+    
+    // LiveWindow is not used
+    LiveWindow::SetEnabled(false);
     
     // Set the autonomous options
     m_AutonomousChooser.SetDefaultOption(AUTO_ROUTINE_1_STRING, AUTO_ROUTINE_1_STRING);
@@ -89,6 +97,26 @@ YtaRobot::YtaRobot() :
     // @todo: Use a control variable to prevent the threads from executing too soon.
     m_CameraThread.detach();
     m_I2cThread.detach();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ResetMemberData
+///
+/// This method resets relevant member data variables.  Since
+/// the robot object is only constructed once, it may be
+/// necessary/helpful to return to a state similar to when the
+/// constructor first ran (e.g. when enabling/disabling robot
+/// states).  Only variables that need to be reset are modified
+/// here.  This also works around the issue where non-member
+/// static data cannot be easily reinitialized (since clearing
+/// the .bss and running static constructors will only happen
+/// once on program start up).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ResetMemberData()
+{
 }
 
 
@@ -136,13 +164,15 @@ void YtaRobot::RobotPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::InitialStateSetup()
 {
+    // First reset any member data
+    ResetMemberData();
+
     // Start with motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
-    
-    // Configure brake or coast for the motors
-    m_pLeftDriveMotors->SetBrakeMode();
-    m_pRightDriveMotors->SetBrakeMode();
+
+    // Solenoids to known state
+    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
     
     // Tare encoders
     m_pLeftDriveMotors->TareEncoder();
@@ -155,6 +185,11 @@ void YtaRobot::InitialStateSetup()
     m_pBlueLedRelay->Set(LEDS_OFF);
     
     // Stop/clear any timers, just in case
+    // @todo: Make this a dedicated function.
+    m_pDriveMotorCoolTimer->Stop();
+    m_pDriveMotorCoolTimer->Reset();
+    m_pMatchModeTimer->Stop();
+    m_pMatchModeTimer->Reset();
     m_pInchingDriveTimer->Stop();
     m_pInchingDriveTimer->Reset();
     m_pDirectionalAlignTimer->Stop();
@@ -188,13 +223,22 @@ void YtaRobot::TeleopInit()
     // Autonomous should have left things in a known state, but
     // just in case clear everything.
     InitialStateSetup();
-    
+
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
-    RobotCamera::SetLimelightMode(RobotCamera::DRIVER_CAMERA);
+    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     
     // Indicate to the I2C thread to get data less often
     RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
+
+    // Start the mode timer for teleop
+    m_pMatchModeTimer->Start();
+
+    // Start the drive motor cooling timer
+    m_pDriveMotorCoolTimer->Reset();
+    m_pDriveMotorCoolTimer->Start();
+    m_LastDriveMotorCoolTime = 0_s;
+    m_bCoolingDriveMotors = true;
 }
 
 
@@ -215,7 +259,7 @@ void YtaRobot::TeleopPeriodic()
 
     DriveControlSequence();
 
-    //PneumaticSequence();
+    PneumaticSequence();
 
     //SerialPortSequence();
     
@@ -224,6 +268,21 @@ void YtaRobot::TeleopPeriodic()
     //CameraSequence();
 
     //LedSequence();
+
+    UpdateSmartDashboard();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::UpdateSmartDashboard
+///
+/// Updates values in the smart dashboard.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::UpdateSmartDashboard()
+{
+    // Give the drive team some state information
 }
 
 
@@ -250,6 +309,8 @@ void YtaRobot::LedSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::PneumaticSequence()
 {
+    // @todo: Monitor other compressor API data?
+    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->Enabled());
 }
 
 
@@ -365,6 +426,36 @@ void YtaRobot::CameraSequence()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::DriveMotorsCool
+///
+/// This method controls active or passive cooling of the drive
+/// motors.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::DriveMotorsCool()
+{
+    SmartDashboard::PutBoolean("Drive motor cooling", m_bCoolingDriveMotors);
+
+    // Get the current time
+    units::second_t currentTime = m_pDriveMotorCoolTimer->Get();
+
+    // Set some values for the common logic based on whether or not cooling is currently active or passive
+    units::second_t timerLimit = m_bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
+    DoubleSolenoid::Value solenoidValue = m_bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
+
+    // If the time until the next state change has elapsed
+    if ((currentTime - m_LastDriveMotorCoolTime) > timerLimit)
+    {
+        // Change solenoid state, update control variables
+        m_pTalonCoolingSolenoid->Set(solenoidValue);
+        m_bCoolingDriveMotors = !m_bCoolingDriveMotors;
+        m_LastDriveMotorCoolTime = currentTime;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::DriveControlSequence
 ///
 /// This method contains the main workflow for drive control.
@@ -376,6 +467,11 @@ void YtaRobot::CameraSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
+    if (DRIVE_MOTOR_COOLING_ENABLED)
+    {
+        DriveMotorsCool();
+    }
+
     if (DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
@@ -397,7 +493,10 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    //CheckForDriveSwap();
+    if (DRIVE_SWAP_ENABLED)
+    {
+        CheckForDriveSwap();
+    }
     
     // Computes what the maximum drive speed could be
     double throttleControl = (m_pDriveController->GetThrottleControl() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
@@ -457,17 +556,14 @@ void YtaRobot::DriveControlSequence()
     m_pLeftDriveMotors->Set(leftSpeed);
     m_pRightDriveMotors->Set(rightSpeed);
 
-    // Retrieve motor temperatures
-    double leftTemp = ConvertCelsiusToFahrenheit(m_pLeftDriveMotors->GetMotorObject()->GetTemperature());
-    double rightTemp = ConvertCelsiusToFahrenheit(m_pRightDriveMotors->GetMotorObject()->GetTemperature());
-
     if (RobotUtils::DEBUG_PRINTS)
     {
         SmartDashboard::PutNumber("Left drive speed", leftSpeed);
         SmartDashboard::PutNumber("Right drive speed", rightSpeed);
-        SmartDashboard::PutNumber("Left temperature (F)", leftTemp);
-        SmartDashboard::PutNumber("Right temperature (F)", rightTemp);
     }
+
+    m_pLeftDriveMotors->DisplayStatusInformation();
+    m_pRightDriveMotors->DisplayStatusInformation();
 }
 
 
@@ -485,22 +581,22 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_FORWARD_BUTTON))
+    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_REVERSE_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_LEFT_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetButtonState(DRIVE_CONTROLS_INCH_RIGHT_BUTTON))
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
@@ -619,6 +715,8 @@ void YtaRobot::DirectionalAlign()
             // Only start an align if a state change is allowed
             if (bStateChangeAllowed)
             {                
+                // @todo: Switch this logic to use GetPovAsDirection()
+
                 // This gives a value between 45 -> 405
                 povValue += POV_NORMALIZATION_ANGLE;
                 
@@ -759,10 +857,15 @@ void YtaRobot::DirectionalAlign()
 void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
+
+    // @todo: Shut off the limelight LEDs?
     
     // All motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
+
+    // Motor cooling off
+    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
     
     // Even though 'Disable' shuts off the relay signals, explitily turn the LEDs off
     m_pLedsEnableRelay->Set(LEDS_DISABLED);
