@@ -215,18 +215,6 @@ private:
     // Function to periodically cool the drive talons
     void DriveMotorsCool();
 
-    // Function to control intake
-    void IntakeSequence();
-
-    // Function to control feeding and shooting
-    void FeedAndShootSequence();
-
-    // Function to unjam the cargo
-    void UnjamSequence();
-
-    // Function to control hanging
-    void HangSequence();
-
     // Main sequence for LED control
     void LedSequence();
 
@@ -254,26 +242,23 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pIntakeMotors;                        // Intake motor control
-    TalonMotorGroup<TalonFX> *      m_pFeederMotors;                        // Feeder motor control
-    TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
-    TalonFX *                       m_pWinchMotor;                          // Winch motor control
     
     // Spike Relays
     Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all
     Relay *                         m_pRedLedRelay;                         // Controls whether or not the red LEDs are lit up
     Relay *                         m_pGreenLedRelay;                       // Controls whether or not the green LEDs are lit up
     Relay *                         m_pBlueLedRelay;                        // Controls whether or not the blue LEDs are lit up
-    
+
+    // Interrupts
+    // (none)
+
     // Digital I/O
     DigitalOutput *                 m_pDebugOutput;                         // Debug assist output
     
     // Analog I/O
     // (none)
     
-    // Solenoids
-    DoubleSolenoid *                m_pIntakeSolenoid;                      // Controls the intake solenoid state
-    DoubleSolenoid *                m_pHangerSolenoid;                      // Controls the hanger solenoid state
+    // Pneumatics
     DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
@@ -284,8 +269,6 @@ private:
     // (none)
     
     // Timers
-    Timer *                         m_pShootMotorSpinUpTimer;               // Timer to allow the shooter motors to get up to speed
-    Timer *                         m_pIntakePulseTimer;                    // Timer to track pulsing the intake motor during a shot
     Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
     Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
@@ -324,15 +307,8 @@ private:
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
-    bool                            m_bUnjamming;                           // Indicates if cargo is being unjammed
-    bool                            m_bShotInProgress;                      // Indicates if a shot is in progress
-    bool                            m_bIntakePulsingEnabled;                // Indicates if intake pulsing should be enabled
-    bool                            m_bIntakePulsing;                       // Indicates if the intake is pulsing
     bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
-    double                          m_ShootingSpeed;                        // The current speed the shooter is configured to
-    double                          m_FeederSpeed;                          // The current speed the feeder is configured to
     units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
-    units::second_t                 m_LastIntakePulseTime;                  // The last time an intake pulse state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -350,14 +326,10 @@ private:
 
     // Driver inputs
     static const int                DRIVE_INTAKE_BUTTON                     = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
-    static const int                DRIVE_SET_SHOOT_60_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                DRIVE_SET_SHOOT_65_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
-    static const int                DRIVE_SET_SHOOT_75_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
-    static const int                DRIVE_SHOOT_BUTTON                      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
-    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
+    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
@@ -368,23 +340,11 @@ private:
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                AUX_SET_SHOOT_25_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
-    static const int                AUX_SET_SHOOT_60_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
-    static const int                AUX_SET_SHOOT_65_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
-    static const int                AUX_SET_SHOOT_75_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                AUX_INTAKE_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
-
-    static const int                AUX_UNJAM_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
-    static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
-    static const unsigned           INTAKE_MOTORS_CAN_START_ID              = 5;
-    static const unsigned           FEEDER_MOTORS_CAN_START_ID              = 7;
-    static const unsigned           SHOOTER_MOTORS_CAN_START_ID             = 9;
-    static const unsigned           WINCH_MOTOR_CAN_ID                      = 11;
 
     // PWM Signals
     // (none)
@@ -402,16 +362,10 @@ private:
     // (none)
     
     // Solenoid Signals
-    static const int                INTAKE_SOLENOID_FWD_CHANNEL             = 0;
-    static const int                INTAKE_SOLENOID_REV_CHANNEL             = 1;
-    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 2;
-    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 3;
-    static const int                HANGER_SOLENOID_FWD_CHANNEL             = 4;
-    static const int                HANGER_SOLENOID_REV_CHANNEL             = 5;
+    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
+    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
 
     // Solenoids
-    static const DoubleSolenoid::Value  INTAKE_DOWN_SOLENOID_VALUE          = DoubleSolenoid::kReverse;
-    static const DoubleSolenoid::Value  INTAKE_UP_SOLENOID_VALUE            = DoubleSolenoid::kForward;
     static const DoubleSolenoid::Value  TALON_COOLING_ON_SOLENOID_VALUE     = DoubleSolenoid::kReverse;
     static const DoubleSolenoid::Value  TALON_COOLING_OFF_SOLENOID_VALUE    = DoubleSolenoid::kForward;
     
@@ -438,7 +392,7 @@ private:
     // @todo: Move these to RobotConfig
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
     static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
-    static const bool               DRIVE_SWAP_ENABLED                      = true;
+    static const bool               DRIVE_SWAP_ENABLED                      = false;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
     static const bool               DIRECTIONAL_INCH_ENABLED                = true;
@@ -525,14 +479,6 @@ private:
         return rightValue;
     }
     
-    static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
-    static constexpr double         FEEDER_MOTOR_SPEED                      = -0.50;
-    static constexpr double         FEEDER_QUICK_MOTOR_SPEED                = -0.30;
-    static constexpr double         SHOOTER_75_MOTOR_SPEED                  =  0.75;
-    static constexpr double         SHOOTER_65_MOTOR_SPEED                  =  0.65;
-    static constexpr double         SHOOTER_60_MOTOR_SPEED                  =  0.60;
-    static constexpr double         SHOOTER_25_MOTOR_SPEED                  =  0.25;
-    
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
@@ -544,12 +490,8 @@ private:
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
 
-    static constexpr units::second_t    INTAKE_PULSE_TIME_S                 =  1.0_s;
-    static constexpr units::second_t    SHOOTING_SPIN_UP_DELAY_S            =  1.00_s;
-
     static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
     static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
-    static constexpr units::second_t    DRIVE_MOTOR_COOL_ALWAYS_ON_TIME     =  95_s;
     static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
     static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
