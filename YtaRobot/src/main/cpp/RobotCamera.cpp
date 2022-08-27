@@ -43,7 +43,7 @@ std::vector<std::vector<cv::Point>>             RobotCamera::m_FilteredContours;
 std::vector<RobotCamera::VisionTargetReport>    RobotCamera::m_ContourTargetReports;
 RobotCamera::VisionTargetReport                 RobotCamera::m_VisionTargetReport;
 bool                                            RobotCamera::m_bDoFullProcessing;
-int                                             RobotCamera::m_HeartBeat;
+unsigned                                        RobotCamera::m_CameraHeartBeat;
 const char *                                    RobotCamera::CAMERA_OUTPUT_NAME = "Camera Output";
 
 Timer                                           RobotCamera::AutonomousCamera::m_AutoCameraTimer;
@@ -376,7 +376,7 @@ void RobotCamera::VisionThread()
 ////////////////////////////////////////////////////////////////
 void RobotCamera::UpdateSmartDashboard()
 {
-    SmartDashboard::PutNumber("HeartBeat",                  m_HeartBeat++);
+    SmartDashboard::PutNumber("Camera HeartBeat",           m_CameraHeartBeat++);
     
     SmartDashboard::PutNumber("Bounding rect X",            m_VisionTargetReport.m_BoundingRectX);
     SmartDashboard::PutNumber("Bounding rect Y",            m_VisionTargetReport.m_BoundingRectY);

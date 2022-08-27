@@ -247,7 +247,7 @@ private:
     static std::vector<VisionTargetReport>      m_ContourTargetReports;             // Stores information about the contours currently visible
     static VisionTargetReport                   m_VisionTargetReport;               // Information about the vision target
     static bool                                 m_bDoFullProcessing;                // Indicates whether or not full image processing should occur
-    static int                                  m_HeartBeat;                        // Keep alive with the C++ dashboard
+    static unsigned                             m_CameraHeartBeat;                  // Keep alive for the camera thread
     
     // CONSTANTS
     
