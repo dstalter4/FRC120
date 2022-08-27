@@ -380,12 +380,12 @@ private:
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
-    static const int                LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
-    static const int                RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
-    static const int                INTAKE_MOTORS_CAN_START_ID              = 5;
-    static const int                FEEDER_MOTORS_CAN_START_ID              = 7;
-    static const int                SHOOTER_MOTORS_CAN_START_ID             = 9;
-    static const int                WINCH_MOTOR_CAN_ID                      = 11;
+    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
+    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
+    static const unsigned           INTAKE_MOTORS_CAN_START_ID              = 5;
+    static const unsigned           FEEDER_MOTORS_CAN_START_ID              = 7;
+    static const unsigned           SHOOTER_MOTORS_CAN_START_ID             = 9;
+    static const unsigned           WINCH_MOTOR_CAN_ID                      = 11;
 
     // PWM Signals
     // (none)
@@ -424,16 +424,16 @@ private:
 
     static const int                OFF                                     = 0;
     static const int                ON                                      = 1;
-    static const int                SINGLE_MOTOR                            = 1;
-    static const int                TWO_MOTORS                              = 2;
-    static const int                NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
-    static const int                NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const int                ANGLE_90_DEGREES                        = 90;
     static const int                ANGLE_180_DEGREES                       = 180;
     static const int                ANGLE_360_DEGREES                       = 360;
     static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
     static const int                QUADRATURE_ENCODING_ROTATIONS           = 4096;
+    static const unsigned           SINGLE_MOTOR                            = 1;
+    static const unsigned           TWO_MOTORS                              = 2;
+    static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
+    static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const char               NULL_CHARACTER                          = '\0';
     
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
@@ -524,8 +524,6 @@ private:
         
         return rightValue;
     }
-
-    inline constexpr double ConvertCelsiusToFahrenheit(double degreesC) { return ((degreesC * 9.0/5.0) + 32.0); }
     
     static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
     static constexpr double         FEEDER_MOTOR_SPEED                      = -0.50;

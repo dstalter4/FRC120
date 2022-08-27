@@ -38,11 +38,11 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, FeedbackDevice::CTRE_MagEncoder_Relative)),
-    m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
-    m_pFeederMotors                     (new TalonMotorGroup<TalonFX>(TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>(TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, FeedbackDevice::None)),
+    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>("Intake", TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
+    m_pFeederMotors                     (new TalonMotorGroup<TalonFX>("Feeder", TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Coast, FeedbackDevice::None)),
     m_pWinchMotor                       (new TalonFX(WINCH_MOTOR_CAN_ID)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
@@ -191,14 +191,11 @@ void YtaRobot::InitialStateSetup()
     m_pShooterMotors->Set(OFF);
     m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     
-    // Configure brake or coast for the motors
-    m_pLeftDriveMotors->SetBrakeMode();
-    m_pRightDriveMotors->SetBrakeMode();
-    m_pIntakeMotors->SetBrakeMode();
-    m_pIntakeMotors->GetMotorObject()->SetNeutralMode(NeutralMode::Coast);
-    m_pFeederMotors->SetBrakeMode();
-    m_pShooterMotors->SetCoastMode();
+    // Configure brake or coast for motors not set during object construction
     m_pWinchMotor->SetNeutralMode(NeutralMode::Brake);
+
+    // Override the neutral mode for the first intake motor in that group
+    m_pIntakeMotors->GetMotorObject()->SetNeutralMode(NeutralMode::Coast);
 
     // Solenoids to known state
     m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
@@ -847,17 +844,14 @@ void YtaRobot::DriveControlSequence()
     m_pLeftDriveMotors->Set(leftSpeed);
     m_pRightDriveMotors->Set(rightSpeed);
 
-    // Retrieve motor temperatures
-    double leftTemp = ConvertCelsiusToFahrenheit(m_pLeftDriveMotors->GetMotorObject()->GetTemperature());
-    double rightTemp = ConvertCelsiusToFahrenheit(m_pRightDriveMotors->GetMotorObject()->GetTemperature());
-
     if (RobotUtils::DEBUG_PRINTS)
     {
         SmartDashboard::PutNumber("Left drive speed", leftSpeed);
         SmartDashboard::PutNumber("Right drive speed", rightSpeed);
-        SmartDashboard::PutNumber("Left temperature (F)", leftTemp);
-        SmartDashboard::PutNumber("Right temperature (F)", rightTemp);
     }
+
+    m_pLeftDriveMotors->DisplayStatusInformation();
+    m_pRightDriveMotors->DisplayStatusInformation();
 }
 
 
