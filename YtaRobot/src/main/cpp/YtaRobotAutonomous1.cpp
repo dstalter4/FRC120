@@ -30,21 +30,25 @@ void YtaRobot::AutonomousRoutine1()
 {
     // Drop the intake, spin the motors
     m_pIntakeSolenoid->Set(INTAKE_DOWN_SOLENOID_VALUE);
+    m_pIntakeMotors->GetMotorObject(INTAKE_MOTORS_CAN_START_ID)->Set(ControlMode::PercentOutput, 0.10);
     m_pIntakeMotors->GetMotorObject(INTAKE_MOTORS_CAN_START_ID + 1)->Set(ControlMode::PercentOutput, -INTAKE_MOTOR_SPEED);
     Wait(0.5_s);
 
     // Start driving, this should pick up a cargo
     AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_FORWARD, 0.30, 1.0_s);
-    Wait(0.5_s);
+    Wait(1.0_s);
+
+    // Turn off the low intake motor
+    m_pIntakeMotors->GetMotorObject(INTAKE_MOTORS_CAN_START_ID)->Set(ControlMode::PercentOutput, 0.0);
 
     // Get closer for an accurate shot
-    AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_REVERSE, 0.30, 0.75_s);
+    AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_REVERSE, 0.30, 1.0_s);
 
     // Give some time to let other robots/human player cargo clear
     Wait(1.5_s);
 
     // Start spinning up the shooter motors
-    m_pShooterMotors->Set(0.75);
+    m_pShooterMotors->Set(0.70);
     Wait(1.0_s);
 
     // Start shooting
@@ -66,7 +70,7 @@ void YtaRobot::AutonomousRoutine1()
     m_pShooterMotors->Set(OFF);
 
     // Back out of the tarmac
-    AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_FORWARD, 0.30, 1.0_s);
+    AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_FORWARD, 0.30, 1.5_s);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 1 done.");

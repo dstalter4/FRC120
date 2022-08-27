@@ -368,7 +368,7 @@ private:
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                AUX_SET_SHOOT_35_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
+    static const int                AUX_SET_SHOOT_25_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_SET_SHOOT_60_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                AUX_SET_SHOOT_65_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                AUX_SET_SHOOT_75_BUTTON                 = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
@@ -435,6 +435,7 @@ private:
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const char               NULL_CHARACTER                          = '\0';
     
+    // @todo: Move these to RobotConfig
     static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
     static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
     static const bool               DRIVE_SWAP_ENABLED                      = true;
@@ -530,7 +531,7 @@ private:
     static constexpr double         SHOOTER_75_MOTOR_SPEED                  =  0.75;
     static constexpr double         SHOOTER_65_MOTOR_SPEED                  =  0.65;
     static constexpr double         SHOOTER_60_MOTOR_SPEED                  =  0.60;
-    static constexpr double         SHOOTER_35_MOTOR_SPEED                  =  0.35;
+    static constexpr double         SHOOTER_25_MOTOR_SPEED                  =  0.25;
     
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;

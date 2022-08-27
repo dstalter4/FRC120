@@ -212,6 +212,7 @@ void YtaRobot::InitialStateSetup()
     m_pBlueLedRelay->Set(LEDS_OFF);
     
     // Stop/clear any timers, just in case
+    // @todo: Make this a dedicated function.
     m_pShootMotorSpinUpTimer->Stop();
     m_pShootMotorSpinUpTimer->Reset();
     m_pIntakePulseTimer->Stop();
@@ -255,12 +256,13 @@ void YtaRobot::TeleopInit()
     InitialStateSetup();
 
     // 2022: Maybe help with overheating?  Doing it here to leave autonomous on brake.
-    m_pLeftDriveMotors->SetCoastMode();
-    m_pRightDriveMotors->SetCoastMode();
+    m_pLeftDriveMotors->SetBrakeMode();
+    m_pRightDriveMotors->SetBrakeMode();
     
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    // @todo: Is this not shutting off?
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // Indicate to the I2C thread to get data less often
@@ -440,9 +442,9 @@ void YtaRobot::FeedAndShootSequence()
         m_FeederSpeed = FEEDER_MOTOR_SPEED;
         m_bIntakePulsingEnabled = true;
     }
-    else if (m_pAuxController->GetButtonState(AUX_SET_SHOOT_35_BUTTON))
+    else if (m_pAuxController->GetButtonState(AUX_SET_SHOOT_25_BUTTON))
     {
-        m_ShootingSpeed = SHOOTER_35_MOTOR_SPEED;
+        m_ShootingSpeed = SHOOTER_25_MOTOR_SPEED;
         m_FeederSpeed = FEEDER_QUICK_MOTOR_SPEED;
         m_bIntakePulsingEnabled = false;
     }
@@ -1146,6 +1148,8 @@ void YtaRobot::DirectionalAlign()
 void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
+
+    // @todo: Shut off the limelight LEDs?
     
     // All motors off
     m_pLeftDriveMotors->Set(OFF);
