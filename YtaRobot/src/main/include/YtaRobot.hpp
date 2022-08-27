@@ -288,7 +288,6 @@ private:
     Timer *                         m_pIntakePulseTimer;                    // Timer to track pulsing the intake motor during a shot
     Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
-    Timer *                         m_pAutonomousTimer;                     // Time things during autonomous
     Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
     Timer *                         m_pDirectionalAlignTimer;               // Keep track of a directional align operation
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete

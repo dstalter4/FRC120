@@ -57,7 +57,6 @@ YtaRobot::YtaRobot() :
     m_pIntakePulseTimer                 (new Timer()),
     m_pDriveMotorCoolTimer              (new Timer()),
     m_pMatchModeTimer                   (new Timer()),
-    m_pAutonomousTimer                  (new Timer()),
     m_pInchingDriveTimer                (new Timer()),
     m_pDirectionalAlignTimer            (new Timer()),
     m_pSafetyTimer                      (new Timer()),

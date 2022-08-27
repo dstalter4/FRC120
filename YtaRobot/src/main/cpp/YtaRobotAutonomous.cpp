@@ -40,8 +40,6 @@ void YtaRobot::AutonomousInit()
     // Indicate the autonomous routine has not executed yet
     YtaRobotAutonomous::bAutonomousExecutionComplete = false;
     
-    m_pAutonomousTimer->Stop();
-    m_pAutonomousTimer->Reset();
     m_pSafetyTimer->Stop();
     m_pSafetyTimer->Reset();
     
