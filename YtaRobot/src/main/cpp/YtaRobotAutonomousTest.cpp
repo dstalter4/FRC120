@@ -29,5 +29,5 @@
 void YtaRobot::AutonomousTestRoutine()
 {
     // Returning from here will enter the idle state until autonomous is over
-    RobotUtils::DisplayMessage("Auto routine 3 done.");
+    RobotUtils::DisplayMessage("Auto test routine done.");
 }

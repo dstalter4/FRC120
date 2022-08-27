@@ -97,8 +97,8 @@ private:
     const Yta::Controller::Config::Mappings * const CONTROLLER_MAPPINGS;
     double m_ThrottleValue;
     
-    static constexpr double X_AXIS_DRIVE_SENSITIVITY_SCALING = 0.40;
-    static constexpr double Y_AXIS_DRIVE_SENSITIVITY_SCALING = 0.70;
+    static constexpr double X_AXIS_DRIVE_SENSITIVITY_SCALING = 0.75;
+    static constexpr double Y_AXIS_DRIVE_SENSITIVITY_SCALING = 1.00;
     
     // Prevent copying/assignment
     YtaCustomController(const YtaCustomController&) = delete;

@@ -300,7 +300,7 @@ private:
     SerialPort *                    m_pSerialPort;
     
     // I2C configuration
-    //std::thread                     m_I2cThread;
+    std::thread                     m_I2cThread;
     
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
@@ -325,8 +325,6 @@ private:
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
     // Driver inputs
-    static const int                DRIVE_INTAKE_BUTTON                     = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
-    
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
@@ -395,7 +393,7 @@ private:
     static const bool               DRIVE_SWAP_ENABLED                      = false;
     static const bool               SLOW_DRIVE_ENABLED                      = false;
     static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
-    static const bool               DIRECTIONAL_INCH_ENABLED                = true;
+    static const bool               DIRECTIONAL_INCH_ENABLED                = false;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
     static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
     
@@ -406,7 +404,6 @@ private:
     // forward/reverse in the robot.  They are used to keep
     // autonomous movement code common without yearly updates.
 
-    // 2022: Practice is + - - +
     static constexpr double         LEFT_DRIVE_FORWARD_SCALAR               = -1.00;
     static constexpr double         LEFT_DRIVE_REVERSE_SCALAR               = +1.00;
     static constexpr double         RIGHT_DRIVE_FORWARD_SCALAR              = +1.00;

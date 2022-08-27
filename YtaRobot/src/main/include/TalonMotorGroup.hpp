@@ -127,7 +127,7 @@ private:
         DisplayStrings m_DisplayStrings;
         
         MotorInfo(const char * pName, MotorGroupControlMode controlMode, NeutralMode neutralMode, unsigned canId, unsigned groupNumber, bool bIsDriveMotor = false) :
-            m_pTalon(new TalonType(canId)),
+            m_pTalon(new TalonType(static_cast<int>(canId))),
             m_pName(pName),
             m_ControlMode(controlMode),
             m_CanId(canId),
