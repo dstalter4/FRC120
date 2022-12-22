@@ -40,6 +40,7 @@
 // C++ INCLUDES
 #include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
+#include "SwerveDrive.hpp"                      // for using swerve drive
 #include "TalonMotorGroup.hpp"                  // for Talon group motor control
 #include "YtaController.hpp"                    // for controller interaction
 

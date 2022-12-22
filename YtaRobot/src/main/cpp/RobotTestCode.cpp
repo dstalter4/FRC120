@@ -49,6 +49,7 @@ public:
     static void CtreSpeedControllerTest();
     static void RevSpeedControllerTest();
     static void TankDrive();
+    static void SwerveDriveTest();
     static void SuperstructureTest();
     static void PneumaticsTest();
 
@@ -113,10 +114,11 @@ void YtaRobot::TestPeriodic()
     CheckAndUpdateRobotMode(ROBOT_MODE_TEST);
 
     // Enable or disable routines for testing
-    YtaRobotTest::QuickTestCode();
+    //YtaRobotTest::QuickTestCode();
     //YtaRobotTest::CtreSpeedControllerTest();
     //YtaRobotTest::RevSpeedControllerTest();
     //YtaRobotTest::TankDrive();
+    YtaRobotTest::SwerveDriveTest();
     //YtaRobotTest::PneumaticsTest();
     //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
@@ -314,6 +316,39 @@ void YtaRobotTest::TankDrive()
 {
     YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
     YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::SwerveDriveTest
+///
+/// Test code for swerve drive of the robot.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::SwerveDriveTest()
+{
+    static SwerveDrive * pSwerveDrive = new SwerveDrive();
+
+    // Get joystick inputs (x = strafe, y = translation)
+    // logitech and xbox controller: strafe = kLeftX (0), translation = kLeftY(1) or triggers (2/3), rotation = kRightX (4)
+    // Try using: YTA_ROBOT_OBJ()->m_pDriveController->GetDriveXInput();
+    double strafeAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(0) * -1.0;
+    double translationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0;
+    double rotationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(4) * -1.0;
+
+    strafeAxis = RobotUtils::Trim(strafeAxis, 0.10, -0.10);
+    translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
+    rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
+
+    // Notice that this is sending translation to X and strafe to Y, despite
+    // the inputs coming from the opposite of what may be intuitive (strafe as X,
+    // translation as Y).  See the comment in Translation2d.h about the robot
+    // placed at origin facing the X-axis.  Forward movement increases X and left
+    // movement increases Y.
+    Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
+    // Translation2d, double rotation, field relative, open loop
+    pSwerveDrive->SetModuleStates(translation, rotationAxis, true, true);
 }
 
 
