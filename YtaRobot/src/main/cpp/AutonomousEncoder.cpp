@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous encoder based routines.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -49,7 +49,8 @@ int YtaRobot::GetEncoderRotationsFromInches(int inches, double diameter, bool bU
     
     if (!bUseQuadEncoding)
     {
-        result /= 4;
+        // C++ '20 deprecated volatile in certain situations
+        result = result / 4;
     }
     
     return result;

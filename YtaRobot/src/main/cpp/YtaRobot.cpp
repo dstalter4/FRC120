@@ -8,7 +8,7 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -310,7 +310,7 @@ void YtaRobot::LedSequence()
 void YtaRobot::PneumaticSequence()
 {
     // @todo: Monitor other compressor API data?
-    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->Enabled());
+    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->IsEnabled());
 }
 
 
