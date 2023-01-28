@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve module on a swerve drive robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEMODULE_HPP
@@ -17,6 +17,7 @@
 // C INCLUDES
 #include "ctre/Phoenix.h"                               // for CTRE library interfaces
 #include "frc/controller/SimpleMotorFeedForward.h"      // for feedforward control
+#include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
 #include "frc/kinematics/SwerveModuleState.h"           // for struct declaration
 #include "frc/geometry/Rotation2d.h"                    // for class declaration
 #include "units/angle.h"                                // for degree user defined literal
@@ -51,7 +52,7 @@ public:
         int m_DriveMotorCanId;
         int m_AngleMotorCanId;
         int m_CanCoderId;
-        double m_AngleOffset;
+        Rotation2d m_AngleOffset;
     };
 
     SwerveModule(SwerveModuleConfig config);
@@ -59,6 +60,7 @@ public:
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
 
     SwerveModuleState GetSwerveModuleState();
+    SwerveModulePosition GetSwerveModulePosition();
 
 private:
     SwerveModuleState Optimize(SwerveModuleState desiredState, Rotation2d currentAngle);
@@ -84,28 +86,14 @@ private:
     }
     */
 
-    /*
-    inline static double DegreesToAbsolutePosition(double degrees, const double gearRatio)
-    {
-        return degrees / (360.0 / (gearRatio * FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION));
-    }
-    */
-
-    /*
-    inline static double AbsolutePositionToDegrees(double controllerUnits, const double gearRatio)
-    {
-        return controllerUnits * (360.0 / (gearRatio * FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION));
-    }
-    */
-
     ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;
     TalonFX * m_pAngleTalon;
     CANCoder * m_pAngleCanCoder;
-    double m_AngleOffset;
-    double m_LastAngle;
+    Rotation2d m_AngleOffset;
+    Rotation2d m_LastAngle;
 
-    SwerveModuleState m_SwerveModuleState;
+    //SwerveModuleState m_SwerveModuleState;
     SimpleMotorFeedforward<units::meters> * m_pFeedForward;
 
     // Divide by 12 on these constants to convert from volts to percent output for CTRE
@@ -114,10 +102,11 @@ private:
     using Acceleration = units::compound_unit<Velocity, units::inverse<units::seconds>>;
     using kv_unit = units::compound_unit<units::volts, units::inverse<Velocity>>;
     using ka_unit = units::compound_unit<units::volts, units::inverse<Acceleration>>;
-    static constexpr units::volt_t KS = (0.667_V / 12.0);
-    static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(2.44 / 12.0);
+    static constexpr units::volt_t KS = (0.32_V / 12.0);
+    static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(1.51 / 12.0);
     static constexpr units::unit_t<ka_unit> KA = units::unit_t<ka_unit>(0.27 / 12.0);
 
+    // SDS MK4 L3
     static constexpr double DRIVE_GEAR_RATIO = (6.12 / 1.0);                        // L3 Very Fast configuration is 6.12:1
     static constexpr double ANGLE_GEAR_RATIO = (12.8 / 1.0);
     static constexpr double FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION = 2048.0;

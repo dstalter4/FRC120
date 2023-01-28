@@ -5,18 +5,21 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
 // <none>
 
 // C INCLUDES
-#include "frc/kinematics/ChassisSpeeds.h"           // for struct declaration
-#include "frc/kinematics/SwerveModuleState.h"       // for struct declaration
+#include "frc/geometry/Translation2d.h"                 // for class declaration
+#include "frc/kinematics/ChassisSpeeds.h"               // for struct declaration
+#include "frc/kinematics/SwerveDriveKinematics.h"       // for class declaration
+#include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
+#include "frc/kinematics/SwerveModuleState.h"           // for struct declaration
 
 // C++ INCLUDES
-#include "SwerveDrive.hpp"                          // for class declaration
+#include "SwerveDrive.hpp"                              // for class declaration
 
 using namespace frc;
 
@@ -39,9 +42,9 @@ const SwerveDriveKinematics<SwerveDrive::NUM_SWERVE_DRIVE_MODULES> SwerveDrive::
 };
 
 SwerveDrive::SwerveDrive() :
-    m_pPigeon(new Pigeon2(PIGEON_CAN_ID, "canivore")),
-    m_Odometry(SWERVE_DRIVE_KINEMATICS, Rotation2d(units::degree_t(0))),
-    m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG}
+    m_pPigeon(new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
+    m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
+    m_Odometry(SWERVE_DRIVE_KINEMATICS, Rotation2d(units::degree_t(0)), {INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION})
 {
     m_pPigeon->ConfigFactoryDefault();
     m_pPigeon->SetYaw(0.0);

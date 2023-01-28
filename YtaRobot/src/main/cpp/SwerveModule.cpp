@@ -5,14 +5,14 @@
 /// @details
 /// Implements functionality for a swerve module on a swerve drive robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
 // <none>
 
 // C INCLUDES
-// (none)
+#include "units/length.h"                   // for units::meters
 
 // C++ INCLUDES
 #include "SwerveModule.hpp"                 // for class declaration
@@ -25,10 +25,9 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_MotorGroupPosition(config.m_Position),
     m_pDriveTalon(new TalonFX(config.m_DriveMotorCanId)),
     m_pAngleTalon(new TalonFX(config.m_AngleMotorCanId)),
-    m_pAngleCanCoder(new CANCoder(config.m_CanCoderId, "canivore")),
+    m_pAngleCanCoder(new CANCoder(config.m_CanCoderId, "canivore-120")),
     m_AngleOffset(config.m_AngleOffset),
     m_LastAngle(),
-    m_SwerveModuleState(),
     m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA))
 {
     // @todo_swerve: Tune these configurations.  Set drive falcon to FeedbackDevice.IntegratedSensor?
@@ -37,12 +36,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // enable, limit, threshold, duration
     SupplyCurrentLimitConfiguration driveTalonSupplyLimit = {true, 35, 60, 0.1};
     TalonFXConfiguration driveTalonConfig;
-    driveTalonConfig.slot0.kP = 0.10;
+    driveTalonConfig.slot0.kP = 0.05;
     driveTalonConfig.slot0.kI = 0.0;
     driveTalonConfig.slot0.kD = 0.0;
     driveTalonConfig.slot0.kF = 0.0;        
     driveTalonConfig.supplyCurrLimit = driveTalonSupplyLimit;
-    driveTalonConfig.initializationStrategy = SensorInitializationStrategy::BootToZero;
     driveTalonConfig.openloopRamp = OPEN_LOOP_RAMP;
     driveTalonConfig.closedloopRamp = CLOSED_LOOP_RAMP;
     m_pDriveTalon->ConfigFactoryDefault();
@@ -55,12 +53,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // enable, limit, threshold, duration
     SupplyCurrentLimitConfiguration angleTalonSupplyLimit = {true, 25, 40, 0.1};
     TalonFXConfiguration angleTalonConfig;
-    angleTalonConfig.slot0.kP = 0.6;
+    angleTalonConfig.slot0.kP = 0.2;
     angleTalonConfig.slot0.kI = 0.0;
-    angleTalonConfig.slot0.kD = 12.0;
+    angleTalonConfig.slot0.kD = 0.0;
     angleTalonConfig.slot0.kF = 0.0;
     angleTalonConfig.supplyCurrLimit = angleTalonSupplyLimit;
-    angleTalonConfig.initializationStrategy = SensorInitializationStrategy::BootToZero;
     m_pAngleTalon->ConfigFactoryDefault();
     m_pAngleTalon->ConfigAllSettings(angleTalonConfig);
     m_pAngleTalon->SetInverted(false);
@@ -76,12 +73,15 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_pAngleCanCoder->ConfigAllSettings(canCoderConfig);
 
     // (ref: resetToAbsolute())
-    // double absolutePosition = Conversions.degreesToFalcon(getCanCoder().getDegrees() - angleOffset, Constants.Swerve.angleGearRatio);
-    m_pAngleTalon->SetSelectedSensorPosition(SwerveConversions::degreesToFalcon(m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset, ANGLE_GEAR_RATIO));
+    // double absolutePosition = Conversions.degreesToFalcon(getCanCoder().getDegrees() - angleOffset.getDegrees(), Constants.Swerve.angleGearRatio);
+    // SetSelectedSensorPosition() is causing excessive spins when downloading new code without a power cycle
+    //m_pAngleTalon->SetSelectedSensorPosition(SwerveConversions::degreesToFalcon(m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value(), ANGLE_GEAR_RATIO));
+    m_LastAngle = units::degree_t(SwerveConversions::falconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), ANGLE_GEAR_RATIO));
 }
 
 SwerveModuleState SwerveModule::Optimize(SwerveModuleState desiredState, Rotation2d currentAngle)
 {
+    // This is a custom optimize function, since default WPILib optimize assumes continuous controller which CTRE and Rev onboard is not
     double targetAngle = SwerveConversions::placeInAppropriate0To360Scope(currentAngle.Degrees().value(), desiredState.angle.Degrees().value());
     double targetSpeed = desiredState.speed.value();
     double delta = targetAngle - currentAngle.Degrees().value();
@@ -125,18 +125,18 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
 
     // Prevent rotating module if speed is less then 1%.  Prevents jitter.
     //double angle = (Math.abs(desiredState.speedMetersPerSecond) <= (Constants.Swerve.maxSpeed * 0.01)) ? lastAngle : desiredState.angle.getDegrees();
-    double angle = 0.0;
+    Rotation2d angle = 0.0_deg;
     if (std::abs(desiredState.speed.value()) <= (MAX_SWERVE_VELOCITY * 0.01))
     {
         angle = m_LastAngle;
     }
     else
     {
-        angle = desiredState.angle.Degrees().value();
+        angle = desiredState.angle;
     }
 
     //mAngleMotor.set(ControlMode.Position, Conversions.degreesToFalcon(angle, Constants.Swerve.angleGearRatio));
-    m_pAngleTalon->Set(ControlMode::Position, SwerveConversions::degreesToFalcon(angle, ANGLE_GEAR_RATIO));
+    m_pAngleTalon->Set(ControlMode::Position, SwerveConversions::degreesToFalcon(angle.Degrees().value(), ANGLE_GEAR_RATIO));
     //lastAngle = angle;
     m_LastAngle = angle;
 }
@@ -154,4 +154,14 @@ SwerveModuleState SwerveModule::GetSwerveModuleState()
     //m_SwerveModuleState.angle = angle;
     //return m_SwerveModuleState;
     return {velocity, angle};
+}
+
+SwerveModulePosition SwerveModule::GetSwerveModulePosition()
+{
+    //Conversions.falconToMeters(mDriveMotor.getSelectedSensorPosition(), Constants.Swerve.wheelCircumference, Constants.Swerve.driveGearRatio)
+    units::meter_t distance(SwerveConversions::falconToMeters(m_pDriveTalon->GetSelectedSensorPosition(), WHEEL_CIRCUMFERENCE, DRIVE_GEAR_RATIO));
+    //Rotation2d.fromDegrees(Conversions.falconToDegrees(mAngleMotor.getSelectedSensorPosition(), Constants.Swerve.angleGearRatio));
+    units::angle::degree_t angle(SwerveConversions::falconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), ANGLE_GEAR_RATIO));
+
+    return {distance, angle};
 }
