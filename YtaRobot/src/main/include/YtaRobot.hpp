@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -201,6 +201,7 @@ private:
     void InitialStateSetup();
 
     // Main sequence for drive motor control
+    void SwerveDriveSequence();
     void DriveControlSequence();
     void SideDriveSequence();
 
@@ -239,6 +240,9 @@ private:
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
     AuxControllerType *             m_pAuxController;                       // Auxillary input controller
+    
+    // Swerve Drive
+    SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control

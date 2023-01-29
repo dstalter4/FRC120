@@ -68,9 +68,6 @@ private:
     SwerveModule m_SwerveModules[NUM_SWERVE_DRIVE_MODULES];
     SwerveDriveOdometry<NUM_SWERVE_DRIVE_MODULES> m_Odometry;
 
-    static constexpr units::meters_per_second_t MAX_DRIVE_VELOCITY_MPS = 4.5_mps;
-    static constexpr units::radians_per_second_t MAX_ANGULAR_VELOCITY_RAD_PER_SEC = 11.5_rad_per_s;
-
     // Distance between front/back wheel centers 23.5 inches
     static constexpr const units::meter_t WHEEL_BASE = 23.5_m * 0.0254; // 1 inch = 0.0254 meters, 0.5969_m;
     // Distance between left/right wheel centers, 21.5 inches

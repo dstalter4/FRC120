@@ -38,6 +38,7 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
+    m_pSwerveDrive                      (new SwerveDrive()),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
@@ -257,7 +258,8 @@ void YtaRobot::TeleopPeriodic()
 
     HeartBeat();
 
-    DriveControlSequence();
+    SwerveDriveSequence();
+    //DriveControlSequence();
 
     PneumaticSequence();
 
@@ -451,6 +453,60 @@ void YtaRobot::DriveMotorsCool()
         m_bCoolingDriveMotors = !m_bCoolingDriveMotors;
         m_LastDriveMotorCoolTime = currentTime;
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SwerveDriveSequence
+///
+/// This method contains the main workflow for swerve drive
+/// control.  It will gather input from the drive joystick and
+/// then filter those values to ensure they are past a certain
+/// threshold (deadband) and generate the information to pass
+/// on to the swerve drive system.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SwerveDriveSequence()
+{
+    // Get joystick inputs (x = strafe, y = translation)
+    // logitech and xbox controller: strafe = kLeftX (0), translation = kLeftY(1) or triggers (2/3), rotation = kRightX (4)
+    //double lAxis = m_pDriveController->GetAxisValue(2) * -1.0;
+    //double rAxis = m_pDriveController->GetAxisValue(3);
+    //double translationAxis = lAxis + rAxis;
+    double strafeAxis = m_pDriveController->GetAxisValue(0) * -1.0;
+    double translationAxis = m_pDriveController->GetAxisValue(1) * -1.0;
+    double rotationAxis = m_pDriveController->GetAxisValue(4) * -1.0;
+
+    strafeAxis = RobotUtils::Trim(strafeAxis, 0.10, -0.10);
+    translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
+    rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
+
+    static bool bFieldRelative = true;
+    if (m_pDriveController->DetectButtonChange(5))
+    {
+        bFieldRelative = !bFieldRelative;
+    }
+
+    if (m_pDriveController->DetectButtonChange(6))
+    {
+        m_pSwerveDrive->ZeroGyro();
+    }
+
+    SmartDashboard::PutNumber("Strafe", strafeAxis);
+    SmartDashboard::PutNumber("Translation", translationAxis);
+    SmartDashboard::PutNumber("Rotation", rotationAxis);
+    SmartDashboard::PutBoolean("Field Relative", bFieldRelative);
+
+    // Notice that this is sending translation to X and strafe to Y, despite
+    // the inputs coming from the opposite of what may be intuitive (strafe as X,
+    // translation as Y).  See the comment in Translation2d.h about the robot
+    // placed at origin facing the X-axis.  Forward movement increases X and left
+    // movement increases Y.
+    Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
+    // Translation2d, double rotation, field relative, open loop
+    m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+    m_pSwerveDrive->UpdateSmartDashboard();
 }
 
 
