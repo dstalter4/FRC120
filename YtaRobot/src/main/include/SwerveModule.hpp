@@ -48,11 +48,12 @@ public:
 
     struct SwerveModuleConfig
     {
+        const char * m_pModuleName;
         ModulePosition m_Position;
         int m_DriveMotorCanId;
         int m_AngleMotorCanId;
         int m_CanCoderId;
-        Rotation2d m_AngleOffset;
+        const Rotation2d m_AngleOffset;
     };
 
     SwerveModule(SwerveModuleConfig config);
@@ -61,6 +62,11 @@ public:
 
     SwerveModuleState GetSwerveModuleState();
     SwerveModulePosition GetSwerveModulePosition();
+
+    void UpdateSmartDashboard();
+
+    static constexpr units::meters_per_second_t MAX_DRIVE_VELOCITY_MPS = 4.5_mps;
+    static constexpr units::radians_per_second_t MAX_ANGULAR_VELOCITY_RAD_PER_SEC = 8.5_rad_per_s;
 
 private:
     SwerveModuleState Optimize(SwerveModuleState desiredState, Rotation2d currentAngle);
@@ -85,6 +91,17 @@ private:
         return m_SwerveModuleState;
     }
     */
+        
+    // Storage space for strings for the smart dashboard
+    struct DisplayStrings
+    {
+        static const unsigned MAX_MODULE_DISPLAY_STRING_LENGTH = 64U;
+        char m_CancoderAngleString[MAX_MODULE_DISPLAY_STRING_LENGTH];
+        char m_FxEncoderAngleString[MAX_MODULE_DISPLAY_STRING_LENGTH];
+        char m_DriveTalonTemp[MAX_MODULE_DISPLAY_STRING_LENGTH];
+        char m_AngleTalonTemp[MAX_MODULE_DISPLAY_STRING_LENGTH];
+    };
+    DisplayStrings m_DisplayStrings;
 
     ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;
@@ -113,8 +130,6 @@ private:
     static constexpr double WHEEL_CIRCUMFERENCE = 4.0 * 0.0254 * M_PI;              // 1 inch = 0.0254 meters
 
     // Swerve Profiling Values
-    static constexpr double MAX_SWERVE_VELOCITY = 4.5;
-    static constexpr double MAX_ANGULAR_VELOCITY = 11.5;
     static constexpr double OPEN_LOOP_RAMP = 0.25;
     static constexpr double CLOSED_LOOP_RAMP = 0.0;
 

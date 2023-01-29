@@ -12,11 +12,12 @@
 // <none>
 
 // C INCLUDES
-#include "units/length.h"                   // for units::meters
+#include "units/length.h"                           // for units::meters
+#include "frc/smartdashboard/SmartDashboard.h"      // for interacting with the smart dashboard
 
 // C++ INCLUDES
-#include "SwerveModule.hpp"                 // for class declaration
-#include "SwerveConversions.hpp"            // for conversion functions
+#include "SwerveModule.hpp"                         // for class declaration
+#include "SwerveConversions.hpp"                    // for conversion functions
 
 using namespace frc;
 
@@ -30,7 +31,13 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_LastAngle(),
     m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA))
 {
-    // @todo_swerve: Tune these configurations.  Set drive falcon to FeedbackDevice.IntegratedSensor?
+    // Build the strings to use in the display method
+    std::snprintf(&m_DisplayStrings.m_CancoderAngleString[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "cancoder");
+    std::snprintf(&m_DisplayStrings.m_FxEncoderAngleString[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "FX encoder");
+    std::snprintf(&m_DisplayStrings.m_DriveTalonTemp[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "drive temp (F)");
+    std::snprintf(&m_DisplayStrings.m_AngleTalonTemp[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "angle temp (F)");
+
+    // @todo_swerve: Tune these configurations.  Set drive falcon to FeedbackDevice.IntegratedSensor?  Sensor boot to zero?
 
     // Configure drive motor controller (ref: configDriveMotor())
     // enable, limit, threshold, duration
@@ -75,6 +82,19 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // (ref: resetToAbsolute())
     // double absolutePosition = Conversions.degreesToFalcon(getCanCoder().getDegrees() - angleOffset.getDegrees(), Constants.Swerve.angleGearRatio);
     // SetSelectedSensorPosition() is causing excessive spins when downloading new code without a power cycle
+    double fxEncoderAbsPosition = m_pAngleTalon->GetSelectedSensorPosition();
+    double fxEncoderTarget = SwerveConversions::degreesToFalcon(m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value(), ANGLE_GEAR_RATIO);
+    double fxEncoderRotate = fxEncoderAbsPosition - fxEncoderTarget;
+    const double FX_ENCODER_UNITS_PER_360_DEGREES = SwerveConversions::degreesToFalcon(360, ANGLE_GEAR_RATIO);
+    while (fxEncoderTarget < fxEncoderAbsPosition)
+    {
+        fxEncoderTarget += FX_ENCODER_UNITS_PER_360_DEGREES;
+    }
+    while (fxEncoderTarget > fxEncoderAbsPosition)
+    {
+        fxEncoderTarget -= FX_ENCODER_UNITS_PER_360_DEGREES;
+    }
+    m_pAngleTalon->SetSelectedSensorPosition(fxEncoderTarget);
     //m_pAngleTalon->SetSelectedSensorPosition(SwerveConversions::degreesToFalcon(m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value(), ANGLE_GEAR_RATIO));
     m_LastAngle = units::degree_t(SwerveConversions::falconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), ANGLE_GEAR_RATIO));
 }
@@ -111,7 +131,7 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     if (bIsOpenLoop)
     {
         //double percentOutput = desiredState.speedMetersPerSecond / Constants.Swerve.maxSpeed;
-        double percentOutput = desiredState.speed.value() / MAX_SWERVE_VELOCITY;
+        double percentOutput = desiredState.speed / MAX_DRIVE_VELOCITY_MPS;
         //mDriveMotor.set(ControlMode.PercentOutput, percentOutput);
         m_pDriveTalon->Set(ControlMode::PercentOutput, percentOutput);
     }
@@ -123,10 +143,10 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
         m_pDriveTalon->Set(ControlMode::Velocity, velocity, DemandType::DemandType_ArbitraryFeedForward, m_pFeedForward->Calculate(desiredState.speed).value());
     }
 
-    // Prevent rotating module if speed is less then 1%.  Prevents jitter.
+    // Prevent rotating module if speed is less then 3% (orig: 1%).  Prevents jitter.
     //double angle = (Math.abs(desiredState.speedMetersPerSecond) <= (Constants.Swerve.maxSpeed * 0.01)) ? lastAngle : desiredState.angle.getDegrees();
     Rotation2d angle = 0.0_deg;
-    if (std::abs(desiredState.speed.value()) <= (MAX_SWERVE_VELOCITY * 0.01))
+    if (std::abs(desiredState.speed.value()) <= (MAX_ANGULAR_VELOCITY_RAD_PER_SEC.value() * 0.03))
     {
         angle = m_LastAngle;
     }
@@ -164,4 +184,12 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
     units::angle::degree_t angle(SwerveConversions::falconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), ANGLE_GEAR_RATIO));
 
     return {distance, angle};
+}
+
+void SwerveModule::UpdateSmartDashboard()
+{
+    SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition());
+    SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, GetSwerveModulePosition().angle.Degrees().value());
+    SmartDashboard::PutNumber(m_DisplayStrings.m_DriveTalonTemp, SwerveConversions::ConvertCelsiusToFahrenheit(m_pDriveTalon->GetTemperature()));
+    SmartDashboard::PutNumber(m_DisplayStrings.m_AngleTalonTemp, SwerveConversions::ConvertCelsiusToFahrenheit(m_pAngleTalon->GetTemperature()));
 }

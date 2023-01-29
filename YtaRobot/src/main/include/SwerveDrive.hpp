@@ -44,8 +44,15 @@ class SwerveDrive
 public:
     SwerveDrive();
     void SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop);
+    void UpdateSmartDashboard();
+
+    inline void ZeroGyro()
+    {
+        m_pPigeon->SetYaw(0.0);
+    }
 
 private:
+    /*
     inline static Rotation2d GetYaw()
     {
         // This probably isn't needed.  Use GetYaw() directly.  invertGyro = false, so no math needed.
@@ -54,6 +61,7 @@ private:
         //return (Constants.Swerve.invertGyro) ? Rotation2d.fromDegrees(360 - ypr[0]) : Rotation2d.fromDegrees(ypr[0]);
         return units::degree_t(0);
     }
+    */
 
     static constexpr const size_t NUM_SWERVE_DRIVE_MODULES = 4U;
     Pigeon2 * m_pPigeon;
@@ -77,10 +85,10 @@ private:
 
     // @todo_swerve: These angle offsets probably come from calibration.  Reference code is 37.35, 10.45, 38.75, 58.88.
     // position, drive talon CAN, angle talon CAN, CANCoder ID, angle offset
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {SwerveModule::FRONT_LEFT, 1, 2, 1, 158.818_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {SwerveModule::FRONT_RIGHT, 3, 4, 2, 38.057_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {SwerveModule::BACK_LEFT, 5, 6, 3, 119.883_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {SwerveModule::BACK_RIGHT, 7, 8, 4, 225.176_deg};
+    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 1, 2, 1, 158.818_deg};
+    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 3, 4, 2, 38.057_deg};
+    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 5, 6, 3, 119.883_deg};
+    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 7, 8, 4, 225.176_deg};
     static const int PIGEON_CAN_ID = 5;
 
     SwerveDrive(const SwerveDrive &) = delete;

@@ -31,6 +31,7 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 namespace SwerveConversions
 {
+    inline static constexpr double ConvertCelsiusToFahrenheit(double degreesC) { return ((degreesC * 9.0/5.0) + 32.0); }
 
   /**
      * @param scopeReference Current Angle

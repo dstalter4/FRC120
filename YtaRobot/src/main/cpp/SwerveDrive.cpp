@@ -17,6 +17,7 @@
 #include "frc/kinematics/SwerveDriveKinematics.h"       // for class declaration
 #include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
 #include "frc/kinematics/SwerveModuleState.h"           // for struct declaration
+#include "frc/smartdashboard/SmartDashboard.h"          // for interacting with the smart dashboard
 
 // C++ INCLUDES
 #include "SwerveDrive.hpp"                              // for class declaration
@@ -75,9 +76,12 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
 
     // The Translation2d passed in is just raw input from the joysticks.
     // It has to be scaled and converted for use with m/s units.
-    units::meters_per_second_t xMps = (translation.X().value()) * MAX_DRIVE_VELOCITY_MPS;
-    units::meters_per_second_t yMps = (translation.Y().value()) * MAX_DRIVE_VELOCITY_MPS;
-    units::radians_per_second_t rotationRadPerSec = units::radians_per_second_t(rotation * MAX_ANGULAR_VELOCITY_RAD_PER_SEC);
+    units::meters_per_second_t xMps = (translation.X().value()) * SwerveModule::MAX_DRIVE_VELOCITY_MPS;
+    units::meters_per_second_t yMps = (translation.Y().value()) * SwerveModule::MAX_DRIVE_VELOCITY_MPS;
+    units::radians_per_second_t rotationRadPerSec = units::radians_per_second_t(rotation * SwerveModule::MAX_ANGULAR_VELOCITY_RAD_PER_SEC);
+    SmartDashboard::PutNumber("x mps", xMps.value());
+    SmartDashboard::PutNumber("y mps", yMps.value());
+    SmartDashboard::PutNumber("rot rps", rotationRadPerSec.value());
 
     ChassisSpeeds chassisSpeeds;
     if (bFieldRelative)
@@ -93,7 +97,7 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
     wpi::array<SwerveModuleState, NUM_SWERVE_DRIVE_MODULES> swerveModuleStates = SWERVE_DRIVE_KINEMATICS.ToSwerveModuleStates(chassisSpeeds);
 
     //SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.maxSpeed);
-    SWERVE_DRIVE_KINEMATICS.DesaturateWheelSpeeds(&swerveModuleStates, MAX_DRIVE_VELOCITY_MPS);
+    SWERVE_DRIVE_KINEMATICS.DesaturateWheelSpeeds(&swerveModuleStates, SwerveModule::MAX_DRIVE_VELOCITY_MPS);
 
     //for(SwerveModule mod : mSwerveMods){
     //mod.setDesiredState(swerveModuleStates[mod.moduleNumber], isOpenLoop);
@@ -101,5 +105,16 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
     for (uint32_t i = 0U; i < NUM_SWERVE_DRIVE_MODULES; i++)
     {
         m_SwerveModules[i].SetDesiredState(swerveModuleStates[i], bIsOpenLoop);
+    }
+}
+
+void SwerveDrive::UpdateSmartDashboard()
+{
+    SmartDashboard::PutNumber("Pigeon yaw", m_pPigeon->GetYaw());
+    SmartDashboard::PutNumber("Pigeon pitch", m_pPigeon->GetPitch());
+    SmartDashboard::PutNumber("Pigeon roll", m_pPigeon->GetRoll());
+    for (uint32_t i = 0U; i < NUM_SWERVE_DRIVE_MODULES; i++)
+    {
+        m_SwerveModules[i].UpdateSmartDashboard();
     }
 }
