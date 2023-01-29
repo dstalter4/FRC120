@@ -341,6 +341,22 @@ void YtaRobotTest::SwerveDriveTest()
     translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
     rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
 
+    static bool bFieldRelative = true;
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(5))
+    {
+        bFieldRelative = !bFieldRelative;
+    }
+
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(6))
+    {
+        pSwerveDrive->ZeroGyro();
+    }
+
+    SmartDashboard::PutNumber("Strafe", strafeAxis);
+    SmartDashboard::PutNumber("Translation", translationAxis);
+    SmartDashboard::PutNumber("Rotation", rotationAxis);
+    SmartDashboard::PutBoolean("Field Relative", bFieldRelative);
+
     // Notice that this is sending translation to X and strafe to Y, despite
     // the inputs coming from the opposite of what may be intuitive (strafe as X,
     // translation as Y).  See the comment in Translation2d.h about the robot
@@ -348,7 +364,7 @@ void YtaRobotTest::SwerveDriveTest()
     // movement increases Y.
     Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
     // Translation2d, double rotation, field relative, open loop
-    pSwerveDrive->SetModuleStates(translation, rotationAxis, true, true);
+    pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
 }
 
 
