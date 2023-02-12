@@ -5,7 +5,7 @@
 /// @details
 /// Contains declarations of utility macros/routines for the robot code.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTUTILS_HPP
@@ -133,6 +133,18 @@ namespace RobotUtils
         }
         
         return num;
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// @method RobotUtils::ConvertCelsiusToFahrenheit
+    ///
+    /// This method converts a temperature from Celsius to
+    /// Fahrenheit.
+    ///
+    ////////////////////////////////////////////////////////////////
+    inline static constexpr double ConvertCelsiusToFahrenheit(double degreesC)
+    {
+        return ((degreesC * 9.0/5.0) + 32.0);
     }
     
 }
