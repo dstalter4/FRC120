@@ -20,69 +20,55 @@
 #include "frc/smartdashboard/SmartDashboard.h"          // for interacting with the smart dashboard
 
 // C++ INCLUDES
+#include "SwerveConfig.hpp"                             // for swerve configuration and constants
 #include "SwerveDrive.hpp"                              // for class declaration
 
 using namespace frc;
 
 
-// From https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-odometry.html
-// 0 degrees / radians represents the robot angle when the robot is facing directly toward your opponent’s
-// alliance station. As your robot turns to the left, your gyroscope angle should increase. By default, WPILib
-// gyros exhibit the opposite behavior, so you should negate the gyro angle.
-
-const Translation2d SwerveDrive::FRONT_LEFT_MODULE_T2D = {WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0};
-const Translation2d SwerveDrive::FRONT_RIGHT_MODULE_T2D = {WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0};
-const Translation2d SwerveDrive::BACK_LEFT_MODULE_T2D = {-WHEEL_BASE / 2.0, TRACK_WIDTH / 2.0};
-const Translation2d SwerveDrive::BACK_RIGHT_MODULE_T2D = {-WHEEL_BASE / 2.0, -TRACK_WIDTH / 2.0};
-const SwerveDriveKinematics<SwerveDrive::NUM_SWERVE_DRIVE_MODULES> SwerveDrive::SWERVE_DRIVE_KINEMATICS
-{
-    FRONT_LEFT_MODULE_T2D,
-    FRONT_RIGHT_MODULE_T2D,
-    BACK_LEFT_MODULE_T2D,
-    BACK_RIGHT_MODULE_T2D
-};
-
+////////////////////////////////////////////////////////////////
+/// @method SwerveDrive::SwerveDrive
+///
+/// Constructs a swerve drive object.  This is the primary
+/// object the robot code will use for generating swerve drive
+/// motion.  It constructs the swerve modules and supporting
+/// members.  Note that the IMU is on the canivore bus.
+///
+////////////////////////////////////////////////////////////////
 SwerveDrive::SwerveDrive() :
     m_pPigeon(new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
     m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
-    m_Odometry(SWERVE_DRIVE_KINEMATICS, Rotation2d(units::degree_t(0)), {INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION})
+    m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), {INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION})
 {
     m_pPigeon->ConfigFactoryDefault();
     m_pPigeon->SetYaw(0.0);
 }
 
+
+////////////////////////////////////////////////////////////////
+/// @method SwerveDrive::SetModuleStates
+///
+/// Updates each individual swerve module.  This is the method
+/// the robot code will call to pass in e.g. driver joystick
+/// inputs.  It supports both field centric and robot centric
+/// control options.  It will compute the chassis speeds and use
+/// these to compute swerve module states, which are then set.
+///
+////////////////////////////////////////////////////////////////
 void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop)
 {
-    /*
-    SwerveModuleState[] swerveModuleStates =
-        Constants.Swerve.swerveKinematics.toSwerveModuleStates(
-            fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
-                                translation.getX(), 
-                                translation.getY(), 
-                                rotation, 
-                                getYaw()
-                            )
-                            : new ChassisSpeeds(
-                                translation.getX(), 
-                                translation.getY(), 
-                                rotation)
-                            );
-    SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.maxSpeed);
-
-    for(SwerveModule mod : mSwerveMods){
-        mod.setDesiredState(swerveModuleStates[mod.moduleNumber], isOpenLoop);
-    }
-    */
-
     // The Translation2d passed in is just raw input from the joysticks.
     // It has to be scaled and converted for use with m/s units.
-    units::meters_per_second_t xMps = (translation.X().value()) * SwerveModule::MAX_DRIVE_VELOCITY_MPS;
-    units::meters_per_second_t yMps = (translation.Y().value()) * SwerveModule::MAX_DRIVE_VELOCITY_MPS;
-    units::radians_per_second_t rotationRadPerSec = units::radians_per_second_t(rotation * SwerveModule::MAX_ANGULAR_VELOCITY_RAD_PER_SEC);
+    units::meters_per_second_t xMps = (translation.X().value()) * SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
+    units::meters_per_second_t yMps = (translation.Y().value()) * SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
+    units::radians_per_second_t rotationRadPerSec = units::radians_per_second_t(rotation * SwerveConfig::MAX_ANGULAR_VELOCITY_RAD_PER_SEC);
+
+    // This can be useful during debug
     SmartDashboard::PutNumber("x mps", xMps.value());
     SmartDashboard::PutNumber("y mps", yMps.value());
     SmartDashboard::PutNumber("rot rps", rotationRadPerSec.value());
 
+    // Compute the chassis speeds
     ChassisSpeeds chassisSpeeds;
     if (bFieldRelative)
     {
@@ -93,27 +79,35 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
         chassisSpeeds = {xMps, yMps, rotationRadPerSec};
     }
 
-    //auto [fl, fr, bl, br] =
-    wpi::array<SwerveModuleState, NUM_SWERVE_DRIVE_MODULES> swerveModuleStates = SWERVE_DRIVE_KINEMATICS.ToSwerveModuleStates(chassisSpeeds);
+    // Capture the desired module states
+    wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModuleStates = SwerveConfig::Kinematics.ToSwerveModuleStates(chassisSpeeds);
 
-    //SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.maxSpeed);
-    SWERVE_DRIVE_KINEMATICS.DesaturateWheelSpeeds(&swerveModuleStates, SwerveModule::MAX_DRIVE_VELOCITY_MPS);
+    // Desaturate the wheel speeds
+    SwerveConfig::Kinematics.DesaturateWheelSpeeds(&swerveModuleStates, SwerveConfig::MAX_DRIVE_VELOCITY_MPS);
 
-    //for(SwerveModule mod : mSwerveMods){
-    //mod.setDesiredState(swerveModuleStates[mod.moduleNumber], isOpenLoop);
-    //}
-    for (uint32_t i = 0U; i < NUM_SWERVE_DRIVE_MODULES; i++)
+    // Set each individual swerve module state
+    for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
     {
         m_SwerveModules[i].SetDesiredState(swerveModuleStates[i], bIsOpenLoop);
     }
 }
 
+
+////////////////////////////////////////////////////////////////
+/// @method SwerveDrive::UpdateSmartDashboard
+///
+/// Support routine to put useful information on the dashboard.
+///
+////////////////////////////////////////////////////////////////
 void SwerveDrive::UpdateSmartDashboard()
 {
+    // Reference code calls update odometry here on m_Odometry, but it doesn't appear to be used anywhere.
+
     SmartDashboard::PutNumber("Pigeon yaw", m_pPigeon->GetYaw());
     SmartDashboard::PutNumber("Pigeon pitch", m_pPigeon->GetPitch());
     SmartDashboard::PutNumber("Pigeon roll", m_pPigeon->GetRoll());
-    for (uint32_t i = 0U; i < NUM_SWERVE_DRIVE_MODULES; i++)
+
+    for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
     {
         m_SwerveModules[i].UpdateSmartDashboard();
     }

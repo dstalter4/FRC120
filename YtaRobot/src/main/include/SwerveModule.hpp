@@ -37,7 +37,9 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 class SwerveModule
 {
-public:
+    friend class SwerveDrive;
+
+private:
     enum ModulePosition
     {
         FRONT_LEFT,
@@ -56,42 +58,22 @@ public:
         const Rotation2d m_AngleOffset;
     };
 
+    // Constructor
     SwerveModule(SwerveModuleConfig config);
 
+    // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
 
+    // Optimizes the desired swerve module state
+    SwerveModuleState Optimize(SwerveModuleState desiredState, Rotation2d currentAngle);
+
+    // Retrieves the swerve module state/position
     SwerveModuleState GetSwerveModuleState();
     SwerveModulePosition GetSwerveModulePosition();
 
+    // Puts useful values on the dashboard
     void UpdateSmartDashboard();
 
-    static constexpr units::meters_per_second_t MAX_DRIVE_VELOCITY_MPS = 4.5_mps;
-    static constexpr units::radians_per_second_t MAX_ANGULAR_VELOCITY_RAD_PER_SEC = 8.5_rad_per_s;
-
-private:
-    SwerveModuleState Optimize(SwerveModuleState desiredState, Rotation2d currentAngle);
-    /*
-    inline SwerveModuleState GetSwerveModuleState()
-    {
-        // https://docs.ctre-phoenix.com/en/latest/ch14_MCSensor.html#sensor-resolution
-        // Units per rotation: 2048 (FX integrated sensor)
-        // From FX user guide: kMaxRPM = Free Speed RPM = 6380 RPM
-        // Calculate the expect peak sensor velocity (sensor units per 100ms) as:
-        // Vsensor_max = (kMaxRPM  / 600) * (kSensorUnitsPerRotation / kGearRatio)
-        // Read sensor velocity and solve above equation for kMaxRPM term for any RPM.
-
-        double motorRpm = m_pDriveTalon->GetSelectedSensorVelocity() * (600.0 / FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION);        
-        double wheelRpm = motorRpm / DRIVE_GEAR_RATIO;
-        units::velocity::meters_per_second_t wheelMetersPerSec {(wheelRpm * WHEEL_CIRCUMFERENCE) / 60.0};
-        m_SwerveModuleState.speed = wheelMetersPerSec;
-
-        units::angle::degree_t moduleAngle {AbsolutePositionToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), ANGLE_GEAR_RATIO)};
-        m_SwerveModuleState.angle = moduleAngle;
-
-        return m_SwerveModuleState;
-    }
-    */
-        
     // Storage space for strings for the smart dashboard
     struct DisplayStrings
     {
@@ -109,8 +91,6 @@ private:
     CANCoder * m_pAngleCanCoder;
     Rotation2d m_AngleOffset;
     Rotation2d m_LastAngle;
-
-    //SwerveModuleState m_SwerveModuleState;
     SimpleMotorFeedforward<units::meters> * m_pFeedForward;
 
     // Divide by 12 on these constants to convert from volts to percent output for CTRE
@@ -122,12 +102,6 @@ private:
     static constexpr units::volt_t KS = (0.32_V / 12.0);
     static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(1.51 / 12.0);
     static constexpr units::unit_t<ka_unit> KA = units::unit_t<ka_unit>(0.27 / 12.0);
-
-    // SDS MK4 L3
-    static constexpr double DRIVE_GEAR_RATIO = (6.12 / 1.0);                        // L3 Very Fast configuration is 6.12:1
-    static constexpr double ANGLE_GEAR_RATIO = (12.8 / 1.0);
-    static constexpr double FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION = 2048.0;
-    static constexpr double WHEEL_CIRCUMFERENCE = 4.0 * 0.0254 * M_PI;              // 1 inch = 0.0254 meters
 
     // Swerve Profiling Values
     static constexpr double OPEN_LOOP_RAMP = 0.25;
