@@ -116,10 +116,18 @@ private:
     
     enum RobotDirection
     {
+        ROBOT_NO_DIRECTION,
         ROBOT_FORWARD,
         ROBOT_REVERSE,
         ROBOT_LEFT,
         ROBOT_RIGHT
+    };
+    
+    enum RobotRotate
+    {
+        ROBOT_NO_ROTATE,
+        ROBOT_CLOCKWISE,
+        ROBOT_COUNTER_CLOCKWISE
     };
 
     enum GyroType
@@ -175,6 +183,7 @@ private:
 
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
+    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -186,6 +195,8 @@ private:
     void AutonomousRoutine2();
     void AutonomousRoutine3();
     void AutonomousTestRoutine();
+    void AutonomousTestSwerveRoutine();
+    void AutonomousTestTrajectoryRoutine();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
