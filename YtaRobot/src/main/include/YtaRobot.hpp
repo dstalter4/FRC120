@@ -38,6 +38,7 @@
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
+#include "DriveConfiguration.hpp"               // for information on the drive config
 #include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                      // for using swerve drive
@@ -357,8 +358,8 @@ private:
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
-    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
-    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
+    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 1 : 64;
+    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 3 : 66;
 
     // PWM Signals
     // (none)
@@ -402,17 +403,8 @@ private:
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const char               NULL_CHARACTER                          = '\0';
-    
-    // @todo: Move these to RobotConfig
-    static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
-    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
-    static const bool               DRIVE_SWAP_ENABLED                      = false;
-    static const bool               SLOW_DRIVE_ENABLED                      = false;
-    static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
-    static const bool               DIRECTIONAL_INCH_ENABLED                = false;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
-    static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
-    
+
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
 

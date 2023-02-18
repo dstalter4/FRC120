@@ -523,12 +523,12 @@ void YtaRobot::SwerveDriveSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
-    if (DRIVE_MOTOR_COOLING_ENABLED)
+    if (Yta::Drive::Config::DRIVE_MOTOR_COOLING_ENABLED)
     {
         DriveMotorsCool();
     }
 
-    if (DIRECTIONAL_ALIGN_ENABLED)
+    if (Yta::Drive::Config::DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
         DirectionalAlign();
@@ -540,7 +540,7 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    if (DIRECTIONAL_INCH_ENABLED)
+    if (Yta::Drive::Config::DIRECTIONAL_INCH_ENABLED)
     {
         // If a directional inch occurred, just return
         if (DirectionalInch())
@@ -549,7 +549,7 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    if (DRIVE_SWAP_ENABLED)
+    if (Yta::Drive::Config::DRIVE_SWAP_ENABLED)
     {
         CheckForDriveSwap();
     }
@@ -589,12 +589,12 @@ void YtaRobot::DriveControlSequence()
     // By default, the drive equations cause the x-axis input
     // to be flipped when going reverse.  Correct that here,
     // if configured.  Remember, y-axis full forward is negative.
-    if ((!USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
+    if ((!Yta::Drive::Config::USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
     {
         xAxisDrive *= -1.0;
     }
     
-    if (SLOW_DRIVE_ENABLED)
+    if (Yta::Drive::Config::SLOW_DRIVE_ENABLED)
     {
         // Get the slow drive control joystick input
         double xAxisSlowDrive = m_pDriveController->GetAxisValue(DRIVE_SLOW_X_AXIS);
