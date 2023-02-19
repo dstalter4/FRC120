@@ -6,6 +6,7 @@ This repository contains the C++ robot source code for FRC Team 120 from the 202
 
 - Robot control derived from the TimedRobot class.
 - An autonomous framework for configurable routines and sensor control.
+- Configurable support for different drive styles, including swerve and differential.
 - Configurable support for various driver station input controller types.
 - A motor group class for managing multiple motor controllers at once.
 - A camera class dedicated to handling vision related operations.
