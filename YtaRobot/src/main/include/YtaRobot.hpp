@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -38,8 +38,10 @@
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
+#include "DriveConfiguration.hpp"               // for information on the drive config
 #include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
+#include "SwerveDrive.hpp"                      // for using swerve drive
 #include "TalonMotorGroup.hpp"                  // for Talon group motor control
 #include "YtaController.hpp"                    // for controller interaction
 
@@ -115,10 +117,18 @@ private:
     
     enum RobotDirection
     {
+        ROBOT_NO_DIRECTION,
         ROBOT_FORWARD,
         ROBOT_REVERSE,
         ROBOT_LEFT,
         ROBOT_RIGHT
+    };
+    
+    enum RobotRotate
+    {
+        ROBOT_NO_ROTATE,
+        ROBOT_CLOCKWISE,
+        ROBOT_COUNTER_CLOCKWISE
     };
 
     enum GyroType
@@ -174,6 +184,7 @@ private:
 
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
+    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -185,6 +196,8 @@ private:
     void AutonomousRoutine2();
     void AutonomousRoutine3();
     void AutonomousTestRoutine();
+    void AutonomousTestSwerveRoutine();
+    void AutonomousTestTrajectoryRoutine();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
@@ -200,6 +213,7 @@ private:
     void InitialStateSetup();
 
     // Main sequence for drive motor control
+    void SwerveDriveSequence();
     void DriveControlSequence();
     void SideDriveSequence();
 
@@ -238,6 +252,9 @@ private:
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
     AuxControllerType *             m_pAuxController;                       // Auxillary input controller
+    
+    // Swerve Drive
+    SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
@@ -328,6 +345,8 @@ private:
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
+    static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
@@ -341,8 +360,12 @@ private:
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
-    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = 1;
-    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = 3;
+    // Note: The use of high CAN values if swerve drive is in use is
+    //       to prevent instantiating multiple motor controllers with
+    //       the same IDs, but still allow code for both drive base
+    //       types to be present.
+    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 1 : 64;
+    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 3 : 66;
 
     // PWM Signals
     // (none)
@@ -386,17 +409,8 @@ private:
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const char               NULL_CHARACTER                          = '\0';
-    
-    // @todo: Move these to RobotConfig
-    static const bool               USE_INVERTED_REVERSE_CONTROLS           = true;
-    static const bool               DRIVE_MOTOR_COOLING_ENABLED             = true;
-    static const bool               DRIVE_SWAP_ENABLED                      = false;
-    static const bool               SLOW_DRIVE_ENABLED                      = false;
-    static const bool               DIRECTIONAL_ALIGN_ENABLED               = false;
-    static const bool               DIRECTIONAL_INCH_ENABLED                = false;
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
-    static_assert((DIRECTIONAL_ALIGN_ENABLED && DIRECTIONAL_INCH_ENABLED) != true, "Only directional align OR directional inch can be enabled.");
-    
+
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
 

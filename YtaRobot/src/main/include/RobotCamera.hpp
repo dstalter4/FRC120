@@ -5,7 +5,7 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTCAMERA_HPP
@@ -22,9 +22,13 @@
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                       // for DisplayMessage()
+
+// gcc 11.1 introduced this warning and no one cleaned up opencv yet
+DISABLE_WARNING("-Wdeprecated-enum-enum-conversion")
 #include "opencv2/imgproc/imgproc.hpp"          // for vision structures and routines
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/types.hpp"
+ENABLE_WARNING("-Wdeprecated-enum-enum-conversion")
 
 using namespace frc;
 

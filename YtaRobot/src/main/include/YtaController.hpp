@@ -7,7 +7,7 @@
 /// YTA controller implementation or the built-in FRC types.
 ///
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTACONTROLLER_HPP
@@ -324,6 +324,9 @@ public:
     double GetDriveXInput();
     double GetDriveYInput();
 
+    // For swerve drive, gets the rotate input
+    double GetDriveRotateInput();
+
 private:
     // Prevent copying/assignment
     YtaDriveController(const YtaDriveController&) = delete;
@@ -362,6 +365,10 @@ double YtaDriveController<YtaCustomController>::GetDriveXInput();
 // Specialization of GetDriveYInput() for YtaCustomController type
 template <>
 double YtaDriveController<YtaCustomController>::GetDriveYInput();
+
+// Specialization of GetDriveRotateInput() for YtaCustomController type
+template <>
+double YtaDriveController<YtaCustomController>::GetDriveRotateInput();
 
 
 ////////////////////////////////////////////////////////////////

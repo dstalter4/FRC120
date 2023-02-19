@@ -6,7 +6,7 @@
 /// A class designed to work with a group of CAN Talon speed controllers working
 /// in tandem.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef TALONMOTORGROUP_HPP
@@ -20,7 +20,7 @@
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
-// (none)
+#include "RobotUtils.hpp"                       // for ConvertCelsiusToFahrenheit
 
 using namespace frc;
 
@@ -104,8 +104,6 @@ private:
     // Represents information about a single motor in a group
     struct MotorInfo
     {
-        inline static constexpr double ConvertCelsiusToFahrenheit(double degreesC) { return ((degreesC * 9.0/5.0) + 32.0); }
-        
         // Storage space for strings for the smart dashboard
         struct DisplayStrings
         {
@@ -521,7 +519,7 @@ void TalonMotorGroup<TalonType>::DisplayStatusInformation()
 {
     for (unsigned i = 0U; i < m_NumMotors; i++)
     {
-        m_pMotorsInfo[i]->m_CurrentTemperature = MotorInfo::ConvertCelsiusToFahrenheit(m_pMotorsInfo[i]->m_pTalon->GetTemperature());
+        m_pMotorsInfo[i]->m_CurrentTemperature = RobotUtils::ConvertCelsiusToFahrenheit(m_pMotorsInfo[i]->m_pTalon->GetTemperature());
         if (m_pMotorsInfo[i]->m_CurrentTemperature > m_pMotorsInfo[i]->m_HighestTemperature)
         {
             m_pMotorsInfo[i]->m_HighestTemperature = m_pMotorsInfo[i]->m_CurrentTemperature;

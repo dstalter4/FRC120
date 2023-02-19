@@ -7,7 +7,7 @@
 /// Xbox GameSir, PS4, etc.) with custom responses.
 ///
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTACUSTOMCONTROLLER_HPP
@@ -43,6 +43,7 @@ public:
     
     double GetDriveX() const;
     double GetDriveY() const;
+    double GetDriveRotate() const;
     double GetThrottle() const;
     
 private:

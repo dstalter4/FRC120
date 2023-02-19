@@ -10,8 +10,8 @@
 /// Copyright (c) 2022 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef CONTROLLERCONFIGURATIONS_HPP
-#define CONTROLLERCONFIGURATIONS_HPP
+#ifndef CONTROLLERCONFIGURATION_HPP
+#define CONTROLLERCONFIGURATION_HPP
 
 // SYSTEM INCLUDES
 // <none>
@@ -297,4 +297,4 @@ namespace Config
 }
 }
 
-#endif // CONTROLLERCONFIGURATIONS_HPP
+#endif // CONTROLLERCONFIGURATION_HPP

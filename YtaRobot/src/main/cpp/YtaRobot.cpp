@@ -8,7 +8,7 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -38,6 +38,7 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
+    m_pSwerveDrive                      (new SwerveDrive()),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
@@ -239,6 +240,10 @@ void YtaRobot::TeleopInit()
     m_pDriveMotorCoolTimer->Start();
     m_LastDriveMotorCoolTime = 0_s;
     m_bCoolingDriveMotors = true;
+
+    // Set the swerve modules to a known angle.  This (somehow) mitigates
+    // the random spin when enabling teleop until it can be investigated.
+    m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
 }
 
 
@@ -257,7 +262,14 @@ void YtaRobot::TeleopPeriodic()
 
     HeartBeat();
 
-    DriveControlSequence();
+    if (Yta::Drive::Config::USE_SWERVE_DRIVE)
+    {
+        SwerveDriveSequence();
+    }
+    else
+    {
+        DriveControlSequence();
+    }
 
     PneumaticSequence();
 
@@ -310,7 +322,7 @@ void YtaRobot::LedSequence()
 void YtaRobot::PneumaticSequence()
 {
     // @todo: Monitor other compressor API data?
-    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->Enabled());
+    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->IsEnabled());
 }
 
 
@@ -456,6 +468,59 @@ void YtaRobot::DriveMotorsCool()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SwerveDriveSequence
+///
+/// This method contains the main workflow for swerve drive
+/// control.  It will gather input from the drive joystick and
+/// then filter those values to ensure they are past a certain
+/// threshold (deadband) and generate the information to pass
+/// on to the swerve drive system.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SwerveDriveSequence()
+{
+    // @todo_swerve: Implement tap rotate for alignment on triggers
+
+    // Check for a switch between field relative and robot centric
+    static bool bFieldRelative = true;
+    if (m_pDriveController->DetectButtonChange(FIELD_RELATIVE_TOGGLE_BUTTON))
+    {
+        bFieldRelative = !bFieldRelative;
+    }
+
+    if (m_pDriveController->DetectButtonChange(ZERO_GYRO_YAW_BUTTON))
+    {
+        m_pSwerveDrive->ZeroGyroYaw();
+    }
+
+    // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
+    // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
+    double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+
+    SmartDashboard::PutNumber("Strafe", strafeAxis);
+    SmartDashboard::PutNumber("Translation", translationAxis);
+    SmartDashboard::PutNumber("Rotation", rotationAxis);
+    SmartDashboard::PutBoolean("Field Relative", bFieldRelative);
+
+    // Notice that this is sending translation to X and strafe to Y, despite
+    // the inputs coming from the opposite of what may be intuitive (strafe as X,
+    // translation as Y).  See the comment in Translation2d.h about the robot
+    // placed at origin facing the X-axis.  Forward movement increases X and left
+    // movement increases Y.
+    Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
+
+    // Update the swerve module states
+    m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+
+    // Display some useful information
+    m_pSwerveDrive->UpdateSmartDashboard();
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::DriveControlSequence
 ///
 /// This method contains the main workflow for drive control.
@@ -467,12 +532,12 @@ void YtaRobot::DriveMotorsCool()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
-    if (DRIVE_MOTOR_COOLING_ENABLED)
+    if (Yta::Drive::Config::DRIVE_MOTOR_COOLING_ENABLED)
     {
         DriveMotorsCool();
     }
 
-    if (DIRECTIONAL_ALIGN_ENABLED)
+    if (Yta::Drive::Config::DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
         DirectionalAlign();
@@ -484,7 +549,7 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    if (DIRECTIONAL_INCH_ENABLED)
+    if (Yta::Drive::Config::DIRECTIONAL_INCH_ENABLED)
     {
         // If a directional inch occurred, just return
         if (DirectionalInch())
@@ -493,7 +558,7 @@ void YtaRobot::DriveControlSequence()
         }
     }
 
-    if (DRIVE_SWAP_ENABLED)
+    if (Yta::Drive::Config::DRIVE_SWAP_ENABLED)
     {
         CheckForDriveSwap();
     }
@@ -533,12 +598,12 @@ void YtaRobot::DriveControlSequence()
     // By default, the drive equations cause the x-axis input
     // to be flipped when going reverse.  Correct that here,
     // if configured.  Remember, y-axis full forward is negative.
-    if ((!USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
+    if ((!Yta::Drive::Config::USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
     {
         xAxisDrive *= -1.0;
     }
     
-    if (SLOW_DRIVE_ENABLED)
+    if (Yta::Drive::Config::SLOW_DRIVE_ENABLED)
     {
         // Get the slow drive control joystick input
         double xAxisSlowDrive = m_pDriveController->GetAxisValue(DRIVE_SLOW_X_AXIS);

@@ -70,6 +70,7 @@ namespace YtaRobotAutonomous
     static const int        THREE_HUNDRED_SIXTY_DEGREES         = 360;
     
     // Autonomous delay constants
+    static constexpr units::second_t SWERVE_OP_STEP_TIME_S      =  0.10_s;
     static constexpr units::second_t COUNTERACT_COAST_TIME_S    =  0.25_s;
     static constexpr units::second_t ENCODER_DRIVE_MAX_DELAY_S  =  5.00_s;
     static constexpr units::second_t DELAY_SHORT_S              =  0.50_s;
@@ -120,7 +121,8 @@ inline void YtaRobot::AutonomousDelay(units::second_t time)
 ////////////////////////////////////////////////////////////////
 /// @method YtaRobot::AutonomousDriveSequence
 ///
-/// Drives during autonomous for a specified amount of time.
+/// Drives during autonomous for a specified amount of time
+/// using traditional differential drive.
 ///
 ////////////////////////////////////////////////////////////////
 inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time)
@@ -155,7 +157,6 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
             break;
         }
         default:
-
         {
             leftSpeed = 0.0;
             rightSpeed = 0.0;
@@ -173,6 +174,82 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
     // Motors back off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousSwerveDriveSequence
+///
+/// Drives during autonomous for a specified amount of time
+/// using swerve drive modules.
+///
+////////////////////////////////////////////////////////////////
+inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative)
+{
+    units::meter_t translation = 0.0_m;
+    units::meter_t strafe = 0.0_m;
+
+    switch (direction)
+    {
+        case ROBOT_FORWARD:
+        {
+            translation = units::meter_t(speed);
+            break;
+        }
+        case ROBOT_REVERSE:
+        {
+            translation = units::meter_t(-speed);
+            break;
+        }
+        case ROBOT_LEFT:
+        {
+            strafe = units::meter_t(speed);
+            break;
+        }
+        case ROBOT_RIGHT:
+        {
+            strafe = units::meter_t(-speed);
+            break;
+        }
+        case ROBOT_NO_DIRECTION:
+        default:
+        {
+            break;
+        }
+    }
+
+    switch (rotate)
+    {
+        case ROBOT_NO_ROTATE:
+        {
+            // Just in case the user decided to pass a speed anyway
+            rotateSpeed = 0.0;
+            break;
+        }
+        case ROBOT_CLOCKWISE:
+        {
+            rotateSpeed *= -1.0;
+            break;
+        }
+        case ROBOT_COUNTER_CLOCKWISE:
+        default:
+        {
+            break;
+        }
+    }
+
+    Translation2d translation2d = {translation, strafe};
+    units::second_t duration = 0.0_s;
+    while (duration < time)
+    {
+        m_pSwerveDrive->SetModuleStates(translation2d, rotateSpeed, bFieldRelative, true);
+        AutonomousDelay(YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S);
+        duration += YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S;
+    }
+
+    // Stop motion
+    m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
 }
 
 

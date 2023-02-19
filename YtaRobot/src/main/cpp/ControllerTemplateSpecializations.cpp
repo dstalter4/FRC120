@@ -6,7 +6,7 @@
 /// Implements the specializations for the YtaController and YtaDriveController
 /// template classes.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -85,4 +85,16 @@ template <>
 double YtaDriveController<YtaCustomController>::GetDriveYInput()
 {
     return m_pController->GetDriveY();
+}
+
+////////////////////////////////////////////////////////////////
+/// @method YtaDriveController<YtaCustomController>::GetDriveRotateInput
+///
+/// Retrieves the drive rotate axis value from controller inputs.
+///
+////////////////////////////////////////////////////////////////
+template <>
+double YtaDriveController<YtaCustomController>::GetDriveRotateInput()
+{
+    return m_pController->GetDriveRotate();
 }
