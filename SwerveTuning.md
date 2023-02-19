@@ -2,26 +2,27 @@
 
 # C++ Swerve Drive
 
-Basic swerve drive for a robot with Swerve Drive Specialties modules using TalonFX motors (e.g. MK3, MK4 and MKri), CTRE CANCoders and a CTRE Pigeon Gyro.
+Basic swerve drive for a robot with Swerve Drive Specialties modules using CTRE TalonFX motors (e.g. MK3, MK4 and MKri), CTRE CANCoders and a CTRE Pigeon Gyro.
 
 **Setup and Configuration**
 ----
 A number of configuration parameters must be adjusted to a specific robot build.  Distances must be in meters and rotation units in radians.
 
 1. In ```SwerveConfig.hpp``` the following constants are swerve module specific and should be updated:
-    * DRIVE_GEAR_RATIO - The ratio from the TalonFX output to the wheel drive gear (from SDS or equivalent module information)
-    * ANGLE_GEAR_RATIO - The ratio from the TalonFX output to the wheel angle gear (from SDS or equivalent module information)
-    * WHEEL_CIRCUMFERENCE - The wheel circumference
-    * WHEEL_BASE - The distance between the center points of the front/back wheels
-    * TRACK_WIDTH - The distance between the center points of the left/right wheels
-    * MAX_DRIVE_VELOCITY_MPS - Maximum linear travel speed of the robot in meters per second
-    * MAX_ANGULAR_VELOCITY_RAD_PER_SEC - Maximum rotational speed of the robot in radians per second
+    * ```DRIVE_GEAR_RATIO``` - The ratio from the TalonFX output to the wheel drive gear (from SDS or equivalent module information)
+    * ```ANGLE_GEAR_RATIO``` - The ratio from the TalonFX output to the wheel angle gear (from SDS or equivalent module information)
+    * ```WHEEL_CIRCUMFERENCE``` - The wheel circumference
+    * ```WHEEL_BASE``` - The distance between the center points of the front/back wheels
+    * ```TRACK_WIDTH``` - The distance between the center points of the left/right wheels
+    * ```MAX_DRIVE_VELOCITY_MPS``` - Maximum linear travel speed of the robot in meters per second
+    * ```MAX_ANGULAR_VELOCITY_RAD_PER_SEC``` - Maximum rotational speed of the robot in radians per second
 
-For the max drive/angular velocities, the theoretical values can be used, but it is better to physically drive the robot and find the actual max values.
+<br>For the max drive/angular velocities, the theoretical values can be used, but it is better to physically drive the robot and find the actual max values.
 
 2. Set ```PIGEON_CAN_ID``` in ```SwerveDrive.hpp``` to the CAN ID of the Pigeon IMU.  There is currently no configuration setting to invert the gyro as the default should work.  The invert setting controls the gyro rotation direction (i.e. CCW+ Counter Clockwise Positive).
+<br><b>Note: The Pigeon is created on the CANivore network</b>
 
-3. Update the four ```SwerveModuleConfig``` constant expressions in ```SwerveDrive.hpp```.  This is a custom data structure used to create the individual ```SwerveModule``` objects.  It takes a name (as a string), an enum value for which swerve module it is, the TalonFX CAN IDs (on the RIO CAN network), the CANCoder CAN ID (on the canivore network), and the CANCoder angle offset (measured in a later step).
+3. Update the four ```SwerveModuleConfig``` constant expressions in ```SwerveDrive.hpp```.  This is a custom data structure used to create the individual ```SwerveModule``` objects.  It takes a name (as a string), a ```ModulePosition``` enum value for which swerve module it is, the TalonFX CAN IDs (on the RIO CAN network), the CANCoder CAN ID (on the CANivore network), and the CANCoder angle offset (measured later in step 5).
 
 4. The ```SwerveModule``` constructor also sets a number of configuration options, mostly for the TalonFX controllers.  The constructor body is in ```SwerveModule.cpp``` and configures the following parameters, which may need to be tuned to robot specific values:
     * Supply current limiting configuration (drive and angle motors)
@@ -30,9 +31,9 @@ For the max drive/angular velocities, the theoretical values can be used, but it
     * Drive and angle motor invert and neutral mode
     * CANCoder invert, sensor range and initialization strategy
 
-The drive motor invert should always be able to remain false, since the calibration step below sets a positive input to the drive motor to cause the robot to move forward.  However, this can be set to true if it is preferred to have the bevel gears face a different direction when setting offsets.  See the calibration step below for more info.
+<br>The drive motor invert should always be able to remain false, since the calibration step below sets a positive input to the drive motor to cause the robot to move forward.  However, this can be set to true if it is preferred to have the bevel gears face a different direction when setting the offsets in step 5.
 
-The angle motor invert and CANCoder invert must both be set such that they are CCW+.
+<br>The angle motor invert and CANCoder invert must both be set such that they are CCW+.
 
 5. Find and set the module offsets.
     * Point the bevel gears of all the wheels in the same direction (either facing left or right), where a postive input to the drive motor drives the robot forward (Phoenix Tuner can be used to test this).  If for some reason the offsets are set with the wheels backwards, the drive motor TalonFX config can be changed to correct the behavior.
