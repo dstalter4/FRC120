@@ -16,7 +16,7 @@ A number of configuration parameters must be adjusted to a specific robot build.
     * ```TRACK_WIDTH``` - The distance between the center points of the left/right wheels
     * ```MAX_DRIVE_VELOCITY_MPS``` - Maximum linear travel speed of the robot in meters per second
     * ```MAX_ANGULAR_VELOCITY_RAD_PER_SEC``` - Maximum rotational speed of the robot in radians per second
-
+<br>
 <br>For the max drive/angular velocities, the theoretical values can be used, but it is better to physically drive the robot and find the actual max values.
 
 2. Set ```PIGEON_CAN_ID``` in ```SwerveDrive.hpp``` to the CAN ID of the Pigeon IMU.  There is currently no configuration setting to invert the gyro as the default should work.  The invert setting controls the gyro rotation direction (i.e. CCW+ Counter Clockwise Positive).
@@ -30,9 +30,9 @@ A number of configuration parameters must be adjusted to a specific robot build.
     * Open and closed loop ramp values
     * Drive and angle motor invert and neutral mode
     * CANCoder invert, sensor range and initialization strategy
-
+<br>
 <br>The drive motor invert should always be able to remain false, since the calibration step below sets a positive input to the drive motor to cause the robot to move forward.  However, this can be set to true if it is preferred to have the bevel gears face a different direction when setting the offsets in step 5.
-
+<br>
 <br>The angle motor invert and CANCoder invert must both be set such that they are CCW+.
 
 5. Find and set the module offsets.
