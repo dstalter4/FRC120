@@ -240,6 +240,10 @@ void YtaRobot::TeleopInit()
     m_pDriveMotorCoolTimer->Start();
     m_LastDriveMotorCoolTime = 0_s;
     m_bCoolingDriveMotors = true;
+
+    // Set the swerve modules to a known angle.  This (somehow) mitigates
+    // the random spin when enabling teleop until it can be investigated.
+    m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
 }
 
 
@@ -469,29 +473,25 @@ void YtaRobot::DriveMotorsCool()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SwerveDriveSequence()
 {
-    // Get joystick inputs (x = strafe, y = translation)
-    // logitech and xbox controller: strafe = kLeftX (0), translation = kLeftY(1) or triggers (2/3), rotation = kRightX (4)
-    //double lAxis = m_pDriveController->GetAxisValue(2) * -1.0;
-    //double rAxis = m_pDriveController->GetAxisValue(3);
-    //double translationAxis = lAxis + rAxis;
-    double strafeAxis = m_pDriveController->GetAxisValue(0) * -1.0;
-    double translationAxis = m_pDriveController->GetAxisValue(1) * -1.0;
-    double rotationAxis = m_pDriveController->GetAxisValue(4) * -1.0;
+    // @todo_swerve: Implement tap rotate for alignment on triggers
 
-    strafeAxis = RobotUtils::Trim(strafeAxis, 0.10, -0.10);
-    translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
-    rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
-
+    // Check for a switch between field relative and robot centric
     static bool bFieldRelative = true;
-    if (m_pDriveController->DetectButtonChange(5))
+    if (m_pDriveController->DetectButtonChange(FIELD_RELATIVE_TOGGLE_BUTTON))
     {
         bFieldRelative = !bFieldRelative;
     }
 
-    if (m_pDriveController->DetectButtonChange(6))
+    if (m_pDriveController->DetectButtonChange(ZERO_GYRO_YAW_BUTTON))
     {
-        m_pSwerveDrive->ZeroGyro();
+        m_pSwerveDrive->ZeroGyroYaw();
     }
+
+    // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
+    // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
+    double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
     SmartDashboard::PutNumber("Strafe", strafeAxis);
     SmartDashboard::PutNumber("Translation", translationAxis);
@@ -504,8 +504,11 @@ void YtaRobot::SwerveDriveSequence()
     // placed at origin facing the X-axis.  Forward movement increases X and left
     // movement increases Y.
     Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
-    // Translation2d, double rotation, field relative, open loop
+
+    // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+
+    // Display some useful information
     m_pSwerveDrive->UpdateSmartDashboard();
 }
 

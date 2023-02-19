@@ -114,11 +114,11 @@ void YtaRobot::TestPeriodic()
     CheckAndUpdateRobotMode(ROBOT_MODE_TEST);
 
     // Enable or disable routines for testing
-    //YtaRobotTest::QuickTestCode();
+    YtaRobotTest::QuickTestCode();
     //YtaRobotTest::CtreSpeedControllerTest();
     //YtaRobotTest::RevSpeedControllerTest();
     //YtaRobotTest::TankDrive();
-    YtaRobotTest::SwerveDriveTest();
+    //YtaRobotTest::SwerveDriveTest();
     //YtaRobotTest::PneumaticsTest();
     //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
@@ -328,29 +328,53 @@ void YtaRobotTest::TankDrive()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SwerveDriveTest()
 {
-    static SwerveDrive * pSwerveDrive = new SwerveDrive();
+    static SwerveDrive * pSwerveDrive = YTA_ROBOT_OBJ()->m_pSwerveDrive;
 
-    // Get joystick inputs (x = strafe, y = translation)
-    // logitech and xbox controller: strafe = kLeftX (0), translation = kLeftY(1) or triggers (2/3), rotation = kRightX (4)
-    // Try using: YTA_ROBOT_OBJ()->m_pDriveController->GetDriveXInput();
-    double strafeAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(0) * -1.0;
-    double translationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0;
-    double rotationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(4) * -1.0;
+    // Tests returning modules to absolute reference angles
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(4))
+    {
+        YTA_ROBOT_OBJ()->m_pSwerveDrive->HomeModules();
+    }
 
-    strafeAxis = RobotUtils::Trim(strafeAxis, 0.10, -0.10);
-    translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
-    rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
-
+    // Dynamically switch between field relative and robot centric
     static bool bFieldRelative = true;
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(5))
     {
         bFieldRelative = !bFieldRelative;
     }
 
+    // Zero the gryo
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(6))
     {
-        pSwerveDrive->ZeroGyro();
+        pSwerveDrive->ZeroGyroYaw();
     }
+
+    // Dynamically switch between arcade and GTA drive controls
+    static bool bGtaControls = false;
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(10))
+    {
+        bGtaControls = !bGtaControls;
+    }
+
+    // Get joystick inputs (x = strafe, y = translation)
+    // logitech and xbox controller: strafe = kLeftX (0), translation = kLeftY(1) or triggers (2/3), rotation = kRightX (4)
+    double translationAxis = 0.0;
+    if (bGtaControls)
+    {
+        double lAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(2) * -1.0;
+        double rAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(3);
+        translationAxis = lAxis + rAxis;
+    }
+    else
+    {
+        translationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0;
+    }
+    double strafeAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(0) * -1.0;
+    double rotationAxis = YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(4) * -1.0;
+
+    strafeAxis = RobotUtils::Trim(strafeAxis, 0.10, -0.10);
+    translationAxis = RobotUtils::Trim(translationAxis, 0.10, -0.10);
+    rotationAxis = RobotUtils::Trim(rotationAxis, 0.10, -0.10);
 
     SmartDashboard::PutNumber("Strafe", strafeAxis);
     SmartDashboard::PutNumber("Translation", translationAxis);

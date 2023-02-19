@@ -52,8 +52,8 @@ public:
     // Puts useful values on the dashboard
     void UpdateSmartDashboard();
 
-    // Sets the gyro back to zero degrees
-    inline void ZeroGyro()
+    // Sets the gyro yaw back to zero degrees
+    inline void ZeroGyroYaw()
     {
         m_pPigeon->SetYaw(0.0);
     }
