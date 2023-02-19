@@ -333,7 +333,8 @@ void YtaRobotTest::SwerveDriveTest()
     // Tests returning modules to absolute reference angles
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(4))
     {
-        YTA_ROBOT_OBJ()->m_pSwerveDrive->HomeModules();
+        // Not available yet
+        //YTA_ROBOT_OBJ()->m_pSwerveDrive->HomeModules();
     }
 
     // Dynamically switch between field relative and robot centric
