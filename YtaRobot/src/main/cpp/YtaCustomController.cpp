@@ -6,7 +6,7 @@
 /// A class designed to interface to several controller types (Logitech Gamepad,
 /// Xbox GameSir, PS4, etc.) with custom responses.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -16,8 +16,9 @@
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
-#include "YtaController.hpp"                    // for class declaration
+#include "DriveConfiguration.hpp"               // for DRIVE_STYLE
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
+#include "YtaController.hpp"                    // for class declaration
 
 // STATIC MEMBER DATA
 // (none)
@@ -66,44 +67,77 @@ double YtaCustomController::GetDriveX() const
 ////////////////////////////////////////////////////////////////
 double YtaCustomController::GetDriveY() const
 {
-    // In order to keep the drive logic the same across
-    // all controller models, full forward is represented
-    // by -1 and full reverse is represented by +1.
-    //   -1
-    //    |
-    // -1---+1
-    //    |
-    //   +1
-    
-    // Left trigger is the 'reverse' value input.
-    double leftTriggerValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER);
-    
-    // Right trigger is the 'forward' value input.
-    double rightTriggerValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER);
+    double yAxisValue = 0.0;
 
-    if (RobotUtils::DEBUG_PRINTS)
+    switch (Yta::Drive::Config::DRIVE_STYLE)
     {
-        SmartDashboard::PutNumber("Raw left trigger", leftTriggerValue);
-        SmartDashboard::PutNumber("Raw right trigger", rightTriggerValue);
-    }
+        case Yta::Drive::Config::DriveStyle::ARCADE_DRIVE:
+        {
+            yAxisValue = GenericHID::GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS);
+            break;
+        }
+        case Yta::Drive::Config::DriveStyle::GTA_DRIVE:
+        {
+            // In order to keep the drive logic the same across
+            // all controller models, full forward is represented
+            // by -1 and full reverse is represented by +1.
+            //   -1
+            //    |
+            // -1---+1
+            //    |
+            //   +1
+            
+            // Left trigger is the 'reverse' value input.
+            double leftTriggerValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER);
+            
+            // Right trigger is the 'forward' value input.
+            double rightTriggerValue = GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER);
 
-    // Normalize (controller specific code).
-    // After this, left will be 0->+1, right will be -1->0.
-    NormalizeTriggers(leftTriggerValue, rightTriggerValue);
+            if (RobotUtils::DEBUG_PRINTS)
+            {
+                SmartDashboard::PutNumber("Raw left trigger", leftTriggerValue);
+                SmartDashboard::PutNumber("Raw right trigger", rightTriggerValue);
+            }
 
-    if (RobotUtils::DEBUG_PRINTS)
-    {
-        SmartDashboard::PutNumber("Normalized left trigger", leftTriggerValue);
-        SmartDashboard::PutNumber("Normalized right trigger", rightTriggerValue);
+            // Normalize (controller specific code).
+            // After this, left will be 0->+1, right will be -1->0.
+            NormalizeTriggers(leftTriggerValue, rightTriggerValue);
+
+            if (RobotUtils::DEBUG_PRINTS)
+            {
+                SmartDashboard::PutNumber("Normalized left trigger", leftTriggerValue);
+                SmartDashboard::PutNumber("Normalized right trigger", rightTriggerValue);
+            }
+            
+            // Hopefully only one trigger is being pushed, but in
+            // case both are being pressed, the value will be combined.
+            yAxisValue =  leftTriggerValue + rightTriggerValue;
+            yAxisValue *= Y_AXIS_DRIVE_SENSITIVITY_SCALING;
+
+            break;
+        }
+        case Yta::Drive::Config::DriveStyle::TANK_DRIVE:
+        default:
+        {
+            ASSERT(false);
+            break;
+        }
     }
-    
-    // Hopefully only one trigger is being pushed, but in
-    // case both are being pressed, the value will be combined.
-    double yAxisValue =  leftTriggerValue + rightTriggerValue;
-    
-    yAxisValue *= Y_AXIS_DRIVE_SENSITIVITY_SCALING;
 
     return yAxisValue;
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaCustomController::GetDriveRotate
+///
+/// Returns the rotate drive input.
+///
+////////////////////////////////////////////////////////////////
+double YtaCustomController::GetDriveRotate() const
+{
+    return GetRawAxis(CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS);
 }
 
 
