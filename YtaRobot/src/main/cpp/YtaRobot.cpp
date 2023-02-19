@@ -262,8 +262,14 @@ void YtaRobot::TeleopPeriodic()
 
     HeartBeat();
 
-    SwerveDriveSequence();
-    //DriveControlSequence();
+    if (Yta::Drive::Config::USE_SWERVE_DRIVE)
+    {
+        SwerveDriveSequence();
+    }
+    else
+    {
+        DriveControlSequence();
+    }
 
     PneumaticSequence();
 
