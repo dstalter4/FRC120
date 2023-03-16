@@ -514,8 +514,6 @@ void YtaRobot::DriveMotorsCool()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SwerveDriveSequence()
 {
-    // @todo_swerve: Implement tap rotate for alignment on triggers
-
     // Check for a switch between field relative and robot centric
     static bool bFieldRelative = true;
     if (m_pDriveController->DetectButtonChange(FIELD_RELATIVE_TOGGLE_BUTTON))
@@ -533,6 +531,23 @@ void YtaRobot::SwerveDriveSequence()
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+
+    // Override normal control if a fine positioning request is made
+    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    {
+        translationAxis = 0.0;
+        strafeAxis = 0.0;
+        rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
+    }
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
+    {
+        translationAxis = 0.0;
+        strafeAxis = 0.0;
+        rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
+    }
+    else
+    {
+    }
 
     SmartDashboard::PutNumber("Strafe", strafeAxis);
     SmartDashboard::PutNumber("Translation", translationAxis);
