@@ -44,7 +44,7 @@ class SwerveDrive
 
 public:
     // Constructor
-    SwerveDrive();
+    SwerveDrive(Pigeon2 * pPigeon);
 
     // Updates each swerve module based on the inputs
     void SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop);
@@ -68,7 +68,6 @@ private:
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
 
-    static const int PIGEON_CAN_ID = 5;
     static constexpr const SwerveModulePosition INITIAL_SWERVE_MODULE_POSITION = {0_m, 0_deg};
 
     // Config information on each swerve module.

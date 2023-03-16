@@ -20,6 +20,7 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
+#include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
 #include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
@@ -254,6 +255,7 @@ private:
     AuxControllerType *             m_pAuxController;                       // Auxillary input controller
     
     // Swerve Drive
+    Pigeon2 *                       m_pPigeon;                              // CTRE Pigeon2 IMU
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
