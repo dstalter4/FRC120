@@ -42,6 +42,10 @@ YtaRobot::YtaRobot() :
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pWristMotor                       (new TalonFX(WRIST_MOTOR_CAN_ID)),
+    m_pArmMotor                         (new TalonFX(ARM_MOTOR_CAN_ID)),
+    m_pCarriageMotors                   (new TalonMotorGroup<TalonFX>("Carriage", NUMBER_OF_CARRIAGE_MOTORS, CARRIAGE_MOTORS_START_CAN_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pIntakeMotor                      (new TalonFX(INTAKE_MOTOR_CAN_ID)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
@@ -173,6 +177,31 @@ void YtaRobot::ConfigureMotorControllers()
     //ctre::phoenix::sensors::AbsoluteSensorRange absoluteSensorRange = ctre::phoenix::sensors::AbsoluteSensorRange::Unsigned_0_to_360;
     //double integratedSensorOffsetDegrees = 0;
     //ctre::phoenix::sensors::SensorInitializationStrategy initializationStrategy = ctre::phoenix::sensors::SensorInitializationStrategy::BootToZero;
+
+    // Currently no current limiting being done
+    TalonFXConfiguration talonConfig;
+    talonConfig.slot0.kP = 0.08;
+    talonConfig.slot0.kI = 0.0;
+    talonConfig.slot0.kD = 0.5;
+    talonConfig.slot0.kF = 0.0;
+    talonConfig.absoluteSensorRange = AbsoluteSensorRange::Unsigned_0_to_360;
+    talonConfig.integratedSensorOffsetDegrees = 0.0;
+    talonConfig.initializationStrategy = SensorInitializationStrategy::BootToZero;
+
+    TalonFX * pTalon = m_pCarriageMotors->GetMotorObject(CARRIAGE_MOTORS_START_CAN_ID);
+    pTalon->ConfigFactoryDefault();
+    pTalon->ConfigAllSettings(talonConfig);
+
+    // Empirically measured for the wrist
+    talonConfig.slot0.kP = 0.05;
+    talonConfig.slot0.kD = 5.0;
+    m_pWristMotor->ConfigFactoryDefault();
+    m_pWristMotor->ConfigAllSettings(talonConfig);
+    m_pWristMotor->ConfigAllowableClosedloopError(0, 1000);
+
+    // Arm currently seems ok with same values as wrist
+    m_pArmMotor->ConfigFactoryDefault();
+    m_pArmMotor->ConfigAllSettings(talonConfig);
 }
 
 
@@ -193,6 +222,11 @@ void YtaRobot::InitialStateSetup()
     // Start with motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
+
+    // Carriage motor neutral mode was configured in the constructor
+    m_pArmMotor->SetNeutralMode(NeutralMode::Brake);
+    m_pWristMotor->SetNeutralMode(NeutralMode::Brake);
+    m_pIntakeMotor->SetNeutralMode(NeutralMode::Brake);
 
     // Solenoids to known state
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
@@ -290,6 +324,9 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    ArmControlSequence();
+    WristControlSequence();
+
     PneumaticSequence();
 
     //SerialPortSequence();
@@ -314,6 +351,70 @@ void YtaRobot::TeleopPeriodic()
 void YtaRobot::UpdateSmartDashboard()
 {
     // Give the drive team some state information
+    SmartDashboard::PutNumber("Arm encoder count", m_pArmMotor->GetSelectedSensorPosition());
+    SmartDashboard::PutNumber("Wrist encoder count", m_pWristMotor->GetSelectedSensorPosition());
+}
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ArmControlSequence
+///
+/// Updates the state of the arm (carriage and swing position).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ArmControlSequence()
+{
+    // Controls moving the carriage up/down
+    // Aux controller inputs get first shot for control
+    double auxCarriageValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(AUX_MOVE_CARRIAGE_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double carriageSetValue = auxCarriageValue;
+
+    if (auxCarriageValue == 0.0)
+    {
+        double carriageDownValue = -m_pDriveController->GetAxisValue(CARRIAGE_DOWN_AXIS);
+        double carriageUpValue = m_pDriveController->GetAxisValue(CARRIAGE_UP_AXIS);
+        carriageSetValue = RobotUtils::Trim(carriageDownValue + carriageUpValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    }
+    m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+
+    // Controls moving the arm in/out
+    double armInValue = m_pAuxController->GetAxisValue(ROTATE_ARM_CW_AXIS);
+    double armOutValue = -m_pAuxController->GetAxisValue(ROTATE_ARM_CCW_AXIS);
+    double armTotalValue = RobotUtils::Trim(armInValue + armOutValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::WristControlSequence
+///
+/// Updates the state of the wrist (position and intake).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::WristControlSequence()
+{
+    // Controls moving the wrist
+    double wristRotateValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(ROTATE_WRIST_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    m_pWristMotor->Set(ControlMode::PercentOutput, wristRotateValue * WRIST_ROTATION_SCALING_FACTOR);
+
+    // Controls the intake
+    if (m_pAuxController->GetButtonState(AUX_INTAKE_FORWARD_BUTTON) || m_pDriveController->GetButtonState(DRV_INTAKE_FORWARD_BUTTON))
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+    }
+    else if (m_pAuxController->GetButtonState(AUX_INTAKE_REVERSE_BUTTON) || m_pDriveController->GetButtonState(DRV_INTAKE_REVERSE_BUTTON))
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, -INTAKE_MOTOR_SPEED);
+    }
+    else
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, OFF);
+    }
 }
 
 
