@@ -44,10 +44,6 @@ YtaRobot::YtaRobot() :
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
-    m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
-    m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
-    m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
-    m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
@@ -190,12 +186,6 @@ void YtaRobot::InitialStateSetup()
 
     // Disable the rainbow animation
     m_pCandle->ClearAnimation(0);
-
-    // Enable LEDs, but keep them off for now
-    m_pLedsEnableRelay->Set(LEDS_ENABLED);
-    m_pRedLedRelay->Set(LEDS_OFF);
-    m_pGreenLedRelay->Set(LEDS_OFF);
-    m_pBlueLedRelay->Set(LEDS_OFF);
     
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
@@ -946,12 +936,6 @@ void YtaRobot::DisabledInit()
 
     // Turn the rainbow animation back on    
     m_pCandle->Animate(m_RainbowAnimation);
-
-    // Even though 'Disable' shuts off the relay signals, explitily turn the LEDs off
-    m_pLedsEnableRelay->Set(LEDS_DISABLED);
-    m_pRedLedRelay->Set(LEDS_OFF);
-    m_pGreenLedRelay->Set(LEDS_OFF);
-    m_pBlueLedRelay->Set(LEDS_OFF);
 }
 
 

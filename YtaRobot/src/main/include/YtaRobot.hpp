@@ -267,10 +267,6 @@ private:
     // LEDs
     CANdle *                        m_pCandle;                              // Controls an RGB LED strip
     RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
-    Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all
-    Relay *                         m_pRedLedRelay;                         // Controls whether or not the red LEDs are lit up
-    Relay *                         m_pGreenLedRelay;                       // Controls whether or not the green LEDs are lit up
-    Relay *                         m_pBlueLedRelay;                        // Controls whether or not the blue LEDs are lit up
 
     // Interrupts
     // (none)
@@ -385,10 +381,7 @@ private:
     // (none)
     
     // Relays
-    static const int                LEDS_ENABLE_RELAY_ID                    = 0;
-    static const int                RED_LED_RELAY_ID                        = 1;
-    static const int                GREEN_LED_RELAY_ID                      = 2;
-    static const int                BLUE_LED_RELAY_ID                       = 3;
+    // (none)
     
     // Digital I/O Signals
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
@@ -521,20 +514,7 @@ private:
     static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
     static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
-    
-    // This may seem backward, but the LEDS work by creating
-    // a voltage differential.  The LED strip has four lines,
-    // 12V, red, green and blue.  The 12V line gets enabled by
-    // one relay during initialization.  The RGB LEDs turn on
-    // when there is a voltage differential, so 'on' is when
-    // there is 0V on a RGB line (kOff) and 'off' is when there
-    // is 12V on a RGB line (kForward).
-    
-    static const Relay::Value       LEDS_ENABLED                            = Relay::kForward;
-    static const Relay::Value       LEDS_DISABLED                           = Relay::kOff;
-    static const Relay::Value       LEDS_OFF                                = Relay::kForward;
-    static const Relay::Value       LEDS_ON                                 = Relay::kOff;
-    
+
 };  // End class
 
 

@@ -56,7 +56,8 @@ public:
     static void TimeTest();
     static void ButtonChangeTest();
     static void AccelerometerTest();
-    static void LedsTest();
+    static void CandleLedsTest();
+    static void RelayLedsTest();
 
 private:
     // Objects for use in test routines
@@ -124,7 +125,8 @@ void YtaRobot::TestPeriodic()
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
     //YtaRobotTest::AccelerometerTest();
-    //YtaRobotTest::LedsTest();
+    //YtaRobotTest::CandleLedsTest();
+    //YtaRobotTest::RelayLedsTest();
 }
 
 
@@ -493,12 +495,26 @@ void YtaRobotTest::AccelerometerTest()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobotTest::LedsTest
+/// @method YtaRobotTest::CandleLedsTest
 ///
-/// Test code to verify functionality of RGB LED strips.
+/// Test code to verify functionality of CANdle controlled RGB
+// LED strips.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobotTest::LedsTest()
+void YtaRobotTest::CandleLedsTest()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::RelayLedsTest
+///
+/// Test code to verify functionality of relay controlled RGB
+/// LED strips.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::RelayLedsTest()
 {
     enum LedDisplayState
     {
@@ -512,6 +528,23 @@ void YtaRobotTest::LedsTest()
         RED_GREEN_BLUE
     };
     static LedDisplayState displayState = NONE;
+
+    // This may seem backward, but the LEDS work by creating
+    // a voltage differential.  The LED strip has four lines,
+    // 12V, red, green and blue.  The 12V line gets enabled by
+    // one relay during initialization.  The RGB LEDs turn on
+    // when there is a voltage differential, so 'on' is when
+    // there is 0V on a RGB line (kOff) and 'off' is when there
+    // is 12V on a RGB line (kForward).
+    static const Relay::Value LEDS_ENABLED  = Relay::kForward;
+    static const Relay::Value LEDS_DISABLED = Relay::kOff;
+    static const Relay::Value LEDS_OFF      = Relay::kForward;
+    static const Relay::Value LEDS_ON       = Relay::kOff;
+
+    static Relay * pLedsEnableRelay = new Relay(0);     // Controls whether the LEDs will light up at all
+    static Relay * pRedLedRelay     = new Relay(1);     // Controls whether or not the red LEDs are lit up
+    static Relay * pGreenLedRelay   = new Relay(2);     // Controls whether or not the green LEDs are lit up
+    static Relay * pBlueLedRelay    = new Relay(3);     // Controls whether or not the blue LEDs are lit up
     
     static std::chrono::time_point<std::chrono::high_resolution_clock> currentTime;
     static std::chrono::time_point<std::chrono::high_resolution_clock> oldTime;
@@ -525,65 +558,67 @@ void YtaRobotTest::LedsTest()
         {
             case NONE:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
+                pLedsEnableRelay->Set(LEDS_DISABLED);
+                pRedLedRelay->Set(LEDS_OFF);
+                pGreenLedRelay->Set(LEDS_OFF);
+                pBlueLedRelay->Set(LEDS_OFF);
                 displayState = RED_ONLY;
                 break;
             }
             case RED_ONLY:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
+                pLedsEnableRelay->Set(LEDS_ENABLED);
+                pRedLedRelay->Set(LEDS_ON);
+                pGreenLedRelay->Set(LEDS_OFF);
+                pBlueLedRelay->Set(LEDS_OFF);
                 displayState = GREEN_ONLY;
                 break;
             }
             case GREEN_ONLY:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
+                pRedLedRelay->Set(LEDS_OFF);
+                pGreenLedRelay->Set(LEDS_ON);
+                pBlueLedRelay->Set(LEDS_OFF);
                 displayState = BLUE_ONLY;
                 break;
             }
             case BLUE_ONLY:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
+                pRedLedRelay->Set(LEDS_OFF);
+                pGreenLedRelay->Set(LEDS_OFF);
+                pBlueLedRelay->Set(LEDS_ON);
                 displayState = RED_GREEN;
                 break;
             }
             case RED_GREEN:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_OFF);
+                pRedLedRelay->Set(LEDS_ON);
+                pGreenLedRelay->Set(LEDS_ON);
+                pBlueLedRelay->Set(LEDS_OFF);
                 displayState = RED_BLUE;
                 break;
             }
             case RED_BLUE:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
+                pRedLedRelay->Set(LEDS_ON);
+                pGreenLedRelay->Set(LEDS_OFF);
+                pBlueLedRelay->Set(LEDS_ON);
                 displayState = GREEN_BLUE;
                 break;
             }
             case GREEN_BLUE:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_OFF);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
+                pRedLedRelay->Set(LEDS_OFF);
+                pGreenLedRelay->Set(LEDS_ON);
+                pBlueLedRelay->Set(LEDS_ON);
                 displayState = RED_GREEN_BLUE;
                 break;
             }
             case RED_GREEN_BLUE:
             {
-                YTA_ROBOT_OBJ()->m_pRedLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pGreenLedRelay->Set(YtaRobot::LEDS_ON);
-                YTA_ROBOT_OBJ()->m_pBlueLedRelay->Set(YtaRobot::LEDS_ON);
+                pRedLedRelay->Set(LEDS_ON);
+                pGreenLedRelay->Set(LEDS_ON);
+                pBlueLedRelay->Set(LEDS_ON);
                 displayState = NONE;
                 break;
             }
