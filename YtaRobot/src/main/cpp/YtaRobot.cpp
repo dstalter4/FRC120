@@ -42,6 +42,8 @@ YtaRobot::YtaRobot() :
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
+    m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
@@ -85,6 +87,12 @@ YtaRobot::YtaRobot() :
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_X_AXIS);
     
+
+    CANdleConfiguration candleConfig;
+    candleConfig.stripType = LEDStripType::RGB;
+    m_pCandle->ConfigAllSettings(candleConfig);
+    m_pCandle->Animate(m_RainbowAnimation);
+
     // Construct the ADXRS450 gyro if configured
     if (ADXRS450_GYRO_PRESENT)
     {
@@ -179,7 +187,10 @@ void YtaRobot::InitialStateSetup()
     // Tare encoders
     m_pLeftDriveMotors->TareEncoder();
     m_pRightDriveMotors->TareEncoder();
-    
+
+    // Disable the rainbow animation
+    m_pCandle->ClearAnimation(0);
+
     // Enable LEDs, but keep them off for now
     m_pLedsEnableRelay->Set(LEDS_ENABLED);
     m_pRedLedRelay->Set(LEDS_OFF);
@@ -280,7 +291,7 @@ void YtaRobot::TeleopPeriodic()
     
     //CameraSequence();
 
-    //LedSequence();
+    LedSequence();
 
     UpdateSmartDashboard();
 }
@@ -932,7 +943,10 @@ void YtaRobot::DisabledInit()
 
     // Motor cooling off
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
-    
+
+    // Turn the rainbow animation back on    
+    m_pCandle->Animate(m_RainbowAnimation);
+
     // Even though 'Disable' shuts off the relay signals, explitily turn the LEDs off
     m_pLedsEnableRelay->Set(LEDS_DISABLED);
     m_pRedLedRelay->Set(LEDS_OFF);

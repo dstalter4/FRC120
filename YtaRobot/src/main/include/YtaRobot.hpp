@@ -20,6 +20,8 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
+#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
+#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 #include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
@@ -262,7 +264,9 @@ private:
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
     
-    // Spike Relays
+    // LEDs
+    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
+    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
     Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all
     Relay *                         m_pRedLedRelay;                         // Controls whether or not the red LEDs are lit up
     Relay *                         m_pGreenLedRelay;                       // Controls whether or not the green LEDs are lit up
@@ -369,6 +373,12 @@ private:
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 1 : 64;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 3 : 66;
 
+    // CANivore Signals
+    // Note: IDs 1-4 are used by the CANcoders (see the
+    //       SwerveModuleConfigs in SwerveDrive.hpp).
+    static const int                PIGEON_CAN_ID                           = 5;
+    static const int                CANDLE_CAN_ID                           = 6;
+
     // PWM Signals
     // (none)
     
@@ -410,6 +420,7 @@ private:
     static const unsigned           TWO_MOTORS                              = 2;
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
+    static const unsigned           NUMBER_OF_LEDS                          = (308 - 92);
     static const char               NULL_CHARACTER                          = '\0';
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
