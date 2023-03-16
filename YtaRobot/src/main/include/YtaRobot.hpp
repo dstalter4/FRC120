@@ -215,6 +215,9 @@ private:
     // Routine to put things in a known state
     void InitialStateSetup();
 
+    // Configure motor controller parameters
+    void ConfigureMotorControllers();
+
     // Main sequence for drive motor control
     void SwerveDriveSequence();
     void DriveControlSequence();

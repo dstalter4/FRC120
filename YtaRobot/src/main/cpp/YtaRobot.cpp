@@ -82,7 +82,8 @@ YtaRobot::YtaRobot() :
     RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_X_AXIS);
-    
+
+    ConfigureMotorControllers();
 
     CANdleConfiguration candleConfig;
     candleConfig.stripType = LEDStripType::RGB;
@@ -156,6 +157,22 @@ void YtaRobot::RobotPeriodic()
         RobotUtils::DisplayMessage("RobotPeriodic called.");
         bRobotPeriodicStarted = true;
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ConfigureMotorControllers
+///
+/// Sets motor controller specific configuration information.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ConfigureMotorControllers()
+{
+    // These are the defaults for the configuration (see TalonFX.h)
+    //ctre::phoenix::sensors::AbsoluteSensorRange absoluteSensorRange = ctre::phoenix::sensors::AbsoluteSensorRange::Unsigned_0_to_360;
+    //double integratedSensorOffsetDegrees = 0;
+    //ctre::phoenix::sensors::SensorInitializationStrategy initializationStrategy = ctre::phoenix::sensors::SensorInitializationStrategy::BootToZero;
 }
 
 
