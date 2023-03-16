@@ -310,6 +310,39 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::LedSequence()
 {
+    enum LedStrandColor
+    {
+        STRAND_OFF,
+        CUBE_PURPLE,
+        CONE_YELLOW
+    };
+    static LedStrandColor strandColor = STRAND_OFF;
+
+    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT) || m_pAuxController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT))
+    {
+        switch (strandColor)
+        {
+            case STRAND_OFF:
+            case CUBE_PURPLE:
+            {
+                // Set all LEDs to yellow
+                m_pCandle->SetLEDs(255, 240, 0, 0, 0, NUMBER_OF_LEDS);
+                strandColor = CONE_YELLOW;
+                break;
+            }
+            case CONE_YELLOW:
+            {
+                // Set all LEDs to purple (163, 73, 164)
+                m_pCandle->SetLEDs(240, 73, 241, 0, 0, NUMBER_OF_LEDS);
+                strandColor = CUBE_PURPLE;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
 }
 
 
