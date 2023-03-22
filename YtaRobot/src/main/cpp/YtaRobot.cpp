@@ -106,6 +106,8 @@ YtaRobot::YtaRobot() :
     
     // Spawn the vision and I2C threads
     // @todo: Use a control variable to prevent the threads from executing too soon.
+    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     m_CameraThread.detach();
     m_I2cThread.detach();
 }
@@ -295,6 +297,7 @@ void YtaRobot::TeleopInit()
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // Indicate to the I2C thread to get data less often
     RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
@@ -1184,6 +1187,8 @@ void YtaRobot::DisabledInit()
     RobotUtils::DisplayMessage("DisabledInit called.");
 
     // @todo: Shut off the limelight LEDs?
+    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // All motors off
     m_pLeftDriveMotors->Set(OFF);
