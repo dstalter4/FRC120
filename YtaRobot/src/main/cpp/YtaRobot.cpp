@@ -324,6 +324,7 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    CheckAndResetEncoderCounts();
     ArmControlSequence();
     WristControlSequence();
 
@@ -357,6 +358,24 @@ void YtaRobot::UpdateSmartDashboard()
 
 
 
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::CheckAndResetEncoderCounts
+///
+/// Checks for driver input to rezero all encoder counts.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::CheckAndResetEncoderCounts()
+{
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START) && m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
+    {
+        m_pCarriageMotors->GetMotorObject()->SetSelectedSensorPosition(0);
+        m_pArmMotor->SetSelectedSensorPosition(0);
+        m_pWristMotor->SetSelectedSensorPosition(0);
+    }
+}
 
 
 

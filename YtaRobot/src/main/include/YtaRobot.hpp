@@ -255,6 +255,9 @@ private:
 
     // Main sequence for wrist control
     void WristControlSequence();
+
+    // Check for a request to reset encoder counts
+    void CheckAndResetEncoderCounts();
     
     // MEMBER VARIABLES
     
