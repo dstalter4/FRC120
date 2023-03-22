@@ -531,7 +531,7 @@ private:
         return rightValue;
     }
     
-    static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.65;
+    static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.80;
     static constexpr double         ARM_ROTATION_SCALING_FACTOR             =  0.50;
     static constexpr double         WRIST_ROTATION_SCALING_FACTOR           =  0.50;
     static constexpr double         INTAKE_MOTOR_SPEED                      =  0.50;

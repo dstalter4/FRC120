@@ -178,7 +178,9 @@ void YtaRobot::ConfigureMotorControllers()
     //double integratedSensorOffsetDegrees = 0;
     //ctre::phoenix::sensors::SensorInitializationStrategy initializationStrategy = ctre::phoenix::sensors::SensorInitializationStrategy::BootToZero;
 
-    // Currently no current limiting being done
+    // The default constructor for TalonFXConfiguration will call the parent
+    // BaseTalonConfiguration constructor with FeedbackDevice::IntegratedSensor.
+    // Currently no current limiting being done.
     TalonFXConfiguration talonConfig;
     talonConfig.slot0.kP = 0.08;
     talonConfig.slot0.kI = 0.0;
@@ -191,6 +193,7 @@ void YtaRobot::ConfigureMotorControllers()
     TalonFX * pTalon = m_pCarriageMotors->GetMotorObject(CARRIAGE_MOTORS_START_CAN_ID);
     pTalon->ConfigFactoryDefault();
     pTalon->ConfigAllSettings(talonConfig);
+    pTalon->SetSelectedSensorPosition(0);
 
     // Empirically measured for the wrist
     talonConfig.slot0.kP = 0.05;
@@ -198,10 +201,12 @@ void YtaRobot::ConfigureMotorControllers()
     m_pWristMotor->ConfigFactoryDefault();
     m_pWristMotor->ConfigAllSettings(talonConfig);
     m_pWristMotor->ConfigAllowableClosedloopError(0, 1000);
+    m_pWristMotor->SetSelectedSensorPosition(0);
 
     // Arm currently seems ok with same values as wrist
     m_pArmMotor->ConfigFactoryDefault();
     m_pArmMotor->ConfigAllSettings(talonConfig);
+    m_pArmMotor->SetSelectedSensorPosition(0);
 }
 
 
@@ -361,6 +366,7 @@ void YtaRobot::TeleopPeriodic()
 void YtaRobot::UpdateSmartDashboard()
 {
     // Give the drive team some state information
+    SmartDashboard::PutNumber("Carriage encoder count", m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition());
     SmartDashboard::PutNumber("Arm encoder count", m_pArmMotor->GetSelectedSensorPosition());
     SmartDashboard::PutNumber("Wrist encoder count", m_pWristMotor->GetSelectedSensorPosition());
 }
@@ -396,6 +402,14 @@ void YtaRobot::CheckAndResetEncoderCounts()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ArmControlSequence()
 {
+/*
+    // This is working as expected
+    if (m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+    {
+        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 300'000);
+        return;
+    }
+*/
     // Controls moving the carriage up/down
     // Aux controller inputs get first shot for control
     double auxCarriageValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(AUX_MOVE_CARRIAGE_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
@@ -407,13 +421,63 @@ void YtaRobot::ArmControlSequence()
         double carriageUpValue = m_pDriveController->GetAxisValue(CARRIAGE_UP_AXIS);
         carriageSetValue = RobotUtils::Trim(carriageDownValue + carriageUpValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     }
-    m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+    if ((carriageSetValue < 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() < 10'000))
+    {
+        if (m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+        {
+            m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+        }
+    }
+    else
+    {
+        m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+    }
 
     // Controls moving the arm in/out
+    double armEncoderCount = m_pArmMotor->GetSelectedSensorPosition();
     double armInValue = m_pAuxController->GetAxisValue(ROTATE_ARM_CW_AXIS);
     double armOutValue = -m_pAuxController->GetAxisValue(ROTATE_ARM_CCW_AXIS);
     double armTotalValue = RobotUtils::Trim(armInValue + armOutValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
+
+    // Check for soft limits
+    //bool bArmDisabled = false;
+    // 130'000/-70'000 for starting inline with guides
+    static bool bUsingPositionMode = false;
+    // This moves to robot back
+    if (armTotalValue > 0.0)
+    {
+        // If approaching vertical position
+        if (armEncoderCount > -10000)
+        {
+            // Try and hold
+            m_pArmMotor->Set(ControlMode::Position, 0.0);
+            bUsingPositionMode = true;
+        }
+        else
+        {
+            m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
+        }
+    }
+    // This moves to robot front
+    else if (armTotalValue < 0.0)
+    {
+        // Past soft limit, no motion
+        if (armEncoderCount < -90000)
+        {
+        }
+        else
+        {
+            m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
+            bUsingPositionMode = false;
+        }
+    }
+    else
+    {
+        if (!bUsingPositionMode)
+        {
+            m_pArmMotor->Set(ControlMode::PercentOutput, 0.0);
+        }
+    }
 }
 
 
@@ -427,7 +491,7 @@ void YtaRobot::ArmControlSequence()
 void YtaRobot::WristControlSequence()
 {
     // Controls moving the wrist
-    double wristRotateValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(ROTATE_WRIST_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double wristRotateValue = RobotUtils::Trim(m_pAuxController->GetAxisValue(ROTATE_WRIST_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     m_pWristMotor->Set(ControlMode::PercentOutput, wristRotateValue * WRIST_ROTATION_SCALING_FACTOR);
 
     // Controls the intake
