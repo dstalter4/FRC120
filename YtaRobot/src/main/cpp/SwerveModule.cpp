@@ -12,8 +12,9 @@
 // <none>
 
 // C INCLUDES
-#include "units/length.h"                           // for units::meters
+#include "frc/Timer.h"                              // for timers
 #include "frc/smartdashboard/SmartDashboard.h"      // for interacting with the smart dashboard
+#include "units/length.h"                           // for units::meters
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                           // for ConvertCelsiusToFahrenheit
@@ -22,6 +23,8 @@
 #include "SwerveModule.hpp"                         // for class declaration
 
 using namespace frc;
+
+uint32_t SwerveModule::m_DetailedModuleDisplayIndex = 0U;
 
 
 ////////////////////////////////////////////////////////////////
@@ -240,8 +243,37 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 ////////////////////////////////////////////////////////////////
 void SwerveModule::UpdateSmartDashboard()
 {
+    // Print the encoder values every time
     SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition());
     SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, GetSwerveModulePosition().angle.Degrees().value());
-    SmartDashboard::PutNumber(m_DisplayStrings.m_DriveTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pDriveTalon->GetTemperature()));
-    SmartDashboard::PutNumber(m_DisplayStrings.m_AngleTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pAngleTalon->GetTemperature()));
+
+    // Create and start a timer the first time through
+    static Timer * pTimer = new Timer();
+    static bool bTimerStarted = false;
+    if (!bTimerStarted)
+    {
+        pTimer->Start();
+        bTimerStarted = true;
+    }
+    static units::second_t lastUpdateTime = 0_s;
+    units::second_t currentTime = pTimer->Get();
+
+    // If it's time for a detailed update, print more info
+    const units::second_t DETAILED_DISPLAY_TIME_S = 0.5_s;
+    if ((currentTime - lastUpdateTime) > DETAILED_DISPLAY_TIME_S)
+    {
+        // Even at the slower update rate, only do one swerve module at a time
+        if (m_DetailedModuleDisplayIndex == static_cast<uint32_t>(m_MotorGroupPosition))
+        {
+            SmartDashboard::PutNumber(m_DisplayStrings.m_DriveTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pDriveTalon->GetTemperature()));
+            SmartDashboard::PutNumber(m_DisplayStrings.m_AngleTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pAngleTalon->GetTemperature()));
+
+            m_DetailedModuleDisplayIndex++;
+            if (m_DetailedModuleDisplayIndex == SwerveConfig::NUM_SWERVE_DRIVE_MODULES)
+            {
+                m_DetailedModuleDisplayIndex = 0U;
+            }
+        }
+        lastUpdateTime = currentTime;
+    }
 }
