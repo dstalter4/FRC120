@@ -40,8 +40,8 @@ YtaRobot::YtaRobot() :
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
+    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
+    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
     m_pWristMotor                       (new TalonFX(WRIST_MOTOR_CAN_ID)),
     m_pArmMotor                         (new TalonFX(ARM_MOTOR_CAN_ID)),
     m_pCarriageMotors                   (new TalonMotorGroup<TalonFX>("Carriage", NUMBER_OF_CARRIAGE_MOTORS, CARRIAGE_MOTORS_START_CAN_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
@@ -219,10 +219,6 @@ void YtaRobot::InitialStateSetup()
     // First reset any member data
     ResetMemberData();
 
-    // Start with motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
-
     // Carriage motor neutral mode was configured in the constructor
     m_pArmMotor->SetNeutralMode(NeutralMode::Brake);
     m_pWristMotor->SetNeutralMode(NeutralMode::Brake);
@@ -230,10 +226,6 @@ void YtaRobot::InitialStateSetup()
 
     // Solenoids to known state
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
-    
-    // Tare encoders
-    m_pLeftDriveMotors->TareEncoder();
-    m_pRightDriveMotors->TareEncoder();
 
     // Disable the rainbow animation
     m_pCandle->ClearAnimation(0);
