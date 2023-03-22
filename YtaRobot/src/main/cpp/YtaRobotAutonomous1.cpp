@@ -38,16 +38,19 @@ void YtaRobot::AutonomousRoutine1()
 
     // Enable the intake motor to spit out a cube
     m_pIntakeMotor->Set(ControlMode::PercentOutput, 1.0);
-    Wait(3.0_s);
+    Wait(2.0_s);
     m_pIntakeMotor->Set(ControlMode::PercentOutput, 0.0);
+
+    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_FORWARD, ROBOT_NO_ROTATE, 0.30, 0.0, 3.5_s, true);
+    return;
 
     uint32_t decreasingRollCount = 0U;
     double lastRoll = 0.0;
 
     m_pSafetyTimer->Start();
     units::second_t startTime = m_pSafetyTimer->Get();
-    // @todo: Switch to DriverStation::IsAutonomousEnabled()
     while ((stationState != BALANCED) && ((m_pSafetyTimer->Get() - startTime) < 10.0_s))
+    //while ((stationState != BALANCED) && DriverStation::IsAutonomousEnabled())
     {
         double currentRoll = m_pPigeon->GetRoll();
 
