@@ -42,8 +42,6 @@ YtaRobot::YtaRobot() :
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
-    m_pWristMotor                       (new TalonFX(WRIST_MOTOR_CAN_ID)),
-    m_pArmMotor                         (new TalonFX(ARM_MOTOR_CAN_ID)),
     m_pCarriageMotors                   (new TalonMotorGroup<TalonFX>("Carriage", NUMBER_OF_CARRIAGE_MOTORS, CARRIAGE_MOTORS_START_CAN_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
     m_pIntakeMotor                      (new TalonFX(INTAKE_MOTOR_CAN_ID)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
@@ -196,19 +194,6 @@ void YtaRobot::ConfigureMotorControllers()
     pTalon->ConfigFactoryDefault();
     pTalon->ConfigAllSettings(talonConfig);
     pTalon->SetSelectedSensorPosition(0);
-
-    // Empirically measured for the wrist
-    talonConfig.slot0.kP = 0.05;
-    talonConfig.slot0.kD = 5.0;
-    m_pWristMotor->ConfigFactoryDefault();
-    m_pWristMotor->ConfigAllSettings(talonConfig);
-    m_pWristMotor->ConfigAllowableClosedloopError(0, 1000);
-    m_pWristMotor->SetSelectedSensorPosition(0);
-
-    // Arm currently seems ok with same values as wrist
-    m_pArmMotor->ConfigFactoryDefault();
-    m_pArmMotor->ConfigAllSettings(talonConfig);
-    m_pArmMotor->SetSelectedSensorPosition(0);
 }
 
 
@@ -227,8 +212,6 @@ void YtaRobot::InitialStateSetup()
     ResetMemberData();
 
     // Carriage motor neutral mode was configured in the constructor
-    m_pArmMotor->SetNeutralMode(NeutralMode::Brake);
-    m_pWristMotor->SetNeutralMode(NeutralMode::Brake);
     m_pIntakeMotor->SetNeutralMode(NeutralMode::Brake);
 
     // Solenoids to known state
@@ -342,8 +325,8 @@ void YtaRobot::TeleopPeriodic()
     }
 
     CheckAndResetEncoderCounts();
-    ArmControlSequence();
-    WristControlSequence();
+    CarriageControlSequence();
+    IntakeControlSequence();
 
     PneumaticSequence();
 
@@ -370,8 +353,6 @@ void YtaRobot::UpdateSmartDashboard()
 {
     // Give the drive team some state information
     SmartDashboard::PutNumber("Carriage encoder count", m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition());
-    SmartDashboard::PutNumber("Arm encoder count", m_pArmMotor->GetSelectedSensorPosition());
-    SmartDashboard::PutNumber("Wrist encoder count", m_pWristMotor->GetSelectedSensorPosition());
 }
 
 
@@ -390,20 +371,18 @@ void YtaRobot::CheckAndResetEncoderCounts()
     if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START) && m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
     {
         m_pCarriageMotors->GetMotorObject()->SetSelectedSensorPosition(0);
-        m_pArmMotor->SetSelectedSensorPosition(0);
-        m_pWristMotor->SetSelectedSensorPosition(0);
     }
 }
 
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::ArmControlSequence
+/// @method YtaRobot::CarriageControlSequence
 ///
 /// Updates the state of the arm (carriage and swing position).
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::ArmControlSequence()
+void YtaRobot::CarriageControlSequence()
 {
 /*
     // This is working as expected
@@ -435,68 +414,18 @@ void YtaRobot::ArmControlSequence()
     {
         m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
     }
-
-    // Controls moving the arm in/out
-    double armEncoderCount = m_pArmMotor->GetSelectedSensorPosition();
-    double armInValue = m_pAuxController->GetAxisValue(ROTATE_ARM_CW_AXIS);
-    double armOutValue = -m_pAuxController->GetAxisValue(ROTATE_ARM_CCW_AXIS);
-    double armTotalValue = RobotUtils::Trim(armInValue + armOutValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-
-    // Check for soft limits
-    //bool bArmDisabled = false;
-    // 130'000/-70'000 for starting inline with guides
-    static bool bUsingPositionMode = false;
-    // This moves to robot back
-    if (armTotalValue > 0.0)
-    {
-        // If approaching vertical position
-        if (armEncoderCount > -10000)
-        {
-            // Try and hold
-            m_pArmMotor->Set(ControlMode::Position, 0.0);
-            bUsingPositionMode = true;
-        }
-        else
-        {
-            m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
-        }
-    }
-    // This moves to robot front
-    else if (armTotalValue < 0.0)
-    {
-        // Past soft limit, no motion
-        if (armEncoderCount < -90000)
-        {
-        }
-        else
-        {
-            m_pArmMotor->Set(ControlMode::PercentOutput, armTotalValue * ARM_ROTATION_SCALING_FACTOR);
-            bUsingPositionMode = false;
-        }
-    }
-    else
-    {
-        if (!bUsingPositionMode)
-        {
-            m_pArmMotor->Set(ControlMode::PercentOutput, 0.0);
-        }
-    }
 }
 
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::WristControlSequence
+/// @method YtaRobot::IntakeControlSequence
 ///
 /// Updates the state of the wrist (position and intake).
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::WristControlSequence()
+void YtaRobot::IntakeControlSequence()
 {
-    // Controls moving the wrist
-    double wristRotateValue = RobotUtils::Trim(m_pAuxController->GetAxisValue(ROTATE_WRIST_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    m_pWristMotor->Set(ControlMode::PercentOutput, wristRotateValue * WRIST_ROTATION_SCALING_FACTOR);
-
     // Controls the intake
     if (m_pAuxController->GetButtonState(AUX_INTAKE_FORWARD_BUTTON) || m_pDriveController->GetButtonState(DRV_INTAKE_FORWARD_BUTTON))
     {

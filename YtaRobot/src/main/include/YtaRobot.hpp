@@ -250,11 +250,11 @@ private:
     // Main sequence for vision processing
     void CameraSequence();
 
-    // Main sequence for arm control
-    void ArmControlSequence();
+    // Main sequence for carriage control
+    void CarriageControlSequence();
 
-    // Main sequence for wrist control
-    void WristControlSequence();
+    // Main sequence for intake control
+    void IntakeControlSequence();
 
     // Check for a request to reset encoder counts
     void CheckAndResetEncoderCounts();
@@ -275,8 +275,6 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonFX *                       m_pWristMotor;                          // Wrist motor control
-    TalonFX *                       m_pArmMotor;                            // Arm motor control
     TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
     TalonFX *                       m_pIntakeMotor;                         // Intake motor control
     
@@ -380,9 +378,6 @@ private:
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                ROTATE_ARM_CW_AXIS                      = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
-    static const int                ROTATE_ARM_CCW_AXIS                     = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
-    static const int                ROTATE_WRIST_AXIS                       = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS;
     static const int                AUX_MOVE_CARRIAGE_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
     static const int                AUX_INTAKE_REVERSE_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
@@ -398,8 +393,6 @@ private:
     //       in SwerveDrive.hpp).
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
-    static const unsigned           WRIST_MOTOR_CAN_ID                      = 9;
-    static const unsigned           ARM_MOTOR_CAN_ID                        = 10;
     static const unsigned           CARRIAGE_MOTORS_START_CAN_ID            = 11;
     static const unsigned           INTAKE_MOTOR_CAN_ID                     = 13;
 
@@ -532,8 +525,6 @@ private:
     }
     
     static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.80;
-    static constexpr double         ARM_ROTATION_SCALING_FACTOR             =  0.50;
-    static constexpr double         WRIST_ROTATION_SCALING_FACTOR           =  0.50;
     static constexpr double         INTAKE_MOTOR_SPEED                      =  0.50;
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
@@ -547,12 +538,7 @@ private:
     static constexpr double         DRIVE_WHEEL_DIAMETER_INCHES             =  6.00;
     static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
     static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
-
-    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      = 2048.0;
-    static constexpr double         ARM_GEAR_RATIO                          = (30.0 / 22.0) * (100.0 / 1.0);
-    static constexpr double         WRIST_GEAR_RATIO                        = (100.0 / 1.0);
-    static constexpr double         ARM_ENCODER_COUNTS_PER_DEGREE           = (ARM_GEAR_RATIO * FALCON_ENCODER_COUNTS_PER_ROTATION) / ANGLE_360_DEGREES;
-    static constexpr double         WRIST_ENCODER_COUNTS_PER_DEGREE         = (WRIST_GEAR_RATIO * FALCON_ENCODER_COUNTS_PER_ROTATION) / ANGLE_360_DEGREES;
+    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
 
     static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
     static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
