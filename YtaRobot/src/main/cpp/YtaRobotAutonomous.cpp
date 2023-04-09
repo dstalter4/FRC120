@@ -36,6 +36,24 @@ void YtaRobot::AutonomousInit()
     
     // Put everything in a stable state
     InitialStateSetup();
+
+    switch (m_AllianceColor)
+    {
+        case DriverStation::Alliance::kRed:
+        {
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        case DriverStation::Alliance::kBlue:
+        {
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
     
     // Indicate the autonomous routine has not executed yet
     YtaRobotAutonomous::bAutonomousExecutionComplete = false;
