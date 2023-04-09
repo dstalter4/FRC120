@@ -15,6 +15,7 @@
 #include "cameraserver/CameraServer.h"          // for CameraServer instance
 #include "networktables/NetworkTable.h"         // for network tables
 #include "networktables/NetworkTableInstance.h" // for network table instance
+#include "wpinet/PortForwarder.h"               // for port forwarding
 
 // C++ INCLUDES
 #include "RobotCamera.hpp"                      // for class declaration
@@ -245,7 +246,15 @@ void RobotCamera::LimelightThread()
     }
 
     RobotUtils::DisplayMessage("Limelight network table found.");
-    
+
+    // Enable port forwarding for the limelight while tethered via USB
+    const int LIMELIGHT_START_PORT = 5800;
+    const int LIMELIGHT_END_PORT = 5805;
+    for (int port = LIMELIGHT_START_PORT; port <= LIMELIGHT_END_PORT; port++)
+    {
+        wpi::PortForwarder::GetInstance().Add(port, "limelight.local", port);
+    }
+
     // The limelight camera mode will be set by autonomous or teleop
     
     while (true)
