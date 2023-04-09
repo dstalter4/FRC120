@@ -339,6 +339,7 @@ private:
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
+    bool                            m_bIntakeCube;                          // Keep track of whether a cube or cone is being taken in
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
     units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
@@ -358,13 +359,12 @@ private:
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
     // Driver inputs
-    static const int                CARRIAGE_DOWN_AXIS                      = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
-    static const int                CARRIAGE_UP_AXIS                        = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
     static const int                DRV_INTAKE_REVERSE_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                DRV_INTAKE_FORWARD_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
+    static const int                DRV_TOGGLE_LEDS_BUTTON                  = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
@@ -378,10 +378,11 @@ private:
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                AUX_MOVE_CARRIAGE_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
+    static const int                AUX_MOVE_CARRIAGE_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
+    static const int                AUX_INTAKE_REVERSE_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
+    static const int                AUX_INTAKE_FORWARD_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
 
-    static const int                AUX_INTAKE_REVERSE_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                AUX_INTAKE_FORWARD_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
+    static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
@@ -524,8 +525,8 @@ private:
         return rightValue;
     }
     
-    static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.80;
-    static constexpr double         INTAKE_MOTOR_SPEED                      =  0.50;
+    static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.40;
+    static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;

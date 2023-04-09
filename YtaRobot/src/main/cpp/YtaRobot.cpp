@@ -64,6 +64,7 @@ YtaRobot::YtaRobot() :
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
+    m_bIntakeCube                       (true),
     m_bDriveSwap                        (false),
     m_bCoolingDriveMotors               (true),
     m_LastDriveMotorCoolTime            (0_s),
@@ -194,6 +195,13 @@ void YtaRobot::ConfigureMotorControllers()
     pTalon->ConfigFactoryDefault();
     pTalon->ConfigAllSettings(talonConfig);
     pTalon->SetSelectedSensorPosition(0);
+
+    m_pIntakeMotor->ConfigFactoryDefault();
+    //talonConfig.slot0.closedLoopPeakOutput = 0.10;
+    m_pIntakeMotor->ConfigAllSettings(talonConfig);
+    m_pIntakeMotor->SetSelectedSensorPosition(0);
+    //const StatorCurrentLimitConfiguration INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG = {true, 5.0, 50.0, 5.0};
+    //m_pIntakeMotor->ConfigStatorCurrentLimit(INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG);
 }
 
 
@@ -213,6 +221,7 @@ void YtaRobot::InitialStateSetup()
 
     // Carriage motor neutral mode was configured in the constructor
     m_pIntakeMotor->SetNeutralMode(NeutralMode::Brake);
+    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_CONE_FIXED_ENCODER_POSITION);
 
     // Solenoids to known state
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
@@ -235,23 +244,6 @@ void YtaRobot::InitialStateSetup()
     
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
-    switch (m_AllianceColor)
-    {
-        case DriverStation::Alliance::kRed:
-        {
-            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
-            break;
-        }
-        case DriverStation::Alliance::kBlue:
-        {
-            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
     
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
@@ -276,6 +268,9 @@ void YtaRobot::TeleopInit()
     // Autonomous should have left things in a known state, but
     // just in case clear everything.
     InitialStateSetup();
+
+    // Start showing a cube (purple)
+    m_pCandle->SetLEDs(240, 73, 241, 0, 0, NUMBER_OF_LEDS);
 
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
@@ -351,8 +346,10 @@ void YtaRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::UpdateSmartDashboard()
 {
+    // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
     SmartDashboard::PutNumber("Carriage encoder count", m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition());
+    SmartDashboard::PutNumber("Intake encoder count", m_pIntakeMotor->GetSelectedSensorPosition());
 }
 
 
@@ -384,34 +381,72 @@ void YtaRobot::CheckAndResetEncoderCounts()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CarriageControlSequence()
 {
-/*
-    // This is working as expected
-    if (m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+    // Static variables for fixed position control
+    static bool bUsingFixedMode = true;
+    static int32_t fixedPosition = 0U;
+
+    //const int32_t FIXED_POSITION_STEP_VALUE = 25'000;
+    if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER))
     {
-        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 300'000);
+        /*
+        fixedPosition += FIXED_POSITION_STEP_VALUE;
+        if (fixedPosition > 150'000)
+        {
+            fixedPosition = 150'000;
+        }
+        */
+        fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
+        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, fixedPosition);
+        bUsingFixedMode = true;
         return;
     }
-*/
-    // Controls moving the carriage up/down
-    // Aux controller inputs get first shot for control
-    double auxCarriageValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(AUX_MOVE_CARRIAGE_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double carriageSetValue = auxCarriageValue;
-
-    if (auxCarriageValue == 0.0)
+    else if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER))
     {
-        double carriageDownValue = -m_pDriveController->GetAxisValue(CARRIAGE_DOWN_AXIS);
-        double carriageUpValue = m_pDriveController->GetAxisValue(CARRIAGE_UP_AXIS);
-        carriageSetValue = RobotUtils::Trim(carriageDownValue + carriageUpValue, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    }
-    if ((carriageSetValue < 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() < 10'000))
-    {
-        if (m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+        /*
+        fixedPosition -= FIXED_POSITION_STEP_VALUE;
+        if (fixedPosition < 0)
         {
-            m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+            fixedPosition = 0;
         }
+        */
+        fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
+        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, fixedPosition);
+        bUsingFixedMode = true;
+        return;
     }
     else
     {
+    }
+
+    // Controls moving the carriage up/down
+    double auxCarriageValue = RobotUtils::Trim(-m_pAuxController->GetAxisValue(AUX_MOVE_CARRIAGE_AXIS), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double carriageSetValue = auxCarriageValue;
+
+    // Inputs from the drive team negate using fixed mode
+    if (carriageSetValue != 0.0)
+    {
+        bUsingFixedMode = false;
+    }
+
+    // Logic to set the manual control
+    if (!bUsingFixedMode)
+    {
+        // Manual override
+        if (carriageSetValue != 0.0 && m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
+        {
+            m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
+            return;
+        }
+        // Do not allow extending past the max range
+        if ((carriageSetValue > 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() > 152'000))
+        {
+            carriageSetValue = 0.0;
+        }
+        // Do not allow retracting past the base
+        if ((carriageSetValue < 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() < 1'000))
+        {
+            carriageSetValue = 0.0;
+        }
         m_pCarriageMotors->Set(carriageSetValue * CARRIAGE_MOVEMENT_SCALING_FACTOR);
     }
 }
@@ -426,18 +461,93 @@ void YtaRobot::CarriageControlSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeControlSequence()
 {
-    // Controls the intake
-    if (m_pAuxController->GetButtonState(AUX_INTAKE_FORWARD_BUTTON) || m_pDriveController->GetButtonState(DRV_INTAKE_FORWARD_BUTTON))
+    // @todo: Check for stall with (m_pIntakeMotor->GetSelectedSensorVelocity() == 0.0)
+    // Nominal free spin current: 10-15A
+    // Stall current: 60-75A
+    // Sensor velocity is negative on intake, ~-5000
+
+    // Static variables for stall control
+    static bool bStalled = false;
+    static double stalledEncoderCount = 0.0;
+    static Timer * pJogTimer = new Timer();
+    static units::second_t lastTimestamp = 0.0_s;
+    static bool bJogOn = false;
+
+    // Check for a stall condition
+    if (!bStalled)
     {
-        m_pIntakeMotor->Set(ControlMode::PercentOutput, INTAKE_MOTOR_SPEED);
+        // If the sensor is barely moving and current is high, assume a stall
+        if ((std::abs(m_pIntakeMotor->GetSelectedSensorVelocity()) < 10.0) && (m_pIntakeMotor->GetStatorCurrent() > 25.0))
+        {
+            // Motor off, start jogging
+            m_pIntakeMotor->Set(ControlMode::PercentOutput, OFF);
+            bStalled = true;
+            stalledEncoderCount = m_pIntakeMotor->GetSelectedSensorPosition();
+            pJogTimer->Start();
+            lastTimestamp = pJogTimer->Get();
+            return;
+        }
     }
-    else if (m_pAuxController->GetButtonState(AUX_INTAKE_REVERSE_BUTTON) || m_pDriveController->GetButtonState(DRV_INTAKE_REVERSE_BUTTON))
+
+    // Allow the drive team to override the stall controls if needed
+    if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
     {
-        m_pIntakeMotor->Set(ControlMode::PercentOutput, -INTAKE_MOTOR_SPEED);
+        bStalled = false;
+    }
+
+    // Controls the intake (cube and cones spin in different directions)
+    const double CUBE_CONE_MULTIPLIER = m_bIntakeCube ? -1.0 : 1.0;
+    double manualControlSpeed = 0.0;
+    if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_FORWARD_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
+    {
+        manualControlSpeed = (INTAKE_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
+
+        // Clear a stall when drive team tries to eject
+        bStalled = false;
+        pJogTimer->Stop();
+        pJogTimer->Reset();
+    }
+    else if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_REVERSE_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
+    {
+        manualControlSpeed = (-INTAKE_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
     }
     else
     {
-        m_pIntakeMotor->Set(ControlMode::PercentOutput, OFF);
+        manualControlSpeed = OFF;
+    }
+
+
+
+    // Hold position if stalled
+    if (bStalled)
+    {
+        // Cube will just try to hold position
+        if (m_bIntakeCube)
+        {
+            m_pIntakeMotor->Set(ControlMode::Position, stalledEncoderCount);
+        }
+        else
+        {
+            // Cones need to jog the motor
+            if ((pJogTimer->Get() - lastTimestamp) > 0.2_s)
+            {
+                if (bJogOn)
+                {
+                    m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.07);
+                }
+                else
+                {
+                    m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.07);
+                }
+                bJogOn = !bJogOn;
+                lastTimestamp = pJogTimer->Get();
+            }
+        }
+    }
+    // Not stalled, just use the manual input value
+    else
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, manualControlSpeed);
     }
 }
 
@@ -454,22 +564,21 @@ void YtaRobot::LedSequence()
 {
     enum LedStrandColor
     {
-        STRAND_OFF,
         CUBE_PURPLE,
         CONE_YELLOW
     };
-    static LedStrandColor strandColor = STRAND_OFF;
+    static LedStrandColor strandColor = CUBE_PURPLE;
 
-    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT) || m_pAuxController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT))
+    if (m_pDriveController->DetectButtonChange(DRV_TOGGLE_LEDS_BUTTON) || m_pAuxController->DetectButtonChange(AUX_TOGGLE_LEDS_BUTTON))
     {
         switch (strandColor)
         {
-            case STRAND_OFF:
             case CUBE_PURPLE:
             {
                 // Set all LEDs to yellow
                 m_pCandle->SetLEDs(255, 240, 0, 0, 0, NUMBER_OF_LEDS);
                 strandColor = CONE_YELLOW;
+                m_bIntakeCube = false;
                 break;
             }
             case CONE_YELLOW:
@@ -477,6 +586,7 @@ void YtaRobot::LedSequence()
                 // Set all LEDs to purple (163, 73, 164)
                 m_pCandle->SetLEDs(240, 73, 241, 0, 0, NUMBER_OF_LEDS);
                 strandColor = CUBE_PURPLE;
+                m_bIntakeCube = true;
                 break;
             }
             default:
