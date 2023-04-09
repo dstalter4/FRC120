@@ -170,6 +170,49 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 
 
 ////////////////////////////////////////////////////////////////
+/// @method RobotCamera::AutonomousCamera::AlignToTargetSwerve
+///
+/// This method tries to automatically align the robot to a
+/// target based on feedback from the camera using swerve drive.
+///
+////////////////////////////////////////////////////////////////
+void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
+{
+    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+
+    // Note for Avery: Here's how you send a command to move the swerves.
+    // The parameters in the {} are the forward/back speed and left/right speed.
+    // Positive values are forward/left, negative values are backward/right.
+    // The next parameter is how much to rotate (spin about the robot center).
+    // Always leave the last two to 'true'.  So the line below would be forward only.
+    // pRobotObj->m_pSwerveDrive->SetModuleStates({0.15_m, 0.0_m}, 0.0, true, true);
+
+    // Look at the method above (AlignToTarget()) for an example that used to move
+    // the non-swerve base.  It shows how you can get limelight info.  Here's a
+    // rudimentary example that will do basic movement.
+    double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
+
+    // tx is reported in degrees (-27:0:+27)
+    if ((targetX > 1.5) && (targetX < 27.0))
+    {
+        // Target is reported to the right, move right
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, -0.20_m}, 0.0, true, true);
+    }
+    else if ((targetX < -1.5) && (targetX > -27.0))
+    {
+        // Target is reported to the left, move left
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.20_m}, 0.0, true, true);
+    }
+    else
+    {
+        // No movement required
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method RobotCamera::UsbCameraInfo::UsbCameraInfo
 ///
 /// Constructor for a UsbCameraInfo object.

@@ -78,6 +78,7 @@ public:
         };
 
         static bool AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors = true);
+        static void AlignToTargetSwerve();
 
     private:
         static Timer m_AutoCameraTimer;

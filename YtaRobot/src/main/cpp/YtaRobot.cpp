@@ -312,7 +312,15 @@ void YtaRobot::TeleopPeriodic()
 
     if (Yta::Drive::Config::USE_SWERVE_DRIVE)
     {
-        SwerveDriveSequence();
+        // Disabled until more testing is done
+        if (false)//m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON))
+        {
+            RobotCamera::AutonomousCamera::AlignToTargetSwerve();
+        }
+        else
+        {
+            SwerveDriveSequence();
+        }
     }
     else
     {
