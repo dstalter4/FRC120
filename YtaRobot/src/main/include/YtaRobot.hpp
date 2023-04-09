@@ -442,7 +442,7 @@ private:
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const unsigned           NUMBER_OF_CARRIAGE_MOTORS               = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = (308 - 92);
+    static const unsigned           NUMBER_OF_LEDS                          = ((23*4) + 8);
     static const char               NULL_CHARACTER                          = '\0';
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
@@ -525,6 +525,9 @@ private:
         return rightValue;
     }
     
+    static constexpr double         CARRIAGE_MIN_FIXED_ENCODER_POSITION     =  1000.0;
+    static constexpr double         CARRIAGE_CONE_FIXED_ENCODER_POSITION    =  5000.0;
+    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  152'000.0;
     static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.40;
     static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
