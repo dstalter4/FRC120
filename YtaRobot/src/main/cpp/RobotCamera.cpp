@@ -192,13 +192,13 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
     // rudimentary example that will do basic movement.
     double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
 
-    // tx is reported in degrees (-27:0:+27)
-    if ((targetX > 1.5) && (targetX < 27.0))
+    // tx is reported in degrees (LL2: -30:0:+30)
+    if ((targetX > 1.5) && (targetX < 30.0))
     {
         // Target is reported to the right, move right
         pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, -0.20_m}, 0.0, true, true);
     }
-    else if ((targetX < -1.5) && (targetX > -27.0))
+    else if ((targetX < -1.5) && (targetX > -30.0))
     {
         // Target is reported to the left, move left
         pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.20_m}, 0.0, true, true);

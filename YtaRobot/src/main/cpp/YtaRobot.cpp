@@ -315,10 +315,16 @@ void YtaRobot::TeleopPeriodic()
         // Disabled until more testing is done
         if (false)//m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON))
         {
+            RobotCamera::SetLimelightPipeline(1);
+            RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
+            RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_ON);
             RobotCamera::AutonomousCamera::AlignToTargetSwerve();
         }
         else
         {
+            RobotCamera::SetLimelightPipeline(0);
+            RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+            RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
             SwerveDriveSequence();
         }
     }

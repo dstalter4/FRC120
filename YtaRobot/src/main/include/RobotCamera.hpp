@@ -101,6 +101,9 @@ public:
     inline static void ToggleCamera();
 
     // Set the limelight mode
+    inline static void SetLimelightPipeline(int32_t pipelineNum);
+
+    // Set the limelight mode
     inline static void SetLimelightMode(LimelightMode mode);
 
     // Set the state of the limelight LED array
@@ -275,6 +278,19 @@ private:
     static constexpr double                     DEGREES_TO_RADIANS                  = M_PI / 180.0;
     static constexpr double                     DECIMAL_TO_PERCENT                  = 100.0;
 };
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method RobotCamera::SetLimelightPipeline
+///
+/// This method sets the pipeline used by the limelight camera.
+///
+////////////////////////////////////////////////////////////////
+inline void RobotCamera::SetLimelightPipeline(int32_t pipelineNum)
+{
+    m_pLimelightNetworkTable->PutNumber("pipeline", pipelineNum);
+}
 
 
 
