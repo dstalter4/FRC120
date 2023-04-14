@@ -389,13 +389,42 @@ void YtaRobot::CheckAndResetEncoderCounts()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CarriageControlSequence()
 {
+    enum CarriagePosition
+    {
+        CARRIAGE_LOW,
+        CARRIAGE_MID,
+        CARRIAGE_HIGH
+    };
+
     // Static variables for fixed position control
     static bool bUsingFixedMode = true;
     static int32_t fixedPosition = 0U;
+    static CarriagePosition carriagePosition = CARRIAGE_LOW;
 
     //const int32_t FIXED_POSITION_STEP_VALUE = 25'000;
     if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER))
     {
+        switch (carriagePosition)
+        {
+            case CARRIAGE_LOW:
+            {
+                fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
+                carriagePosition = CARRIAGE_MID;
+                break;
+            }
+            case CARRIAGE_MID:
+            {
+                fixedPosition = CARRIAGE_MAX_FIXED_ENCODER_POSITION;
+                carriagePosition = CARRIAGE_HIGH;
+                break;
+            }
+            case CARRIAGE_HIGH:
+            default:
+            {
+                // If already in the high position, extension can't go further
+                break;
+            }
+        }
         /*
         fixedPosition += FIXED_POSITION_STEP_VALUE;
         if (fixedPosition > 150'000)
@@ -403,13 +432,36 @@ void YtaRobot::CarriageControlSequence()
             fixedPosition = 150'000;
         }
         */
-        fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
+        //fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
         m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, fixedPosition);
         bUsingFixedMode = true;
         return;
     }
     else if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER))
     {
+        switch (carriagePosition)
+        {
+            case CARRIAGE_HIGH:
+            {
+                fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
+                carriagePosition = CARRIAGE_MID;
+                break;
+            }
+            case CARRIAGE_MID:
+            {
+                // We should set the position based on cone/cube, but the state change logic also needs an update
+                //fixedPosition = m_bIntakeCube ? CARRIAGE_CONE_FIXED_ENCODER_POSITION : CARRIAGE_MIN_FIXED_ENCODER_POSITION;
+                fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
+                carriagePosition = CARRIAGE_LOW;
+                break;
+            }
+            case CARRIAGE_LOW:
+            default:
+            {
+                // If already in the low position, retraction can't go further
+                break;
+            }
+        }
         /*
         fixedPosition -= FIXED_POSITION_STEP_VALUE;
         if (fixedPosition < 0)
@@ -417,7 +469,7 @@ void YtaRobot::CarriageControlSequence()
             fixedPosition = 0;
         }
         */
-        fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
+        //fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
         m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, fixedPosition);
         bUsingFixedMode = true;
         return;
@@ -446,12 +498,12 @@ void YtaRobot::CarriageControlSequence()
             return;
         }
         // Do not allow extending past the max range
-        if ((carriageSetValue > 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() > 152'000))
+        if ((carriageSetValue > 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() > CARRIAGE_MAX_FIXED_ENCODER_POSITION))
         {
             carriageSetValue = 0.0;
         }
         // Do not allow retracting past the base
-        if ((carriageSetValue < 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() < 1'000))
+        if ((carriageSetValue < 0.0) && (m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition() < CARRIAGE_MIN_FIXED_ENCODER_POSITION))
         {
             carriageSetValue = 0.0;
         }
@@ -508,7 +560,7 @@ void YtaRobot::IntakeControlSequence()
     double manualControlSpeed = 0.0;
     if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_FORWARD_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
     {
-        manualControlSpeed = (INTAKE_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
+        manualControlSpeed = (INTAKE_OUT_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
 
         // Clear a stall when drive team tries to eject
         bStalled = false;
@@ -517,7 +569,7 @@ void YtaRobot::IntakeControlSequence()
     }
     else if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_REVERSE_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
     {
-        manualControlSpeed = (-INTAKE_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
+        manualControlSpeed = (-INTAKE_IN_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
     }
     else
     {

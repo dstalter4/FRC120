@@ -527,9 +527,11 @@ private:
     
     static constexpr double         CARRIAGE_MIN_FIXED_ENCODER_POSITION     =  1000.0;
     static constexpr double         CARRIAGE_CONE_FIXED_ENCODER_POSITION    =  5000.0;
-    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  152'000.0;
+    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  95'000.0;
+    static constexpr double         CARRIAGE_MAX_FIXED_ENCODER_POSITION     =  152'000.0;
     static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.40;
-    static constexpr double         INTAKE_MOTOR_SPEED                      =  0.30;
+    static constexpr double         INTAKE_IN_MOTOR_SPEED                   =  0.45;
+    static constexpr double         INTAKE_OUT_MOTOR_SPEED                  =  0.30;
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
