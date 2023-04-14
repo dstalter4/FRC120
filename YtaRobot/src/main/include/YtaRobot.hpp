@@ -141,15 +141,6 @@ private:
         BNO055
     };
     
-    enum SonarDriveState
-    {
-        NONE            = 0x00,
-        LEFT_GUIDE      = 0x01,
-        RIGHT_GUIDE     = 0x02,
-        FORWARD_GUIDE   = 0x10,
-        REVERSE_GUIDE   = 0x20
-    };
-    
     // STRUCTS
     // (none)
     
@@ -178,9 +169,6 @@ private:
    
     // Get a reading from the gyro sensor
     inline double GetGyroValue(GyroType gyroType, AnalogGyro * pSensor = nullptr);
-    
-    // Convert a distance in inches to encoder turns
-    int GetEncoderRotationsFromInches(int inches, double diameter, bool bUseQuadEncoding = true);
 
     // Autonomous wait for something to complete delay routine
     inline void AutonomousDelay(units::second_t time);
@@ -204,10 +192,6 @@ private:
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
-    bool AutonomousGyroLeftTurn(double destAngle, double turnSpeed);
-    bool AutonomousGyroRightTurn(double destAngle, double turnSpeed);
-    void AutonomousEncoderDrive(double speed, double distance, RobotDirection direction);
-    bool AutonomousSonarDrive(RobotDirection direction, SonarDriveState driveState, uint32_t destLateralDist, uint32_t destSideDist);
 
     // Resets member variables
     void ResetMemberData();
