@@ -29,16 +29,16 @@
 void YtaRobot::AutonomousRoutine3()
 {
     // Extend the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 152'000);
+    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_MAX_FIXED_ENCODER_POSITION);
     Wait(1.0_s);
 
     // Enable the intake motor to spit out a cube
-    m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.35);
+    m_pIntakeMotor->Set(ControlMode::PercentOutput, -INTAKE_OUT_MOTOR_SPEED);
     Wait(1.0_s);
     m_pIntakeMotor->Set(ControlMode::PercentOutput, 0.0);
 
     // Retract the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 1000);
+    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_MIN_FIXED_ENCODER_POSITION);
     Wait(1.0_s);
 
 

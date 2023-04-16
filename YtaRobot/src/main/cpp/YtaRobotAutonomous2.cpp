@@ -28,17 +28,20 @@
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine2()
 {
+    // Hold the game piece in place while extending
+    m_pIntakeMotor->Set(ControlMode::PercentOutput, -INTAKE_IN_CONE_MOTOR_SPEED);
+
     // Extend the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 152'000);
+    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_MAX_FIXED_ENCODER_POSITION);
     Wait(1.0_s);
 
-    // Enable the intake motor to spit out a cube
-    m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.35);
+    // Enable the intake motor to spit out a cone
+    m_pIntakeMotor->Set(ControlMode::PercentOutput, INTAKE_OUT_MOTOR_SPEED);
     Wait(1.0_s);
     m_pIntakeMotor->Set(ControlMode::PercentOutput, 0.0);
 
     // Retract the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 1000);
+    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_MIN_FIXED_ENCODER_POSITION);
     Wait(1.0_s);
 
 
@@ -46,17 +49,20 @@ void YtaRobot::AutonomousRoutine2()
     enum StationState
     {
         ASCENDING_STATION,
+        CROSSING_STATION,
+        DESCENDING_STATION,
+        REASCEND_STATION,
         BALANCING_STATION,
         BALANCED
     };
     StationState stationState = ASCENDING_STATION;
 
-    uint32_t increasingRollCount = 0U;
+    uint32_t decreasingRollCount = 0U;
     double lastRoll = 0.0;
 
     m_pSafetyTimer->Start();
     units::second_t startTime = m_pSafetyTimer->Get();
-    while ((stationState != BALANCED) && ((m_pSafetyTimer->Get() - startTime) < 7.0_s))
+    while ((stationState != BALANCED) && ((m_pSafetyTimer->Get() - startTime) < 12.0_s))
     //while ((stationState != BALANCED) && DriverStation::IsAutonomousEnabled())
     {
         double currentRoll = m_pPigeon->GetRoll();
@@ -68,11 +74,10 @@ void YtaRobot::AutonomousRoutine2()
                 // Drive backward onto the ramp
                 m_pSwerveDrive->SetModuleStates({-0.30_m, 0.0_m}, 0.0, true, true);
 
-                // If the pitch is over abs(10 degrees), we can start to try and balance
+                // If the pitch is over abs(10 degrees), we can start the descent drive
                 if (currentRoll < -10.0)
                 {
-                    lastRoll = currentRoll;
-                    stationState = BALANCING_STATION;
+                    stationState = CROSSING_STATION;
                     m_pCandle->SetLEDs(255, 255, 255, 0, 0, NUMBER_OF_LEDS);
 
                     // The delay is because the ramp angle bounces as the robot moves it.
@@ -82,29 +87,82 @@ void YtaRobot::AutonomousRoutine2()
 
                 break;
             }
+            case CROSSING_STATION:
+            {
+                // Drop off some speed, continue driving over the ramp
+                m_pSwerveDrive->SetModuleStates({-0.25_m, 0.0_m}, 0.0, true, true);
+
+                // When the pitch changes the other way, the robot is now going down the ramp
+                if (currentRoll > 10.0)
+                {
+                    stationState = DESCENDING_STATION;
+                }
+
+                break;
+            }
+            case DESCENDING_STATION:
+            {
+                // At this point the robot should be clearly descending the back.
+                // Just do a timed drive to exit the community.
+                AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, ROBOT_NO_ROTATE, 0.20, 0.0, 1.0_s, true);
+                AutonomousDelay(0.5_s);
+                stationState = REASCEND_STATION;
+                m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+                break;
+            }
+            case REASCEND_STATION:
+            {
+                // Drive forward back onto the ramp
+                m_pSwerveDrive->SetModuleStates({0.30_m, 0.0_m}, 0.0, true, true);
+
+                // If the pitch is over abs(10 degrees), we can start to try and balance
+                if (currentRoll > 10.0)
+                {
+                    lastRoll = currentRoll;
+                    stationState = BALANCING_STATION;
+                    m_pCandle->SetLEDs(255, 255, 255, 0, 0, NUMBER_OF_LEDS);
+
+                    // The delay is because the ramp angle bounces as the robot moves it.
+                    // Slow down and give it some time to climb.
+                    // GPR: Started with 0.25_s, too short.
+                    // If this fails, go back to 0.20_m and no currentRoll check.
+                    m_pSwerveDrive->SetModuleStates({0.12_m, 0.0_m}, 0.0, true, true);
+                    AutonomousDelay(0.5_s);
+                }
+
+                break;
+            }
             case BALANCING_STATION:
             {
-                // This is a logic issue that wasn't fixed when the pitch direction changed, but it's working
-                if (currentRoll < lastRoll)
+                // Logic issued fixed, does it make a difference?
+                if ((currentRoll < lastRoll) && (currentRoll < 12.0))
                 {
-                    increasingRollCount++;
+                    decreasingRollCount++;
+                    m_pCandle->SetLEDs(0, 0, 255, 0, 0, (NUMBER_OF_LEDS / 3 * decreasingRollCount));
+                }
+                else if (currentRoll < 2.0)
+                {
+                    decreasingRollCount++;
+                    m_pCandle->SetLEDs(255, 0, 0, 0, 0, (NUMBER_OF_LEDS / 3 * decreasingRollCount));
                 }
                 else
                 {
-                    increasingRollCount = 0U;
+                    decreasingRollCount = 0U;
+                    m_pCandle->SetLEDs(255, 255, 255, 0, 0, NUMBER_OF_LEDS);
                 }
 
-                // If we see three consecutive decreasing roll counts, lock wheels and balance
-                if (increasingRollCount == 3U)
+                // If we see three consecutive increasing roll counts, lock wheels and balance
+                if (decreasingRollCount == 3U)
                 {
                     m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 1.0, true, true);
                     AutonomousDelay(0.02_s);
                     m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
                     stationState = BALANCED;
+                    Wait(1.0_s);
                 }
 
                 lastRoll = currentRoll;
-                AutonomousDelay(0.04_s);
+                AutonomousDelay(0.1_s);
 
                 break;
             }
