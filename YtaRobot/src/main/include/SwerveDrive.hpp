@@ -11,13 +11,26 @@
 #ifndef SWERVEDRIVE_HPP
 #define SWERVEDRIVE_HPP
 
+// Work around for long build times!  Define these to defeat gradle problems with
+// unlocatable headers.  Use a generic standard library header to satisfy the macros.
+// Define these before including anything that uses the Eigen part of wpimath (like
+// swerve odometry/kinematics).
+#define EIGEN_FUNCTORS_PLUGIN           <cstdint>
+#define EIGEN_DENSEBASE_PLUGIN          <cstdint>
+#define EIGEN_MATRIXBASE_PLUGIN         <cstdint>
+#define EIGEN_ARRAYBASE_PLUGIN          <cstdint>
+#define EIGEN_PLAINOBJECTBASE_PLUGIN    <cstdint>
+#define EIGEN_MATRIX_PLUGIN             <cstdint>
+#define EIGEN_ARRAY_PLUGIN              <cstdint>
+#define EIGEN_MAPBASE_PLUGIN            <cstdint>
+#define EIGEN_VECTORWISEOP_PLUGIN       <cstdint>
+
 // SYSTEM INCLUDES
 // <none>
 
 // C INCLUDES
 #include "ctre/phoenix/sensors/Pigeon2.h"               // for PigeonIMU
 #include "frc/geometry/Translation2d.h"                 // for class declaration
-#include "frc/kinematics/SwerveDriveKinematics.h"       // for class declaration
 #include "frc/kinematics/SwerveDriveOdometry.h"         // for class declaration
 #include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
 #include "frc/kinematics/SwerveModuleState.h"           // for struct declaration

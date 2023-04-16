@@ -11,6 +11,12 @@
 #ifndef ROBOTCAMERA_HPP
 #define ROBOTCAMERA_HPP
 
+// Work around for long build times!  Define these to defeat gradle problems with
+// unlocatable headers.  Use a generic standard library header to satisfy the macros.
+// Define these before including anything anything that uses opencv.
+#define OPENCV_INCLUDE_PORT_FILE    <cstdint>
+#define OPENCV_STDINT_HEADER        <cstdint>
+
 // SYSTEM INCLUDES
 // <none>
 
