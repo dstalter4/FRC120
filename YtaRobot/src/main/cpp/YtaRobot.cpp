@@ -577,6 +577,7 @@ void YtaRobot::IntakeControlSequence()
 
     // Controls the intake (cube and cones spin in different directions)
     const double CUBE_CONE_MULTIPLIER = m_bIntakeCube ? -1.0 : 1.0;
+    const double CUBE_CONE_IN_SPEED = m_bIntakeCube ? INTAKE_IN_CUBE_MOTOR_SPEED : INTAKE_IN_CONE_MOTOR_SPEED;
     double manualControlSpeed = 0.0;
     if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_FORWARD_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
     {
@@ -589,7 +590,7 @@ void YtaRobot::IntakeControlSequence()
     }
     else if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_REVERSE_AXIS)) > JOYSTICK_TRIM_UPPER_LIMIT)
     {
-        manualControlSpeed = (-INTAKE_IN_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
+        manualControlSpeed = (-CUBE_CONE_IN_SPEED * CUBE_CONE_MULTIPLIER);
     }
     else
     {
