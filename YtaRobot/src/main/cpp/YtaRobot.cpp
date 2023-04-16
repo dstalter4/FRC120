@@ -403,7 +403,8 @@ void YtaRobot::CarriageControlSequence()
     {
         CARRIAGE_LOW,
         CARRIAGE_MID,
-        CARRIAGE_HIGH
+        CARRIAGE_HIGH,
+        CARRIAGE_HUMAN_PLAYER
     };
 
     // Static variables for fixed position control
@@ -412,7 +413,7 @@ void YtaRobot::CarriageControlSequence()
     static CarriagePosition carriagePosition = CARRIAGE_LOW;
 
     //const int32_t FIXED_POSITION_STEP_VALUE = 25'000;
-    if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER))
+    if (m_pAuxController->DetectButtonChange(AUX_CARRIAGE_UP_BUTTON))
     {
         switch (carriagePosition)
         {
@@ -423,6 +424,7 @@ void YtaRobot::CarriageControlSequence()
                 break;
             }
             case CARRIAGE_MID:
+            case CARRIAGE_HUMAN_PLAYER:
             {
                 fixedPosition = CARRIAGE_MAX_FIXED_ENCODER_POSITION;
                 carriagePosition = CARRIAGE_HIGH;
@@ -447,11 +449,12 @@ void YtaRobot::CarriageControlSequence()
         bUsingFixedMode = true;
         return;
     }
-    else if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER))
+    else if (m_pAuxController->DetectButtonChange(AUX_CARRIAGE_DOWN_BUTTON))
     {
         switch (carriagePosition)
         {
             case CARRIAGE_HIGH:
+            case CARRIAGE_HUMAN_PLAYER:
             {
                 fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
                 carriagePosition = CARRIAGE_MID;
@@ -481,6 +484,13 @@ void YtaRobot::CarriageControlSequence()
         */
         //fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
         m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, fixedPosition);
+        bUsingFixedMode = true;
+        return;
+    }
+    else if (m_pAuxController->DetectButtonChange(AUX_HUMAN_PLAYER_LOAD_BUTTON))
+    {
+        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_LOAD_FIXED_ENCODER_POSITION);
+        carriagePosition = CARRIAGE_HUMAN_PLAYER;
         bUsingFixedMode = true;
         return;
     }

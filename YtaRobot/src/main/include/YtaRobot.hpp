@@ -369,6 +369,9 @@ private:
     static const int                AUX_INTAKE_REVERSE_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
     static const int                AUX_INTAKE_FORWARD_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
 
+    static const int                AUX_CARRIAGE_UP_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
+    static const int                AUX_CARRIAGE_DOWN_BUTTON                = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
+    static const int                AUX_HUMAN_PLAYER_LOAD_BUTTON            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
@@ -514,10 +517,12 @@ private:
     
     static constexpr double         CARRIAGE_MIN_FIXED_ENCODER_POSITION     =  1000.0;
     static constexpr double         CARRIAGE_CONE_FIXED_ENCODER_POSITION    =  5000.0;
-    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  95'000.0;
-    static constexpr double         CARRIAGE_MAX_FIXED_ENCODER_POSITION     =  152'000.0;
+    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  108'000.0;
+    static constexpr double         CARRIAGE_LOAD_FIXED_ENCODER_POSITION    =  145'000.0;
+    static constexpr double         CARRIAGE_MAX_FIXED_ENCODER_POSITION     =  154'000.0;
     static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.40;
-    static constexpr double         INTAKE_IN_MOTOR_SPEED                   =  0.45;
+    static constexpr double         INTAKE_IN_CUBE_MOTOR_SPEED              =  0.45;
+    static constexpr double         INTAKE_IN_CONE_MOTOR_SPEED              =  0.65;
     static constexpr double         INTAKE_OUT_MOTOR_SPEED                  =  0.30;
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
