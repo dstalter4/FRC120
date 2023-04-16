@@ -189,6 +189,8 @@ private:
     void AutonomousTestRoutine();
     void AutonomousTestSwerveRoutine();
     void AutonomousTestTrajectoryRoutine();
+    void AutonomousPlaceGamePiece();
+    void AutonomousChargeStationSequence();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
@@ -247,6 +249,7 @@ private:
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
+    SendableChooser<std::string>    m_AutonomousGamePieceChooser;           // Selects from the dashboard whether to place a cone or cube during auto
     
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller

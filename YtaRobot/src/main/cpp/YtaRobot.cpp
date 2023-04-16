@@ -36,6 +36,7 @@ YtaRobot * YtaRobot::m_pThis;
 ////////////////////////////////////////////////////////////////
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
+    m_AutonomousGamePieceChooser        (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
@@ -81,6 +82,9 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_3_STRING, AUTO_ROUTINE_3_STRING);
     m_AutonomousChooser.AddOption(AUTO_TEST_ROUTINE_STRING, AUTO_TEST_ROUTINE_STRING);
     SmartDashboard::PutData("Autonomous Modes", &m_AutonomousChooser);
+    m_AutonomousGamePieceChooser.SetDefaultOption("Cone", "Cone");
+    m_AutonomousGamePieceChooser.AddOption("Cube", "Cube");
+    SmartDashboard::PutData("Auto Game Piece", &m_AutonomousGamePieceChooser);
     
     RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);

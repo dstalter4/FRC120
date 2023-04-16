@@ -28,19 +28,8 @@
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine1()
 {
-    // Extend the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 152'000);
-    Wait(1.0_s);
-
-    // Enable the intake motor to spit out a cube
-    m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.35);
-    Wait(1.0_s);
-    m_pIntakeMotor->Set(ControlMode::PercentOutput, 0.0);
-
-    // Retract the lift
-    m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, 1000);
-    Wait(1.0_s);
-
+    // Place a game piece (set by smart dashboard) and just back up
+    AutonomousPlaceGamePiece();
     AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, ROBOT_NO_ROTATE, 0.30, 0.0, 3.5_s, true);
 
     // The extended version attempts to strafe and balance on the station.
