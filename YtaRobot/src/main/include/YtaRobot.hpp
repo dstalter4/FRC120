@@ -195,8 +195,6 @@ private:
     void AutonomousTestRoutine();
     void AutonomousTestSwerveRoutine();
     void AutonomousTestTrajectoryRoutine();
-    void AutonomousPlaceGamePiece();
-    void AutonomousChargeStationSequence();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
@@ -229,6 +227,7 @@ private:
 
     // Main sequence for LED control
     void LedSequence();
+    inline void SetLedsToAllianceColor();
     void MarioKartLights(double translation, double strafe, double rotate);
 
     // Main sequence for controlling pneumatics
@@ -243,12 +242,6 @@ private:
     // Main sequence for vision processing
     void CameraSequence();
 
-    // Main sequence for carriage control
-    void CarriageControlSequence();
-
-    // Main sequence for intake control
-    void IntakeControlSequence();
-
     // Check for a request to reset encoder counts
     void CheckAndResetEncoderCounts();
 
@@ -259,7 +252,6 @@ private:
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
-    SendableChooser<std::string>    m_AutonomousGamePieceChooser;           // Selects from the dashboard whether to place a cone or cube during auto
     
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
@@ -299,10 +291,7 @@ private:
     // (none)
     
     // Timers
-    Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
-    Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
-    Timer *                         m_pDirectionalAlignTimer;               // Keep track of a directional align operation
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
@@ -336,11 +325,7 @@ private:
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
-    bool                            m_bIntakeCube;                          // Keep track of whether a cube or cone is being taken in
-    bool                            m_bIntakeStalled;                       // Keep track if the intake stalled
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
-    bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
-    units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -360,29 +345,19 @@ private:
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
-    static const int                DRV_INTAKE_REVERSE_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
-    static const int                DRV_INTAKE_FORWARD_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
-    static const int                DRV_TOGGLE_LEDS_BUTTON                  = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
-    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
-    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
-    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
-    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
-    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
+    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                AUX_MOVE_CARRIAGE_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
-    static const int                AUX_INTAKE_REVERSE_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
-    static const int                AUX_INTAKE_FORWARD_AXIS                 = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
-
-    static const int                AUX_CARRIAGE_UP_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
-    static const int                AUX_CARRIAGE_DOWN_BUTTON                = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
-    static const int                AUX_HUMAN_PLAYER_LOAD_BUTTON            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
@@ -395,8 +370,6 @@ private:
     //       in SwerveDrive.hpp).
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
-    static const unsigned           CARRIAGE_MOTORS_START_CAN_ID            = 11;
-    static const unsigned           INTAKE_MOTOR_CAN_ID                     = 13;
 
     // CANivore Signals
     // Note: IDs 1-4 are used by the CANcoders (see the
@@ -442,13 +415,27 @@ private:
     static const unsigned           TWO_MOTORS                              = 2;
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
-    static const unsigned           NUMBER_OF_CARRIAGE_MOTORS               = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = ((23*4) + 8);
+    static const unsigned           NUMBER_OF_LEDS                          = 8;
     static const char               NULL_CHARACTER                          = '\0';
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
+    
+    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
+    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
+    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
+    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
+    static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
+    static constexpr double         SWERVE_ROTATE_SLOW_JOYSTICK_THRESHOLD   =  0.10;
+    static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
+    static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
+    static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
+    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
+
+    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
+
+
 
     // These indicate which motor value (+1/-1) represent
     // forward/reverse in the robot.  They are used to keep
@@ -525,35 +512,6 @@ private:
         
         return rightValue;
     }
-    
-    static constexpr double         CARRIAGE_MIN_FIXED_ENCODER_POSITION     =  1000.0;
-    static constexpr double         CARRIAGE_CONE_FIXED_ENCODER_POSITION    =  5000.0;
-    static constexpr double         CARRIAGE_MID_FIXED_ENCODER_POSITION     =  108'000.0;
-    static constexpr double         CARRIAGE_LOAD_FIXED_ENCODER_POSITION    =  145'000.0;
-    static constexpr double         CARRIAGE_MAX_FIXED_ENCODER_POSITION     =  154'000.0;
-    static constexpr double         CARRIAGE_MOVEMENT_SCALING_FACTOR        =  0.40;
-    static constexpr double         INTAKE_IN_CUBE_MOTOR_SPEED              =  0.45;
-    static constexpr double         INTAKE_IN_CONE_MOTOR_SPEED              =  0.65;
-    static constexpr double         INTAKE_OUT_MOTOR_SPEED                  =  0.30;
-    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
-    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
-    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
-    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
-    static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
-    static constexpr double         SWERVE_ROTATE_SLOW_JOYSTICK_THRESHOLD   =  0.10;
-    static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
-    static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
-    static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
-    static constexpr double         DRIVE_WHEEL_DIAMETER_INCHES             =  6.00;
-    static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
-    static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
-    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
-
-    static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
-    static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
-    static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
-    static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
-    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
 
 };  // End class
 
@@ -587,6 +545,35 @@ inline void YtaRobot::CheckForDriveSwap()
     {
         m_bDriveSwap = !m_bDriveSwap;
         SmartDashboard::PutBoolean("Drive swap", m_bDriveSwap);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SetLedsToAllianceColor
+///
+/// Sets the LEDs to the alliance color.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SetLedsToAllianceColor()
+{
+    switch (m_AllianceColor)
+    {
+        case DriverStation::Alliance::kRed:
+        {
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        case DriverStation::Alliance::kBlue:
+        {
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 }
 

@@ -28,10 +28,6 @@
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine2()
 {
-    // Place a game piece (set by smart dashboard) and balance on the charge station
-    AutonomousPlaceGamePiece();
-    AutonomousChargeStationSequence();
-
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 2 done.");
 }
