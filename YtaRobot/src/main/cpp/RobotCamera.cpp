@@ -15,6 +15,7 @@
 #include "cameraserver/CameraServer.h"          // for CameraServer instance
 #include "networktables/NetworkTable.h"         // for network tables
 #include "networktables/NetworkTableInstance.h" // for network table instance
+#include "wpinet/PortForwarder.h"               // for port forwarding
 
 // C++ INCLUDES
 #include "RobotCamera.hpp"                      // for class declaration
@@ -169,6 +170,40 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 
 
 ////////////////////////////////////////////////////////////////
+/// @method RobotCamera::AutonomousCamera::AlignToTargetSwerve
+///
+/// This method tries to automatically align the robot to a
+/// target based on feedback from the camera using swerve drive.
+///
+////////////////////////////////////////////////////////////////
+void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
+{
+    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+
+    // Get the x-axis target value
+    double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
+
+    // tx is reported in degrees (LL2: -30:0:+30)
+    if ((targetX > 1.5) && (targetX < 30.0))
+    {
+        // Target is reported to the right, move right
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, -0.20_m}, 0.0, true, true);
+    }
+    else if ((targetX < -1.5) && (targetX > -30.0))
+    {
+        // Target is reported to the left, move left
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.20_m}, 0.0, true, true);
+    }
+    else
+    {
+        // No movement required
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method RobotCamera::UsbCameraInfo::UsbCameraInfo
 ///
 /// Constructor for a UsbCameraInfo object.
@@ -245,7 +280,15 @@ void RobotCamera::LimelightThread()
     }
 
     RobotUtils::DisplayMessage("Limelight network table found.");
-    
+
+    // Enable port forwarding for the limelight while tethered via USB
+    const int LIMELIGHT_START_PORT = 5800;
+    const int LIMELIGHT_END_PORT = 5805;
+    for (int port = LIMELIGHT_START_PORT; port <= LIMELIGHT_END_PORT; port++)
+    {
+        wpi::PortForwarder::GetInstance().Add(port, "limelight.local", port);
+    }
+
     // The limelight camera mode will be set by autonomous or teleop
     
     while (true)

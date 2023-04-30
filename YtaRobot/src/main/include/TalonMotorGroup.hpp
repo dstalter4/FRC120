@@ -39,6 +39,7 @@ namespace YtaTalon
     {
         MASTER,                 // First motor in a group
         FOLLOW,                 // Motor follows the master
+        FOLLOW_INVERSE,         // Motor follows the master, but inverse
         INDEPENDENT,            // Motor needs to be set independently
         INVERSE,                // Motor is the inverse value of the master
         INDEPENDENT_OFFSET,     // Motor is set independently, but with a different value from master
@@ -136,6 +137,11 @@ private:
         {
             m_pTalon->SetNeutralMode(neutralMode);
 
+            if (controlMode == YtaTalon::FOLLOW_INVERSE)
+            {
+                m_pTalon->SetInverted(true);
+            }
+
             // @todo: Move in sensor too?
             if (YtaTalon::CURRENT_LIMITING_ENABLED && bIsDriveMotor)
             {
@@ -158,7 +164,8 @@ private:
             // Set it as a follower
             m_pTalon->Set(ControlMode::Follower, masterCanId);
 
-            // This helps decrease CAN bus utilization
+            // The Phoenix documentation states: "Motor controllers that are followers can have slower
+            // update rates for [status groups 1/2] without impacting performance."
             // @todo: Consider setting other rates, even for all motor controllers
             m_pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, FOLLOWER_FRAME_RATE_MS);
             m_pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, FOLLOWER_FRAME_RATE_MS);
@@ -268,7 +275,7 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
             // Only set follow for Talon groups that will be configured as
             // such.  The CTRE Phoenix library now passes the control mode in
             // the Set() method, so we only need to set the followers here.
-            if (nonMasterControlMode == YtaTalon::FOLLOW)
+            if ((nonMasterControlMode == YtaTalon::FOLLOW) || (nonMasterControlMode == YtaTalon::FOLLOW_INVERSE))
             {
                 m_pMotorsInfo[i]->SetAsFollower(masterCanId);
             }
@@ -300,7 +307,7 @@ bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMo
         m_pMotorsInfo[m_NumMotors] = new MotorInfo(m_pMotorsInfo[0]->m_pName, controlMode, newMotorCanId, (m_NumMotors + 1), bIsDriveMotor);
         
         // If this Talon will be a follower, be sure to call Set() to enable it
-        if (controlMode == YtaTalon::FOLLOW)
+        if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
         {
             m_pMotorsInfo[m_NumMotors]->SetAsFollower(m_MasterCanId);
         }
@@ -338,9 +345,27 @@ bool TalonMotorGroup<TalonType>::SetMotorInGroupControlMode(unsigned canId, Moto
             m_pMotorsInfo[i]->m_ControlMode = controlMode;
 
             // If this Talon will be a follower, be sure to call Set() to enable it
-            if (controlMode == YtaTalon::FOLLOW)
+            if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
             {
                 m_pMotorsInfo[i]->SetAsFollower(m_MasterCanId);
+            }
+            else
+            {
+                // The previous mode might have had follower frame rates, so they need to be reset
+                static const uint8_t DEFAULT_STATUS_GROUP_1_FRAME_RATE_MS = 10U;
+                static const uint8_t DEFAULT_STATUS_GROUP_2_FRAME_RATE_MS = 20U;
+                m_pMotorsInfo[i]->m_pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, DEFAULT_STATUS_GROUP_1_FRAME_RATE_MS);
+                m_pMotorsInfo[i]->m_pTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, DEFAULT_STATUS_GROUP_2_FRAME_RATE_MS);
+            }
+
+            // Update the inverted status.  Only FOLLOW_INVERSE uses the built-in invert.
+            if (controlMode == YtaTalon::FOLLOW_INVERSE)
+            {
+                m_pMotorsInfo[i]->m_pTalon->SetInverted(true);
+            }
+            else
+            {
+                m_pMotorsInfo[i]->m_pTalon->SetInverted(false);
             }
             
             // Indicate success
@@ -467,6 +492,7 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
                 break;
             }
             case YtaTalon::FOLLOW:
+            case YtaTalon::FOLLOW_INVERSE:
             {
                 // Nothing to do, motor had Set() called during object construction
                 bCallSet = false;

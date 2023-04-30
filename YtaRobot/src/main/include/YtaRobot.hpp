@@ -20,6 +20,9 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
+#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
+#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
+#include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
 #include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
@@ -138,17 +141,14 @@ private:
         BNO055
     };
     
-    enum SonarDriveState
-    {
-        NONE            = 0x00,
-        LEFT_GUIDE      = 0x01,
-        RIGHT_GUIDE     = 0x02,
-        FORWARD_GUIDE   = 0x10,
-        REVERSE_GUIDE   = 0x20
-    };
-    
     // STRUCTS
-    // (none)
+    struct LedColors
+    {
+        int m_Red;
+        int m_Green;
+        int m_Blue;
+        int m_White;
+    };
     
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
@@ -175,9 +175,6 @@ private:
    
     // Get a reading from the gyro sensor
     inline double GetGyroValue(GyroType gyroType, AnalogGyro * pSensor = nullptr);
-    
-    // Convert a distance in inches to encoder turns
-    int GetEncoderRotationsFromInches(int inches, double diameter, bool bUseQuadEncoding = true);
 
     // Autonomous wait for something to complete delay routine
     inline void AutonomousDelay(units::second_t time);
@@ -201,16 +198,15 @@ private:
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();
-    bool AutonomousGyroLeftTurn(double destAngle, double turnSpeed);
-    bool AutonomousGyroRightTurn(double destAngle, double turnSpeed);
-    void AutonomousEncoderDrive(double speed, double distance, RobotDirection direction);
-    bool AutonomousSonarDrive(RobotDirection direction, SonarDriveState driveState, uint32_t destLateralDist, uint32_t destSideDist);
 
     // Resets member variables
     void ResetMemberData();
 
     // Routine to put things in a known state
     void InitialStateSetup();
+
+    // Configure motor controller parameters
+    void ConfigureMotorControllers();
 
     // Main sequence for drive motor control
     void SwerveDriveSequence();
@@ -231,6 +227,8 @@ private:
 
     // Main sequence for LED control
     void LedSequence();
+    inline void SetLedsToAllianceColor();
+    void MarioKartLights(double translation, double strafe, double rotate);
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
@@ -243,6 +241,12 @@ private:
     
     // Main sequence for vision processing
     void CameraSequence();
+
+    // Check for a request to reset encoder counts
+    void CheckAndResetEncoderCounts();
+
+    // Superstructure control testing sequence
+    void SuperStructureTestSequence();
     
     // MEMBER VARIABLES
     
@@ -254,17 +258,18 @@ private:
     AuxControllerType *             m_pAuxController;                       // Auxillary input controller
     
     // Swerve Drive
+    Pigeon2 *                       m_pPigeon;                              // CTRE Pigeon2 IMU
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
+    TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
+    TalonFX *                       m_pIntakeMotor;                         // Intake motor control
     
-    // Spike Relays
-    Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all
-    Relay *                         m_pRedLedRelay;                         // Controls whether or not the red LEDs are lit up
-    Relay *                         m_pGreenLedRelay;                       // Controls whether or not the green LEDs are lit up
-    Relay *                         m_pBlueLedRelay;                        // Controls whether or not the blue LEDs are lit up
+    // LEDs
+    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
+    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
 
     // Interrupts
     // (none)
@@ -286,10 +291,7 @@ private:
     // (none)
     
     // Timers
-    Timer *                         m_pDriveMotorCoolTimer;                 // Timer to track when to enable cooling the drive motors
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
-    Timer *                         m_pInchingDriveTimer;                   // Keep track of an inching drive operation
-    Timer *                         m_pDirectionalAlignTimer;               // Keep track of a directional align operation
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
@@ -324,8 +326,6 @@ private:
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
-    bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
-    units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -344,37 +344,44 @@ private:
     // Driver inputs
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
-    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
-    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
-    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
-    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
-    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
+    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+    static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
+    static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
     // Note: The use of high CAN values if swerve drive is in use is
     //       to prevent instantiating multiple motor controllers with
     //       the same IDs, but still allow code for both drive base
-    //       types to be present.
-    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 1 : 64;
-    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 3 : 66;
+    //       types to be present.  When using swerve drive, IDs 1-8
+    //       are used by the swerve modules (see the SwerveModuleConfigs
+    //       in SwerveDrive.hpp).
+    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
+    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
+
+    // CANivore Signals
+    // Note: IDs 1-4 are used by the CANcoders (see the
+    //       SwerveModuleConfigs in SwerveDrive.hpp).
+    static const int                PIGEON_CAN_ID                           = 5;
+    static const int                CANDLE_CAN_ID                           = 6;
 
     // PWM Signals
     // (none)
     
     // Relays
-    static const int                LEDS_ENABLE_RELAY_ID                    = 0;
-    static const int                RED_LED_RELAY_ID                        = 1;
-    static const int                GREEN_LED_RELAY_ID                      = 2;
-    static const int                BLUE_LED_RELAY_ID                       = 3;
+    // (none)
     
     // Digital I/O Signals
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
@@ -408,11 +415,27 @@ private:
     static const unsigned           TWO_MOTORS                              = 2;
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
+    static const unsigned           NUMBER_OF_LEDS                          = 8;
     static const char               NULL_CHARACTER                          = '\0';
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
+    
+    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
+    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
+    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
+    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
+    static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
+    static constexpr double         SWERVE_ROTATE_SLOW_JOYSTICK_THRESHOLD   =  0.10;
+    static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
+    static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
+    static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
+    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
+
+    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
+
+
 
     // These indicate which motor value (+1/-1) represent
     // forward/reverse in the robot.  They are used to keep
@@ -489,37 +512,7 @@ private:
         
         return rightValue;
     }
-    
-    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
-    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
-    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
-    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
-    static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
-    static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
-    static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
-    static constexpr double         DRIVE_WHEEL_DIAMETER_INCHES             =  6.00;
-    static constexpr double         INCHING_DRIVE_SPEED                     =  0.25;
-    static constexpr double         DIRECTIONAL_ALIGN_DRIVE_SPEED           =  0.55;
 
-    static constexpr units::second_t    DRIVE_MOTOR_COOL_ON_TIME            =  10_s;
-    static constexpr units::second_t    DRIVE_MOTOR_COOL_OFF_TIME           =  20_s;
-    static constexpr units::second_t    INCHING_DRIVE_DELAY_S               =  0.10_s;
-    static constexpr units::second_t    DIRECTIONAL_ALIGN_MAX_TIME_S        =  3.00_s;
-    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
-    
-    // This may seem backward, but the LEDS work by creating
-    // a voltage differential.  The LED strip has four lines,
-    // 12V, red, green and blue.  The 12V line gets enabled by
-    // one relay during initialization.  The RGB LEDs turn on
-    // when there is a voltage differential, so 'on' is when
-    // there is 0V on a RGB line (kOff) and 'off' is when there
-    // is 12V on a RGB line (kForward).
-    
-    static const Relay::Value       LEDS_ENABLED                            = Relay::kForward;
-    static const Relay::Value       LEDS_DISABLED                           = Relay::kOff;
-    static const Relay::Value       LEDS_OFF                                = Relay::kForward;
-    static const Relay::Value       LEDS_ON                                 = Relay::kOff;
-    
 };  // End class
 
 
@@ -552,6 +545,35 @@ inline void YtaRobot::CheckForDriveSwap()
     {
         m_bDriveSwap = !m_bDriveSwap;
         SmartDashboard::PutBoolean("Drive swap", m_bDriveSwap);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SetLedsToAllianceColor
+///
+/// Sets the LEDs to the alliance color.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SetLedsToAllianceColor()
+{
+    switch (m_AllianceColor)
+    {
+        case DriverStation::Alliance::kRed:
+        {
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        case DriverStation::Alliance::kBlue:
+        {
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 }
 

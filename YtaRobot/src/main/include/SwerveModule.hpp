@@ -84,6 +84,7 @@ private:
         char m_AngleTalonTemp[MAX_MODULE_DISPLAY_STRING_LENGTH];
     };
     DisplayStrings m_DisplayStrings;
+    static uint32_t m_DetailedModuleDisplayIndex;
 
     ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;

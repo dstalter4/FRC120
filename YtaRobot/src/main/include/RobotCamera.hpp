@@ -78,6 +78,7 @@ public:
         };
 
         static bool AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors = true);
+        static void AlignToTargetSwerve();
 
     private:
         static Timer m_AutoCameraTimer;
@@ -98,6 +99,9 @@ public:
     
     // Toggle between cameras
     inline static void ToggleCamera();
+
+    // Set the limelight mode
+    inline static void SetLimelightPipeline(int32_t pipelineNum);
 
     // Set the limelight mode
     inline static void SetLimelightMode(LimelightMode mode);
@@ -274,6 +278,19 @@ private:
     static constexpr double                     DEGREES_TO_RADIANS                  = M_PI / 180.0;
     static constexpr double                     DECIMAL_TO_PERCENT                  = 100.0;
 };
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method RobotCamera::SetLimelightPipeline
+///
+/// This method sets the pipeline used by the limelight camera.
+///
+////////////////////////////////////////////////////////////////
+inline void RobotCamera::SetLimelightPipeline(int32_t pipelineNum)
+{
+    m_pLimelightNetworkTable->PutNumber("pipeline", pipelineNum);
+}
 
 
 

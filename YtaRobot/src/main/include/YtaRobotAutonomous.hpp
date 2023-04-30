@@ -6,7 +6,7 @@
 /// Contains the declarations for the autonomous portions of code ran in an FRC
 /// robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOTAUTONOMOUS_HPP
@@ -72,29 +72,9 @@ namespace YtaRobotAutonomous
     // Autonomous delay constants
     static constexpr units::second_t SWERVE_OP_STEP_TIME_S      =  0.10_s;
     static constexpr units::second_t COUNTERACT_COAST_TIME_S    =  0.25_s;
-    static constexpr units::second_t ENCODER_DRIVE_MAX_DELAY_S  =  5.00_s;
     static constexpr units::second_t DELAY_SHORT_S              =  0.50_s;
     static constexpr units::second_t DELAY_MEDIUM_S             =  1.00_s;
     static constexpr units::second_t DELAY_LONG_S               =  2.00_s;
-    
-    // Autonomous encoder drive constants
-    static const int        ENCODER_DRIVE_STRAIGHT_IN           =  12*8;                    
-    static constexpr double ENCODER_COMPENSATE_SPEED            =  0.02;
-    
-    // Autonomous sonar drive constants
-    static const uint32_t   SONAR_DRIVE_STATE_SIDE_MASK         = 0x0F;
-    static const uint32_t   SONAR_DRIVE_STATE_LATERAL_MASK      = 0xF0;
-    static const int        SONAR_LATERAL_DRIVE_DIST_INCHES     =  7*12;
-    static const int        SONAR_SIDE_DRIVE_DIST_INCHES        =     6;
-    static const int        SONAR_MIN_DRIVE_ENABLE_INCHES       = 10*12;
-    static const int        SONAR_INIT_TURN_DIST_INCHES         =     5;
-    static const int        SONAR_MAX_ALLOWED_READING_DIFF      =     2;
-    static const unsigned   SONAR_BUMPER_CLEARANCE_DIST_INCHES  =     4;
-    static constexpr double SONAR_ROUTINE_TIME_S                =  5.00;
-    static constexpr double SONAR_DRIVE_LEFT_SPEED              = -0.10;
-    static constexpr double SONAR_DRIVE_RIGHT_SPEED             =  0.10;
-    static constexpr double SONAR_COMPENSATE_LEFT_SPEED         = -0.05;
-    static constexpr double SONAR_COMPENSATE_RIGHT_SPEED        =  0.05;
     
     // Autonomous misc constants
     static const unsigned   I2C_THREAD_UPDATE_RATE_MS           = 20U;

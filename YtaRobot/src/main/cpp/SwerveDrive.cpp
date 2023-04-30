@@ -35,8 +35,8 @@ using namespace frc;
 /// members.  Note that the IMU is on the canivore bus.
 ///
 ////////////////////////////////////////////////////////////////
-SwerveDrive::SwerveDrive() :
-    m_pPigeon(new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
+SwerveDrive::SwerveDrive(Pigeon2 * pPigeon) :
+    m_pPigeon(pPigeon),
     m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
     m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), {INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION})
 {

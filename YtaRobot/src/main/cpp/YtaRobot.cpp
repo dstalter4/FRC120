@@ -38,20 +38,16 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
-    m_pSwerveDrive                      (new SwerveDrive()),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
-    m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
-    m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
-    m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
-    m_pBlueLedRelay                     (new Relay(BLUE_LED_RELAY_ID)),
+    m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
+    m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
+    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
+    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
+    m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
+    m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
-    m_pDriveMotorCoolTimer              (new Timer()),
     m_pMatchModeTimer                   (new Timer()),
-    m_pInchingDriveTimer                (new Timer()),
-    m_pDirectionalAlignTimer            (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_pAccelerometer                    (new BuiltInAccelerometer),
     m_pAdxrs450Gyro                     (nullptr),
@@ -64,8 +60,6 @@ YtaRobot::YtaRobot() :
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
-    m_bCoolingDriveMotors               (true),
-    m_LastDriveMotorCoolTime            (0_s),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -83,7 +77,14 @@ YtaRobot::YtaRobot() :
     RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_X_AXIS);
-    
+
+    ConfigureMotorControllers();
+
+    CANdleConfiguration candleConfig;
+    candleConfig.stripType = LEDStripType::RGB;
+    m_pCandle->ConfigAllSettings(candleConfig);
+    m_pCandle->Animate(m_RainbowAnimation);
+
     // Construct the ADXRS450 gyro if configured
     if (ADXRS450_GYRO_PRESENT)
     {
@@ -96,6 +97,8 @@ YtaRobot::YtaRobot() :
     
     // Spawn the vision and I2C threads
     // @todo: Use a control variable to prevent the threads from executing too soon.
+    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     m_CameraThread.detach();
     m_I2cThread.detach();
 }
@@ -156,6 +159,47 @@ void YtaRobot::RobotPeriodic()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ConfigureMotorControllers
+///
+/// Sets motor controller specific configuration information.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ConfigureMotorControllers()
+{
+    // These are the defaults for the configuration (see TalonFX.h)
+    //ctre::phoenix::sensors::AbsoluteSensorRange absoluteSensorRange = ctre::phoenix::sensors::AbsoluteSensorRange::Unsigned_0_to_360;
+    //double integratedSensorOffsetDegrees = 0;
+    //ctre::phoenix::sensors::SensorInitializationStrategy initializationStrategy = ctre::phoenix::sensors::SensorInitializationStrategy::BootToZero;
+
+    // The default constructor for TalonFXConfiguration will call the parent
+    // BaseTalonConfiguration constructor with FeedbackDevice::IntegratedSensor.
+
+    /*
+    // Example configuration
+    TalonFXConfiguration talonConfig;
+    talonConfig.slot0.kP = 0.08;
+    talonConfig.slot0.kI = 0.0;
+    talonConfig.slot0.kD = 0.3;
+    talonConfig.slot0.kF = 0.0;
+    talonConfig.absoluteSensorRange = AbsoluteSensorRange::Unsigned_0_to_360;
+    talonConfig.integratedSensorOffsetDegrees = 0.0;
+    talonConfig.initializationStrategy = SensorInitializationStrategy::BootToZero;
+    talonConfig.peakOutputForward = 1.0;
+    talonConfig.peakOutputReverse = 1.0;
+    talonConfig.slot0.closedLoopPeakOutput = 0.10;
+
+    TalonFX * pTalon = new TalonFX(0xFF);
+    pTalon->ConfigFactoryDefault();
+    pTalon->ConfigAllSettings(talonConfig);
+    pTalon->SetSelectedSensorPosition(0);
+    const StatorCurrentLimitConfiguration INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG = {true, 5.0, 50.0, 5.0};
+    pTalon->ConfigStatorCurrentLimit(INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG);
+    */
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::InitialStateSetup
 ///
 /// This method contains the work flow for putting motors,
@@ -168,38 +212,24 @@ void YtaRobot::InitialStateSetup()
     // First reset any member data
     ResetMemberData();
 
-    // Start with motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
-
     // Solenoids to known state
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
     
-    // Tare encoders
-    m_pLeftDriveMotors->TareEncoder();
-    m_pRightDriveMotors->TareEncoder();
-    
-    // Enable LEDs, but keep them off for now
-    m_pLedsEnableRelay->Set(LEDS_ENABLED);
-    m_pRedLedRelay->Set(LEDS_OFF);
-    m_pGreenLedRelay->Set(LEDS_OFF);
-    m_pBlueLedRelay->Set(LEDS_OFF);
-    
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
-    m_pDriveMotorCoolTimer->Stop();
-    m_pDriveMotorCoolTimer->Reset();
     m_pMatchModeTimer->Stop();
     m_pMatchModeTimer->Reset();
-    m_pInchingDriveTimer->Stop();
-    m_pInchingDriveTimer->Reset();
-    m_pDirectionalAlignTimer->Stop();
-    m_pDirectionalAlignTimer->Reset();
     m_pSafetyTimer->Stop();
     m_pSafetyTimer->Reset();
     
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
+
+    // Disable the rainbow animation
+    m_pCandle->ClearAnimation(0);
+
+    // Set the LEDs to the alliance color
+    SetLedsToAllianceColor();
     
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
@@ -228,18 +258,13 @@ void YtaRobot::TeleopInit()
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // Indicate to the I2C thread to get data less often
     RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
-
-    // Start the drive motor cooling timer
-    m_pDriveMotorCoolTimer->Reset();
-    m_pDriveMotorCoolTimer->Start();
-    m_LastDriveMotorCoolTime = 0_s;
-    m_bCoolingDriveMotors = true;
 
     // Set the swerve modules to a known angle.  This (somehow) mitigates
     // the random spin when enabling teleop until it can be investigated.
@@ -271,6 +296,9 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    //SuperStructureSequence();
+    CheckAndResetEncoderCounts();
+
     PneumaticSequence();
 
     //SerialPortSequence();
@@ -279,7 +307,7 @@ void YtaRobot::TeleopPeriodic()
     
     //CameraSequence();
 
-    //LedSequence();
+    LedSequence();
 
     UpdateSmartDashboard();
 }
@@ -294,7 +322,37 @@ void YtaRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::UpdateSmartDashboard()
 {
+    // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
+    // Nothing to send yet
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SuperStructureTestSequence
+///
+/// Quick super structure test.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SuperStructureTestSequence()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::CheckAndResetEncoderCounts
+///
+/// Checks for driver input to rezero all encoder counts.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::CheckAndResetEncoderCounts()
+{
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START) && m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
+    {
+        // Nothing to reset yet
+    }
 }
 
 
@@ -308,6 +366,142 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::LedSequence()
 {
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::MarioKartLights
+///
+/// This method will generate LED behavior that mimicks
+/// drifting in Mario Kart.  It watches for non-zero rotational
+/// inputs while driving/strafing.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
+{
+    enum DriftState
+    {
+        DRIFT_OFF,
+        DRIFT_BLUE,
+        DRIFT_YELLOW,
+        DRIFT_PURPLE,
+        DRIFT_DISABLED,
+        NUM_DRIFT_STATES
+    };
+
+    static DriftState driftState = DRIFT_OFF;
+    static Timer * pDriftTimer = new Timer();
+    static units::second_t lastTimeStamp = 0.0_s;
+    static bool bLastDriftValue = false;
+    static const double MIN_TRANSLATION_OR_STRAFE_VALUE = 0.25;
+
+    // First check if the robot is moving in a way that qualifies for "drift"
+    bool bDrifting = false;
+    if (((std::abs(translation) > MIN_TRANSLATION_OR_STRAFE_VALUE) || (std::abs(strafe) > MIN_TRANSLATION_OR_STRAFE_VALUE)) && (std::abs(rotate) > 0.0))
+    {
+        bDrifting = true;
+    }
+
+    // See if there was a state change in drift status
+    if (bDrifting != bLastDriftValue)
+    {
+        // Now drifting, previously were not
+        if (bDrifting)
+        {
+            // Start the timer, clear the LEDs
+            pDriftTimer->Start();
+            lastTimeStamp = pDriftTimer->Get();
+            m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        }
+        // Not drifting, previously were
+        else
+        {
+            // Stop the timer, turn the LEDs back on
+            pDriftTimer->Stop();
+            pDriftTimer->Reset();
+            driftState = DRIFT_OFF;
+            SetLedsToAllianceColor();
+        }
+        bLastDriftValue = bDrifting;
+    }
+
+    // B: {132, 132, 255}
+    // Y: {255, 240, 0}
+    // P: {240, 73, 241}
+    const LedColors MARIO_KART_LED_COLORS[NUM_DRIFT_STATES] =
+    {
+        {   0,   0,   0,   0},
+        { 132, 132, 255,   0},
+        { 255, 240,   0,   0},
+        { 240,  73, 241,   0},
+        {   0,   0,   0,   0}
+    };
+
+    // Light up the LEDs based on state
+    if (bDrifting)
+    {
+        units::second_t currentTimeStamp = pDriftTimer->Get();
+        switch (driftState)
+        {
+            case DRIFT_OFF:
+            {
+                // Transition to blue (total time 0.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 0.5_s)
+                {
+                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Red,
+                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Green,
+                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Blue,
+                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_White,
+                                       0, NUMBER_OF_LEDS);
+                    driftState = DRIFT_BLUE;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_BLUE:
+            {
+                // Transition to yellow (total time 1.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
+                {
+                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Red,
+                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Green,
+                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Blue,
+                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_White,
+                                       0, NUMBER_OF_LEDS);
+                    driftState = DRIFT_YELLOW;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_YELLOW:
+            {
+                // Transition to purple (total time 2.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
+                {
+                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Red,
+                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Green,
+                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Blue,
+                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_White,
+                                       0, NUMBER_OF_LEDS);
+                    driftState = DRIFT_PURPLE;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_PURPLE:
+            {
+                // @todo: Implement some kind of 'burst' pattern
+                driftState = DRIFT_DISABLED;
+                break;
+            }
+            case DRIFT_DISABLED:
+            default:
+            {
+                break;
+            }
+        }
+    }
 }
 
 
@@ -446,22 +640,38 @@ void YtaRobot::CameraSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveMotorsCool()
 {
-    SmartDashboard::PutBoolean("Drive motor cooling", m_bCoolingDriveMotors);
+    static Timer * pDriveMotorCoolTimer = new Timer();
+    static units::second_t lastDriveMotorCoolTime = 0_s;
+    static constexpr units::second_t DRIVE_MOTOR_COOL_ON_TIME = 10_s;
+    static constexpr units::second_t DRIVE_MOTOR_COOL_OFF_TIME = 10_s;
+    static bool bTimerStarted = false;
+    static bool bCoolingDriveMotors = true;
+
+    // If the first time here, start the timer
+    if (!bTimerStarted)
+    {
+        pDriveMotorCoolTimer->Reset();
+        pDriveMotorCoolTimer->Start();
+        bTimerStarted = true;
+    }
+
+    // Put a status on the smart dashboard
+    SmartDashboard::PutBoolean("Drive motor cooling", bCoolingDriveMotors);
 
     // Get the current time
-    units::second_t currentTime = m_pDriveMotorCoolTimer->Get();
+    units::second_t currentTime = pDriveMotorCoolTimer->Get();
 
     // Set some values for the common logic based on whether or not cooling is currently active or passive
-    units::second_t timerLimit = m_bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
-    DoubleSolenoid::Value solenoidValue = m_bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
+    units::second_t timerLimit = bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
+    DoubleSolenoid::Value solenoidValue = bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
 
     // If the time until the next state change has elapsed
-    if ((currentTime - m_LastDriveMotorCoolTime) > timerLimit)
+    if ((currentTime - lastDriveMotorCoolTime) > timerLimit)
     {
         // Change solenoid state, update control variables
         m_pTalonCoolingSolenoid->Set(solenoidValue);
-        m_bCoolingDriveMotors = !m_bCoolingDriveMotors;
-        m_LastDriveMotorCoolTime = currentTime;
+        bCoolingDriveMotors = !bCoolingDriveMotors;
+        lastDriveMotorCoolTime = currentTime;
     }
 }
 
@@ -479,8 +689,6 @@ void YtaRobot::DriveMotorsCool()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SwerveDriveSequence()
 {
-    // @todo_swerve: Implement tap rotate for alignment on triggers
-
     // Check for a switch between field relative and robot centric
     static bool bFieldRelative = true;
     if (m_pDriveController->DetectButtonChange(FIELD_RELATIVE_TOGGLE_BUTTON))
@@ -499,6 +707,23 @@ void YtaRobot::SwerveDriveSequence()
     double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
+    // Override normal control if a fine positioning request is made
+    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    {
+        translationAxis = 0.0;
+        strafeAxis = 0.0;
+        rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
+    }
+    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
+    {
+        translationAxis = 0.0;
+        strafeAxis = 0.0;
+        rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
+    }
+    else
+    {
+    }
+
     SmartDashboard::PutNumber("Strafe", strafeAxis);
     SmartDashboard::PutNumber("Translation", translationAxis);
     SmartDashboard::PutNumber("Rotation", rotationAxis);
@@ -513,6 +738,7 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+    MarioKartLights(translationAxis, strafeAxis, rotationAxis);
 
     // Display some useful information
     m_pSwerveDrive->UpdateSmartDashboard();
@@ -643,6 +869,10 @@ void YtaRobot::DriveControlSequence()
 ////////////////////////////////////////////////////////////////
 bool YtaRobot::DirectionalInch()
 {
+    static Timer * pInchingDriveTimer = new Timer();
+    static constexpr units::second_t INCHING_DRIVE_DELAY_S = 0.10_s;
+    static constexpr double INCHING_DRIVE_SPEED = 0.25;
+
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
@@ -677,14 +907,14 @@ bool YtaRobot::DirectionalInch()
     }
     
     // Start the timer
-    m_pInchingDriveTimer->Reset();
-    m_pInchingDriveTimer->Start();
+    pInchingDriveTimer->Reset();
+    pInchingDriveTimer->Start();
     
     // Motors on
     m_pLeftDriveMotors->Set(leftSpeed);
     m_pRightDriveMotors->Set(rightSpeed);
     
-    while (m_pInchingDriveTimer->Get() < INCHING_DRIVE_DELAY_S)
+    while (pInchingDriveTimer->Get() < INCHING_DRIVE_DELAY_S)
     {
     }
     
@@ -693,8 +923,8 @@ bool YtaRobot::DirectionalInch()
     m_pRightDriveMotors->Set(OFF);
     
     // Stop the timer
-    m_pInchingDriveTimer->Stop();
-    m_pInchingDriveTimer->Reset();
+    pInchingDriveTimer->Stop();
+    pInchingDriveTimer->Reset();
 
     return true;
 }
@@ -722,6 +952,10 @@ bool YtaRobot::DirectionalInch()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DirectionalAlign()
 {
+    static Timer * pDirectionalAlignTimer = new Timer();
+    static constexpr units::second_t DIRECTIONAL_ALIGN_MAX_TIME_S = 3.00_s;
+    static constexpr double DIRECTIONAL_ALIGN_DRIVE_SPEED = 0.55;
+
     // Retain the last POV value between function invocations
     static int lastPovValue = -1;
     
@@ -857,7 +1091,7 @@ void YtaRobot::DirectionalAlign()
                 }
                 
                 // Start the safety timer
-                m_pDirectionalAlignTimer->Start();
+                pDirectionalAlignTimer->Start();
 
                 // Indicate a state change is not allowed until POV release
                 bStateChangeAllowed = false;
@@ -880,7 +1114,7 @@ void YtaRobot::DirectionalAlign()
             // @todo: Is it a problem that (destinationAngle - 1) can be negative when angle == zero?
             int currentAngle = static_cast<int>(GetGyroValue(BNO055));
             if (((currentAngle >= (destinationAngle - 1)) && (currentAngle <= (destinationAngle + 1))) ||
-                (m_pDirectionalAlignTimer->Get() > DIRECTIONAL_ALIGN_MAX_TIME_S) ||
+                (pDirectionalAlignTimer->Get() > DIRECTIONAL_ALIGN_MAX_TIME_S) ||
                 (bStateChangeAllowed))
             {
                 // Motors off
@@ -888,8 +1122,8 @@ void YtaRobot::DirectionalAlign()
                 m_pRightDriveMotors->Set(OFF);
                 
                 // Reset the safety timer
-                m_pDirectionalAlignTimer->Stop();
-                m_pDirectionalAlignTimer->Reset();
+                pDirectionalAlignTimer->Stop();
+                pDirectionalAlignTimer->Reset();
                 
                 // Clear this just to be safe
                 destinationAngle = -1;
@@ -924,6 +1158,8 @@ void YtaRobot::DisabledInit()
     RobotUtils::DisplayMessage("DisabledInit called.");
 
     // @todo: Shut off the limelight LEDs?
+    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // All motors off
     m_pLeftDriveMotors->Set(OFF);
@@ -931,12 +1167,9 @@ void YtaRobot::DisabledInit()
 
     // Motor cooling off
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
-    
-    // Even though 'Disable' shuts off the relay signals, explitily turn the LEDs off
-    m_pLedsEnableRelay->Set(LEDS_DISABLED);
-    m_pRedLedRelay->Set(LEDS_OFF);
-    m_pGreenLedRelay->Set(LEDS_OFF);
-    m_pBlueLedRelay->Set(LEDS_OFF);
+
+    // Turn the rainbow animation back on    
+    m_pCandle->Animate(m_RainbowAnimation);
 }
 
 
