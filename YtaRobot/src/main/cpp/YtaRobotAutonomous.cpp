@@ -295,7 +295,7 @@ void YtaRobot::AutonomousChargeStationSequence()
                     // GPR: Started with 0.25_s, too short.
                     // If this fails, go back to 0.20_m and no currentRoll check.
                     m_pSwerveDrive->SetModuleStates({0.12_m, 0.0_m}, 0.0, true, true);
-                    AutonomousDelay(0.5_s);
+                    AutonomousDelay(1.0_s);
                 }
 
                 break;
@@ -330,7 +330,7 @@ void YtaRobot::AutonomousChargeStationSequence()
                 }
 
                 lastRoll = currentRoll;
-                AutonomousDelay(0.1_s);
+                AutonomousDelay(0.2_s);
 
                 break;
             }
