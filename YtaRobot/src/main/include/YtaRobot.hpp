@@ -214,7 +214,6 @@ private:
     void SwerveDriveSequence();
     void DriveControlSequence();
     void SideDriveSequence();
-    void MarioKartLights(double translation, double strafe, double rotate);
 
     // Function to check for drive control direction swap
     inline void CheckForDriveSwap();
@@ -230,6 +229,7 @@ private:
 
     // Main sequence for LED control
     void LedSequence();
+    void MarioKartLights(double translation, double strafe, double rotate);
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
