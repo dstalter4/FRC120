@@ -369,6 +369,7 @@ void YtaRobot::UpdateSmartDashboard()
     // Give the drive team some state information
     SmartDashboard::PutNumber("Carriage encoder count", m_pCarriageMotors->GetMotorObject()->GetSelectedSensorPosition());
     SmartDashboard::PutNumber("Intake encoder count", m_pIntakeMotor->GetSelectedSensorPosition());
+    SmartDashboard::PutBoolean("Intake stalled", m_bIntakeStalled);
 }
 
 
@@ -920,6 +921,141 @@ void YtaRobot::DriveMotorsCool()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::MarioKartLights
+///
+/// This method will generate LED behavior that mimicks
+/// drifting in Mario Kart.  It watches for non-zero rotational
+/// inputs while driving/strafing.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
+{
+    enum DriftState
+    {
+        DRIFT_OFF,
+        DRIFT_BLUE,
+        DRIFT_YELLOW,
+        DRIFT_PURPLE,
+        DRIFT_DISABLED
+    };
+
+    static DriftState driftState = DRIFT_OFF;
+    static Timer * pDriftTimer = new Timer();
+    static units::second_t lastTimeStamp = 0.0_s;
+    static bool bLastDriftValue = false;
+    static const double MIN_TRANSLATION_OR_STRAFE_VALUE = 0.25;
+
+    // First check if the robot is moving in a way that qualifies for "drift"
+    bool bDrifting = false;
+    if (((std::abs(translation) > MIN_TRANSLATION_OR_STRAFE_VALUE) || (std::abs(strafe) > MIN_TRANSLATION_OR_STRAFE_VALUE)) && (std::abs(rotate) > 0.0))
+    {
+        bDrifting = true;
+    }
+
+    // See if there was a state change in drift status
+    if (bDrifting != bLastDriftValue)
+    {
+        // Now drifting, previously were not
+        if (bDrifting)
+        {
+            // Start the timer, clear the LEDs
+            pDriftTimer->Start();
+            lastTimeStamp = pDriftTimer->Get();
+            m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        }
+        // Not drifting, previously were
+        else
+        {
+            // Stop the timer, turn the LEDs back on
+            pDriftTimer->Stop();
+            pDriftTimer->Reset();
+            driftState = DRIFT_OFF;
+            if (m_bIntakeCube)
+            {
+                // Purple
+                m_pCandle->SetLEDs(240, 73, 241, 0, 0, NUMBER_OF_LEDS);
+            }
+            else
+            {
+                // Yellow
+                m_pCandle->SetLEDs(255, 240, 0, 0, 0, NUMBER_OF_LEDS);
+            }
+        }
+        bLastDriftValue = bDrifting;
+    }
+
+    // B: {132, 240, 109}
+    // Y: {255, 240, 0}
+    // P: {240, 73, 241}
+    // Candle has 8 LEDs in it that need to be bypassed
+    if (bDrifting)
+    {
+        units::second_t currentTimeStamp = pDriftTimer->Get();
+        switch (driftState)
+        {
+            case DRIFT_OFF:
+            {
+                // Transition to blue (total time 0.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 0.5_s)
+                {
+                    // 2023 LED layout/spacing
+                    m_pCandle->SetLEDs(132, 132, 255, 0, 8, 7);
+                    m_pCandle->SetLEDs(132, 132, 255, 0, 47, 7);
+                    m_pCandle->SetLEDs(132, 132, 255, 0, 54, 7);
+                    m_pCandle->SetLEDs(132, 132, 255, 0, 93, 7);
+                    driftState = DRIFT_BLUE;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_BLUE:
+            {
+                // Transition to yellow (total time 1.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
+                {
+                    // 2023 LED layout/spacing
+                    m_pCandle->SetLEDs(255, 240, 0, 0, 15, 8);
+                    m_pCandle->SetLEDs(255, 240, 0, 0, 39, 8);
+                    m_pCandle->SetLEDs(255, 240, 0, 0, 61, 8);
+                    m_pCandle->SetLEDs(255, 240, 0, 0, 85, 8);
+                    driftState = DRIFT_YELLOW;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_YELLOW:
+            {
+                // Transition to purple (total time 2.5 seconds)
+                if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
+                {
+                    // 2023 LED layout/spacing
+                    m_pCandle->SetLEDs(240, 73, 241, 0, 23, 8);
+                    m_pCandle->SetLEDs(240, 73, 241, 0, 31, 8);
+                    m_pCandle->SetLEDs(240, 73, 241, 0, 69, 8);
+                    m_pCandle->SetLEDs(240, 73, 241, 0, 77, 8);
+                    driftState = DRIFT_PURPLE;
+                    lastTimeStamp = currentTimeStamp;
+                }
+                break;
+            }
+            case DRIFT_PURPLE:
+            {
+                // @todo: Implement some kind of 'burst' pattern
+                driftState = DRIFT_DISABLED;
+                break;
+            }
+            case DRIFT_DISABLED:
+            default:
+            {
+                break;
+            }
+        }
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::SwerveDriveSequence
 ///
 /// This method contains the main workflow for swerve drive
@@ -980,6 +1116,7 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+    MarioKartLights(translationAxis, strafeAxis, rotationAxis);
 
     // Display some useful information
     m_pSwerveDrive->UpdateSmartDashboard();

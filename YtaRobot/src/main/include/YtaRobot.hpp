@@ -142,7 +142,13 @@ private:
     };
     
     // STRUCTS
-    // (none)
+    struct LedColors
+    {
+        int m_Red;
+        int m_Green;
+        int m_Blue;
+        int m_White;
+    };
     
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
@@ -208,6 +214,7 @@ private:
     void SwerveDriveSequence();
     void DriveControlSequence();
     void SideDriveSequence();
+    void MarioKartLights(double translation, double strafe, double rotate);
 
     // Function to check for drive control direction swap
     inline void CheckForDriveSwap();
