@@ -66,6 +66,7 @@ YtaRobot::YtaRobot() :
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bIntakeCube                       (true),
+    m_bIntakeStalled                    (false),
     m_bDriveSwap                        (false),
     m_bCoolingDriveMotors               (true),
     m_LastDriveMotorCoolTime            (0_s),
@@ -411,6 +412,7 @@ void YtaRobot::CarriageControlSequence()
     static bool bUsingFixedMode = true;
     static int32_t fixedPosition = 0U;
     static CarriagePosition carriagePosition = CARRIAGE_LOW;
+    static bool bAtLoadHeight = false;
 
     //const int32_t FIXED_POSITION_STEP_VALUE = 25'000;
     if (m_pAuxController->DetectButtonChange(AUX_CARRIAGE_UP_BUTTON))
@@ -421,6 +423,7 @@ void YtaRobot::CarriageControlSequence()
             {
                 fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
                 carriagePosition = CARRIAGE_MID;
+                bAtLoadHeight = true;
                 break;
             }
             case CARRIAGE_MID:
@@ -458,6 +461,7 @@ void YtaRobot::CarriageControlSequence()
             {
                 fixedPosition = CARRIAGE_MID_FIXED_ENCODER_POSITION;
                 carriagePosition = CARRIAGE_MID;
+                bAtLoadHeight = true;
                 break;
             }
             case CARRIAGE_MID:
@@ -466,6 +470,7 @@ void YtaRobot::CarriageControlSequence()
                 //fixedPosition = m_bIntakeCube ? CARRIAGE_CONE_FIXED_ENCODER_POSITION : CARRIAGE_MIN_FIXED_ENCODER_POSITION;
                 fixedPosition = CARRIAGE_CONE_FIXED_ENCODER_POSITION;
                 carriagePosition = CARRIAGE_LOW;
+                bAtLoadHeight = false;
                 break;
             }
             case CARRIAGE_LOW:
@@ -489,9 +494,18 @@ void YtaRobot::CarriageControlSequence()
     }
     else if (m_pAuxController->DetectButtonChange(AUX_HUMAN_PLAYER_LOAD_BUTTON))
     {
-        m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_LOAD_FIXED_ENCODER_POSITION);
-        carriagePosition = CARRIAGE_HUMAN_PLAYER;
+        if (!bAtLoadHeight)
+        {
+            m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_LOAD_FIXED_ENCODER_POSITION);
+            carriagePosition = CARRIAGE_HUMAN_PLAYER;
+        }
+        else
+        {
+            m_pCarriageMotors->GetMotorObject()->Set(ControlMode::Position, CARRIAGE_CONE_FIXED_ENCODER_POSITION);
+            carriagePosition = CARRIAGE_LOW;
+        }
         bUsingFixedMode = true;
+        bAtLoadHeight = !bAtLoadHeight;
         return;
     }
     else
@@ -547,24 +561,23 @@ void YtaRobot::IntakeControlSequence()
     // Sensor velocity is negative on intake, ~-5000
 
     // Static variables for stall control
-    static bool bStalled = false;
     static double stalledEncoderCount = 0.0;
     static Timer * pJogTimer = new Timer();
-    static units::second_t lastTimestamp = 0.0_s;
+    static units::second_t lastTimeStamp = 0.0_s;
     static bool bJogOn = false;
 
     // Check for a stall condition
-    if (!bStalled)
+    if (!m_bIntakeStalled)
     {
         // If the sensor is barely moving and current is high, assume a stall
-        if ((std::abs(m_pIntakeMotor->GetSelectedSensorVelocity()) < 10.0) && (m_pIntakeMotor->GetStatorCurrent() > 25.0))
+        if ((std::abs(m_pIntakeMotor->GetSelectedSensorVelocity()) < 10.0) && (m_pIntakeMotor->GetStatorCurrent() > 15.0))
         {
             // Motor off, start jogging
             m_pIntakeMotor->Set(ControlMode::PercentOutput, OFF);
-            bStalled = true;
+            m_bIntakeStalled = true;
             stalledEncoderCount = m_pIntakeMotor->GetSelectedSensorPosition();
             pJogTimer->Start();
-            lastTimestamp = pJogTimer->Get();
+            lastTimeStamp = pJogTimer->Get();
             return;
         }
     }
@@ -572,7 +585,7 @@ void YtaRobot::IntakeControlSequence()
     // Allow the drive team to override the stall controls if needed
     if (m_pAuxController->DetectButtonChange(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
     {
-        bStalled = false;
+        m_bIntakeStalled = false;
     }
 
     // Controls the intake (cube and cones spin in different directions)
@@ -584,7 +597,7 @@ void YtaRobot::IntakeControlSequence()
         manualControlSpeed = (INTAKE_OUT_MOTOR_SPEED * CUBE_CONE_MULTIPLIER);
 
         // Clear a stall when drive team tries to eject
-        bStalled = false;
+        m_bIntakeStalled = false;
         pJogTimer->Stop();
         pJogTimer->Reset();
     }
@@ -600,7 +613,7 @@ void YtaRobot::IntakeControlSequence()
 
 
     // Hold position if stalled
-    if (bStalled)
+    if (m_bIntakeStalled)
     {
         // Cube will just try to hold position
         if (m_bIntakeCube)
@@ -610,7 +623,7 @@ void YtaRobot::IntakeControlSequence()
         else
         {
             // Cones need to jog the motor
-            if ((pJogTimer->Get() - lastTimestamp) > 0.2_s)
+            if ((pJogTimer->Get() - lastTimeStamp) > 0.2_s)
             {
                 if (bJogOn)
                 {
@@ -621,7 +634,7 @@ void YtaRobot::IntakeControlSequence()
                     m_pIntakeMotor->Set(ControlMode::PercentOutput, -0.07);
                 }
                 bJogOn = !bJogOn;
-                lastTimestamp = pJogTimer->Get();
+                lastTimeStamp = pJogTimer->Get();
             }
         }
     }
@@ -646,7 +659,14 @@ void YtaRobot::LedSequence()
     enum LedStrandColor
     {
         CUBE_PURPLE,
-        CONE_YELLOW
+        CONE_YELLOW,
+        NUM_STRAND_COLORS
+    };
+    const LedColors CANDLE_LED_COLORS[NUM_STRAND_COLORS] =
+    {
+        // This order matches the enum order above (purple, yellow) for easy indexing
+        {240,  73, 241,   0},
+        {255, 240,   0,   0}
     };
     static LedStrandColor strandColor = CUBE_PURPLE;
 
@@ -657,15 +677,23 @@ void YtaRobot::LedSequence()
             case CUBE_PURPLE:
             {
                 // Set all LEDs to yellow
-                m_pCandle->SetLEDs(255, 240, 0, 0, 0, NUMBER_OF_LEDS);
+                m_pCandle->SetLEDs(CANDLE_LED_COLORS[CONE_YELLOW].m_Red,
+                                   CANDLE_LED_COLORS[CONE_YELLOW].m_Green,
+                                   CANDLE_LED_COLORS[CONE_YELLOW].m_Blue,
+                                   CANDLE_LED_COLORS[CONE_YELLOW].m_White,
+                                   0, NUMBER_OF_LEDS);
                 strandColor = CONE_YELLOW;
                 m_bIntakeCube = false;
                 break;
             }
             case CONE_YELLOW:
             {
-                // Set all LEDs to purple (163, 73, 164)
-                m_pCandle->SetLEDs(240, 73, 241, 0, 0, NUMBER_OF_LEDS);
+                // Set all LEDs to purple
+                m_pCandle->SetLEDs(CANDLE_LED_COLORS[CUBE_PURPLE].m_Red,
+                                   CANDLE_LED_COLORS[CUBE_PURPLE].m_Green,
+                                   CANDLE_LED_COLORS[CUBE_PURPLE].m_Blue,
+                                   CANDLE_LED_COLORS[CUBE_PURPLE].m_White,
+                                   0, NUMBER_OF_LEDS);
                 strandColor = CUBE_PURPLE;
                 m_bIntakeCube = true;
                 break;
@@ -676,6 +704,62 @@ void YtaRobot::LedSequence()
             }
         }
     }
+
+    // Variables for blinking the LEDs
+    static Timer * pBlinkTimer = new Timer();
+    static units::second_t lastTimeStamp = 0.0_s;
+    static bool bLastStallValue = m_bIntakeStalled;
+    static bool bOn = false;
+    static bool bBlink = false;
+
+    // Check if there was a state change on intake stalled
+    if (bLastStallValue != m_bIntakeStalled)
+    {
+        // Changed to stalled, start the blink timer
+        if (m_bIntakeStalled)
+        {
+            pBlinkTimer->Start();
+            lastTimeStamp = pBlinkTimer->Get();
+            bBlink = true;
+            bOn = false;
+        }
+        else
+        {
+            // Changed to not stalled, stop the timer, LEDs back on
+            pBlinkTimer->Stop();
+            pBlinkTimer->Reset();
+            bBlink = false;
+            m_pCandle->SetLEDs(CANDLE_LED_COLORS[strandColor].m_Red,
+                               CANDLE_LED_COLORS[strandColor].m_Green,
+                               CANDLE_LED_COLORS[strandColor].m_Blue,
+                               CANDLE_LED_COLORS[strandColor].m_White,
+                               0, NUMBER_OF_LEDS);
+        }
+        bLastStallValue = m_bIntakeStalled;
+    }
+
+    // If we are supposed to blink and if the timer elapsed enough for a change
+    if ((bBlink) && ((pBlinkTimer->Get() - lastTimeStamp) > 0.25_s))
+    {
+        // LEDs on
+        if (bOn)
+        {
+            m_pCandle->SetLEDs(CANDLE_LED_COLORS[strandColor].m_Red,
+                               CANDLE_LED_COLORS[strandColor].m_Green,
+                               CANDLE_LED_COLORS[strandColor].m_Blue,
+                               CANDLE_LED_COLORS[strandColor].m_White,
+                               0, NUMBER_OF_LEDS);
+        }
+        // LEDs off
+        else
+        {
+            m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        }
+
+        bOn = !bOn;
+        lastTimeStamp = pBlinkTimer->Get();
+    }
+
 }
 
 

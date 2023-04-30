@@ -327,6 +327,7 @@ private:
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
     DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bIntakeCube;                          // Keep track of whether a cube or cone is being taken in
+    bool                            m_bIntakeStalled;                       // Keep track if the intake stalled
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCoolingDriveMotors;                  // Indicates if the drive motors are actively being cooled
     units::second_t                 m_LastDriveMotorCoolTime;               // The last time a drive motor cool state change happened
