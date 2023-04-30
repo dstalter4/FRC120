@@ -187,14 +187,17 @@ void YtaRobot::ConfigureMotorControllers()
     // The default constructor for TalonFXConfiguration will call the parent
     // BaseTalonConfiguration constructor with FeedbackDevice::IntegratedSensor.
     // Currently no current limiting being done.
+    // New lift: try kP = 0.05 and kD = 5.0 (orig 0.08/0.5)
     TalonFXConfiguration talonConfig;
     talonConfig.slot0.kP = 0.08;
     talonConfig.slot0.kI = 0.0;
-    talonConfig.slot0.kD = 0.5;
+    talonConfig.slot0.kD = 0.3;
     talonConfig.slot0.kF = 0.0;
     talonConfig.absoluteSensorRange = AbsoluteSensorRange::Unsigned_0_to_360;
     talonConfig.integratedSensorOffsetDegrees = 0.0;
     talonConfig.initializationStrategy = SensorInitializationStrategy::BootToZero;
+    //talonConfig.peakOutputForward = 0.5;
+    //talonConfig.peakOutputReverse = 0.5;
 
     TalonFX * pTalon = m_pCarriageMotors->GetMotorObject(CARRIAGE_MOTORS_START_CAN_ID);
     pTalon->ConfigFactoryDefault();
@@ -203,6 +206,8 @@ void YtaRobot::ConfigureMotorControllers()
 
     m_pIntakeMotor->ConfigFactoryDefault();
     //talonConfig.slot0.closedLoopPeakOutput = 0.10;
+    //talonConfig.peakOutputForward = 1.0;
+    //talonConfig.peakOutputReverse = 1.0;
     m_pIntakeMotor->ConfigAllSettings(talonConfig);
     m_pIntakeMotor->SetSelectedSensorPosition(0);
     //const StatorCurrentLimitConfiguration INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG = {true, 5.0, 50.0, 5.0};
@@ -338,6 +343,7 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    //SuperStructureSequence();
     CheckAndResetEncoderCounts();
     CarriageControlSequence();
     IntakeControlSequence();
@@ -374,6 +380,115 @@ void YtaRobot::UpdateSmartDashboard()
 
 
 
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SuperStructureTestSequence
+///
+/// Quick super structure test.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SuperStructureTestSequence()
+{
+    // Arm length = 25.5 inches
+    // Arm gear ratio: 30:22 * 100:1
+    // Wrist gear ratio: 100:1
+    // position counts per degree = (gear ratio * 2048) / 360
+
+    // Wrist measurements:  Absolute = 1192 @ vertical
+    //                      F 3606 <-> N -60122 <-> B -131674
+    //                      F<->N range = 63728
+    //                      B<->N range = 71552
+    //                      Full range = 135280
+    //
+    // Arm measurements:    Absolute = 1888 @ vertical
+    //                      F -106632 <-> N 1319 <-> B 102704
+    //                      F<->N range = 107951
+    //                      B<->N range = 101385
+    //                      Full range = 209336
+    //
+    // Carriage measurements:   Absolute = 1139 @ base, 1429 @ base
+    //                          Bottom: ~10000
+    //                          Top: ~1.141M
+    //                          Range: ~1.13M
+    //
+
+    TalonFX * pTalon = m_pCarriageMotors->GetMotorObject(CARRIAGE_MOTORS_START_CAN_ID);
+    double encoderCount = pTalon->GetSelectedSensorPosition();
+    //const uint32_t STEP_VALUE = (FALCON_ENCODER_COUNTS_PER_ROTATION / 2.0);
+    const uint32_t STEP_VALUE = 20'000;
+    static int32_t setRequest = 0U;
+    static double lastEncoderSetPoint = 0;
+    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
+    {
+        // SetSelectedSensorPosition() seems to actually set the position count register, not cause movement
+        pTalon->Set(ControlMode::Position, (encoderCount + STEP_VALUE));
+        lastEncoderSetPoint = encoderCount + STEP_VALUE;
+        setRequest++;
+    }
+    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT))
+    {
+        // SetSelectedSensorPosition() seems to actually set the position count register, not cause movement
+        pTalon->Set(ControlMode::Position, (encoderCount - STEP_VALUE));
+        lastEncoderSetPoint = encoderCount - STEP_VALUE;
+        setRequest--;
+    }
+    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+    {
+        // open loop/closed loop?
+        // ConfigClosedLoopPeakOutput()?
+        pTalon->Set(ControlMode::PercentOutput, 0.0);
+        pTalon->SetSelectedSensorPosition(0);
+    }
+    SmartDashboard::PutNumber("Debug A", pTalon->GetSensorCollection().GetIntegratedSensorAbsolutePosition());
+    SmartDashboard::PutNumber("Debug B", encoderCount);
+    SmartDashboard::PutNumber("Debug C", lastEncoderSetPoint);
+    SmartDashboard::PutNumber("Debug D", lastEncoderSetPoint - encoderCount);
+
+/*
+    static double speed = 0.5;
+    static bool bForward = true;
+    if (m_pDriveController->DetectButtonChange(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK))
+    {
+        speed *= -1.0;
+        bForward = !bForward;
+    }
+
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON))
+    {
+        m_pArmMotor->Set(ControlMode::PercentOutput, speed);
+    }
+    else
+    {
+        m_pArmMotor->Set(ControlMode::PercentOutput, 0.0);
+    }
+
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON))
+    {
+        m_pWristMotor->Set(ControlMode::PercentOutput, speed);
+    }
+    else
+    {
+        m_pWristMotor->Set(ControlMode::PercentOutput, 0.0);
+    }
+
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON))
+    {
+        m_pCarriageMotors->Set(speed);
+    }
+    else
+    {
+        m_pCarriageMotors->Set(0.0);
+    }
+
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON))
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, speed);
+    }
+    else
+    {
+        m_pIntakeMotor->Set(ControlMode::PercentOutput, 0.0);
+    }
+*/
+}
 
 
 

@@ -251,6 +251,9 @@ private:
 
     // Check for a request to reset encoder counts
     void CheckAndResetEncoderCounts();
+
+    // Superstructure control testing sequence
+    void SuperStructureTestSequence();
     
     // MEMBER VARIABLES
     

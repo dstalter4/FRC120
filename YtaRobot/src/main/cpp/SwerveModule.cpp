@@ -37,6 +37,8 @@ uint32_t SwerveModule::m_DetailedModuleDisplayIndex = 0U;
 /// on the CANivore bus, which requires a 120 ohm terminating
 /// resistor.
 ///
+/// 2023: Bevels facing right is 1.0 forward on the Talons.
+///
 ////////////////////////////////////////////////////////////////
 SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_MotorGroupPosition(config.m_Position),
@@ -69,6 +71,10 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_pDriveTalon->SetInverted(false);
     m_pDriveTalon->SetNeutralMode(NeutralMode::Brake);
     m_pDriveTalon->SetSelectedSensorPosition(0);
+
+    // @todo: Should the talons change default group status rates to preserve CAN bandwidth?
+    //m_pDriveTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, 100);
+    //m_pDriveTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 100);
 
     // Configure angle motor controller
     // Current limiting values: enable, limit, threshold, duration
