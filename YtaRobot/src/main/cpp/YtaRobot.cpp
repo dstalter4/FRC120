@@ -40,10 +40,10 @@ YtaRobot::YtaRobot() :
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::CTRE_MagEncoder_Relative, true)),
-    m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>("Intake", TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
-    m_pFeederMotors                     (new TalonMotorGroup<TalonFX>("Feeder", TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Coast, FeedbackDevice::None)),
-    m_pWinchMotor                       (new TalonFX(WINCH_MOTOR_CAN_ID)),
+    //m_pIntakeMotors                     (new TalonMotorGroup<TalonFX>("Intake", TWO_MOTORS, INTAKE_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
+    //m_pFeederMotors                     (new TalonMotorGroup<TalonFX>("Feeder", TWO_MOTORS, FEEDER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Brake, FeedbackDevice::None)),
+    //m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE, NeutralMode::Coast, FeedbackDevice::None)),
+    //m_pWinchMotor                       (new TalonFX(WINCH_MOTOR_CAN_ID)),
     m_pLedsEnableRelay                  (new Relay(LEDS_ENABLE_RELAY_ID)),
     m_pRedLedRelay                      (new Relay(RED_LED_RELAY_ID)),
     m_pGreenLedRelay                    (new Relay(GREEN_LED_RELAY_ID)),
@@ -185,16 +185,16 @@ void YtaRobot::InitialStateSetup()
     // Start with motors off
     m_pLeftDriveMotors->Set(OFF);
     m_pRightDriveMotors->Set(OFF);
-    m_pIntakeMotors->Set(OFF);
-    m_pFeederMotors->Set(OFF);
-    m_pShooterMotors->Set(OFF);
-    m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
+    //m_pIntakeMotors->Set(OFF);
+    //m_pFeederMotors->Set(OFF);
+    //m_pShooterMotors->Set(OFF);
+    //m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     
     // Configure brake or coast for motors not set during object construction
-    m_pWinchMotor->SetNeutralMode(NeutralMode::Brake);
+    //m_pWinchMotor->SetNeutralMode(NeutralMode::Brake);
 
     // Override the neutral mode for the first intake motor in that group
-    m_pIntakeMotors->GetMotorObject()->SetNeutralMode(NeutralMode::Coast);
+    //m_pIntakeMotors->GetMotorObject()->SetNeutralMode(NeutralMode::Coast);
 
     // Solenoids to known state
     m_pIntakeSolenoid->Set(INTAKE_UP_SOLENOID_VALUE);
@@ -306,15 +306,17 @@ void YtaRobot::TeleopPeriodic()
 
     DriveControlSequence();
 
-    IntakeSequence();
+    SuperstructureDemo();
 
-    FeedAndShootSequence();
+    //IntakeSequence();
 
-    UnjamSequence();
+    //FeedAndShootSequence();
 
-    HangSequence();
+    //UnjamSequence();
 
-    PneumaticSequence();
+    //HangSequence();
+
+    //PneumaticSequence();
 
     //SerialPortSequence();
     
@@ -349,6 +351,27 @@ void YtaRobot::UpdateSmartDashboard()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::SuperstructureDemo
+///
+/// Demonstrate superstructure features.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::SuperstructureDemo()
+{
+    static TalonFX * pShootTalon = new TalonFX(8);
+    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON))
+    {
+        pShootTalon->Set(ControlMode::PercentOutput, ON);
+    }
+    else
+    {
+        pShootTalon->Set(ControlMode::PercentOutput, OFF);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::IntakeSequence
 ///
 /// Controls the intake.
@@ -356,6 +379,7 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
+    /*
     // Only spin the intake if we are not unjamming
     if (!m_bUnjamming)
     {
@@ -407,6 +431,7 @@ void YtaRobot::IntakeSequence()
             }
         }
     }
+    */
 }
 
 
@@ -423,6 +448,7 @@ void YtaRobot::IntakeSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::FeedAndShootSequence()
 {
+    /*
     // First determine and set the shooter speed
     if (m_pDriveController->GetButtonState(DRIVE_SET_SHOOT_75_BUTTON) || m_pAuxController->GetButtonState(AUX_SET_SHOOT_75_BUTTON))
     {
@@ -511,6 +537,7 @@ void YtaRobot::FeedAndShootSequence()
             shootState = NO_SHOT;
         }
     }
+    */
 }
 
 
@@ -523,6 +550,7 @@ void YtaRobot::FeedAndShootSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::UnjamSequence()
 {
+    /*
     if (m_pAuxController->GetAxisValue(AUX_UNJAM_AXIS) > 0.0)
     {
         m_bUnjamming = true;
@@ -536,6 +564,7 @@ void YtaRobot::UnjamSequence()
     {
         m_bUnjamming = false;
     }
+    */
 }
 
 
@@ -548,6 +577,7 @@ void YtaRobot::UnjamSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::HangSequence()
 {
+    /*
     Yta::Controller::PovDirections povDirection = m_pAuxController->GetPovAsDirection();
 
     if (povDirection == Yta::Controller::PovDirections::POV_UP)
@@ -562,6 +592,7 @@ void YtaRobot::HangSequence()
     {
         m_pWinchMotor->Set(ControlMode::PercentOutput, OFF);
     }
+    */
 }
 
 

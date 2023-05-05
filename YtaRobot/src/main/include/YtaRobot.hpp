@@ -215,6 +215,9 @@ private:
     // Function to periodically cool the drive talons
     void DriveMotorsCool();
 
+    // Function for demo robot functionality
+    void SuperstructureDemo();
+
     // Function to control intake
     void IntakeSequence();
 
@@ -254,10 +257,10 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pIntakeMotors;                        // Intake motor control
-    TalonMotorGroup<TalonFX> *      m_pFeederMotors;                        // Feeder motor control
-    TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
-    TalonFX *                       m_pWinchMotor;                          // Winch motor control
+    //TalonMotorGroup<TalonFX> *      m_pIntakeMotors;                        // Intake motor control
+    //TalonMotorGroup<TalonFX> *      m_pFeederMotors;                        // Feeder motor control
+    //TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
+    //TalonFX *                       m_pWinchMotor;                          // Winch motor control
     
     // Spike Relays
     Relay *                         m_pLedsEnableRelay;                     // Controls whether the LEDs will light up at all

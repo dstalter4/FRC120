@@ -28,6 +28,10 @@
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine1()
 {
+    // No auto for demo purposes
+    return;
+
+    /*
     // Drop the intake, spin the motors
     m_pIntakeSolenoid->Set(INTAKE_DOWN_SOLENOID_VALUE);
     m_pIntakeMotors->GetMotorObject(INTAKE_MOTORS_CAN_START_ID)->Set(ControlMode::PercentOutput, 0.10);
@@ -71,6 +75,7 @@ void YtaRobot::AutonomousRoutine1()
 
     // Back out of the tarmac
     AutonomousDriveSequence(YtaRobot::RobotDirection::ROBOT_FORWARD, 0.30, 1.5_s);
+    */
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 1 done.");
