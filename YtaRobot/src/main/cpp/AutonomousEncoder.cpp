@@ -49,7 +49,7 @@ int YtaRobot::GetEncoderRotationsFromInches(int inches, double diameter, bool bU
     
     if (!bUseQuadEncoding)
     {
-        result /= 4;
+        result = result / 4;
     }
     
     return result;

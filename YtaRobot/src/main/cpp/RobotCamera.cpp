@@ -303,7 +303,7 @@ void RobotCamera::VisionThread()
     }
     
     // Clear the memory used for the camera storage
-    std::memset(&m_UsbCameras, 0U, sizeof(UsbCameraStorage));
+    std::memset(reinterpret_cast<void*>(&m_UsbCameras), 0U, sizeof(UsbCameraStorage));
     
     // Clear the vision target structure
     std::memset(&m_VisionTargetReport, 0U, sizeof(VisionTargetReport));

@@ -6,7 +6,7 @@
 /// Contains function definitions for interacting with and controlling I2C on
 /// the robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -226,8 +226,9 @@ void RobotI2c::UnpackI2cData()
             // Currently only supporting gyro data
             case I2cDataSelection::GYRO_DATA:
             {
-                // Read the angle
-                uint16_t * pRobotAngle = &m_I2cRioduinoData.m_DataBuffer.m_GyroData.m_xAxisInfo.m_Angle;
+                // Read the angle (and defeat taking address of packed member warning)
+                void * pIntermediate = &m_I2cRioduinoData.m_DataBuffer.m_GyroData.m_xAxisInfo.m_Angle;
+                uint16_t * pRobotAngle = reinterpret_cast<uint16_t *>(pIntermediate);
                 
                 // Make sure a valid angle came over
                 if (*pRobotAngle > RoborioRioduinoSharedData::GyroI2cData::MAX_VALID_ANGLE_VALUE)

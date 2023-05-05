@@ -589,7 +589,7 @@ void YtaRobot::LedSequence()
 void YtaRobot::PneumaticSequence()
 {
     // @todo: Monitor other compressor API data?
-    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->Enabled());
+    SmartDashboard::PutBoolean("Compressor status", m_pCompressor->IsEnabled());
 }
 
 

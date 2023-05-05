@@ -5,7 +5,7 @@
 /// @details
 /// Contains declarations for interacting with and controlling I2C on the robot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2023 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTI2C_HPP
@@ -208,7 +208,9 @@ inline GyroI2cData * RobotI2c::GetGyroData()
 
     if (m_I2cRioduinoData.m_DataSelection == I2cDataSelection::GYRO_DATA)
     {
-        pGyroData = &m_I2cRioduinoData.m_DataBuffer.m_GyroData;
+        // Defeat taking address of packed member warning
+        void * pIntermediate = &m_I2cRioduinoData.m_DataBuffer.m_GyroData;
+        pGyroData = reinterpret_cast<GyroI2cData*>(pIntermediate);
     }
     else
     {
