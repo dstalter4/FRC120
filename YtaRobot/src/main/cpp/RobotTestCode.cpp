@@ -282,8 +282,8 @@ void YtaRobotTest::CtreSpeedControllerTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::RevSpeedControllerTest()
 {
-    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
-    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
+    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkLowLevel::MotorType::kBrushless);
+    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkLowLevel::MotorType::kBrushless);
 
     while (m_pJoystick->GetRawButton(1))
     {
