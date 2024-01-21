@@ -327,7 +327,8 @@ private:
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
-    DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
+    std::optional
+    <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
@@ -561,7 +562,7 @@ inline void YtaRobot::CheckForDriveSwap()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SetLedsToAllianceColor()
 {
-    switch (m_AllianceColor)
+    switch (m_AllianceColor.value())
     {
         case DriverStation::Alliance::kRed:
         {
