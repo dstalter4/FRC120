@@ -20,8 +20,6 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
-#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
-#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 #include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
@@ -47,6 +45,8 @@
 #include "SwerveDrive.hpp"                      // for using swerve drive
 #include "TalonMotorGroup.hpp"                  // for Talon group motor control
 #include "YtaController.hpp"                    // for controller interaction
+//#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
+//#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 
 using namespace frc;
 
@@ -268,8 +268,8 @@ private:
     TalonFX *                       m_pIntakeMotor;                         // Intake motor control
     
     // LEDs
-    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
-    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
+    //CANdle *                        m_pCandle;                              // Controls an RGB LED strip
+    //RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
 
     // Interrupts
     // (none)
@@ -562,12 +562,12 @@ void YtaRobot::SetLedsToAllianceColor()
     {
         case DriverStation::Alliance::kRed:
         {
-            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            //m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
             break;
         }
         case DriverStation::Alliance::kBlue:
         {
-            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            //m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
             break;
         }
         default:
