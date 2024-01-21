@@ -44,6 +44,8 @@ YtaRobot::YtaRobot() :
     m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
+    //m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
+    //m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
@@ -80,10 +82,10 @@ YtaRobot::YtaRobot() :
 
     ConfigureMotorControllers();
 
-    CANdleConfiguration candleConfig;
-    candleConfig.stripType = LEDStripType::RGB;
-    m_pCandle->ConfigAllSettings(candleConfig);
-    m_pCandle->Animate(m_RainbowAnimation);
+    //CANdleConfiguration candleConfig;
+    //candleConfig.stripType = LEDStripType::RGB;
+    //m_pCandle->ConfigAllSettings(candleConfig);
+    //m_pCandle->Animate(m_RainbowAnimation);
 
     // Construct the ADXRS450 gyro if configured
     if (ADXRS450_GYRO_PRESENT)
@@ -226,7 +228,7 @@ void YtaRobot::InitialStateSetup()
     m_AllianceColor = DriverStation::GetAlliance();
 
     // Disable the rainbow animation
-    m_pCandle->ClearAnimation(0);
+    //m_pCandle->ClearAnimation(0);
 
     // Set the LEDs to the alliance color
     SetLedsToAllianceColor();
@@ -380,6 +382,7 @@ void YtaRobot::LedSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
 {
+    /*
     enum DriftState
     {
         DRIFT_OFF,
@@ -502,6 +505,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
             }
         }
     }
+    */
 }
 
 
@@ -1169,7 +1173,7 @@ void YtaRobot::DisabledInit()
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
 
     // Turn the rainbow animation back on    
-    m_pCandle->Animate(m_RainbowAnimation);
+    //m_pCandle->Animate(m_RainbowAnimation);
 }
 
 
