@@ -171,63 +171,49 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SuperstructureTest()
 {
-    // Intakes run opposite each other
-    static TalonFX * pIntake1 = new TalonFX(5);
-    static TalonFX * pIntake2 = new TalonFX(6);
-    // Feeders run opposite each other
-    static TalonFX * pFeeder1 = new TalonFX(7);
-    static TalonFX * pFeeder2 = new TalonFX(8);
-    // Shooters run opposite each other
-    static TalonFX * pShooter1 = new TalonFX(9);
-    static TalonFX * pShooter2 = new TalonFX(10);
-    // Hanger
-    static TalonFX * pWinch = new TalonFX(11);
+    static TalonFX * pTalonFx5 = new TalonFX(5);
+    static TalonFX * pTalonFx6 = new TalonFX(6);
+    static TalonFX * pTalonFx7 = new TalonFX(7);
+    static TalonFX * pTalonFx8 = new TalonFX(8);
+    static TalonFX * pTalonFx9 = new TalonFX(9);
+    static TalonFX * pTalonFx10 = new TalonFX(10);
     
     while (m_pJoystick->GetRawButton(1))
     {
-        pIntake1->Set(ControlMode::PercentOutput, 0.3);
-        pIntake2->Set(ControlMode::PercentOutput, 0.3);
+        pTalonFx5->Set(0.3);
+        pTalonFx6->Set(0.3);
     }
-    pIntake1->Set(ControlMode::PercentOutput, 0.0);
-    pIntake2->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx5->Set(0.0);
+    pTalonFx6->Set(0.0);
     while (m_pJoystick->GetRawButton(2))
     {
-        pFeeder1->Set(ControlMode::PercentOutput, -0.3);
-        pFeeder2->Set(ControlMode::PercentOutput, 0.3);
+        pTalonFx7->Set(0.3);
+        pTalonFx8->Set(0.3);
     }
-    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx7->Set(0.0);
+    pTalonFx8->Set(0.0);
     while (m_pJoystick->GetRawButton(3))
     {
-        pShooter1->Set(ControlMode::PercentOutput, 0.3);
-        pShooter2->Set(ControlMode::PercentOutput, -0.3);
+        pTalonFx9->Set(0.3);
+        pTalonFx10->Set(0.3);
     }
-    pShooter1->Set(ControlMode::PercentOutput, 0.0);
-    pShooter2->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx9->Set(0.0);
+    pTalonFx10->Set(0.0);
     while (m_pJoystick->GetRawButton(4))
     {
-        pIntake1->Set(ControlMode::PercentOutput, 0.3);
-        pIntake1->Set(ControlMode::PercentOutput, -0.3);
-        pFeeder1->Set(ControlMode::PercentOutput, -0.5);
-        pFeeder2->Set(ControlMode::PercentOutput, 0.5);
-        pShooter1->Set(ControlMode::PercentOutput, 1.0);
-        pShooter2->Set(ControlMode::PercentOutput, -1.0);
+        pTalonFx5->Set(0.3);
+        pTalonFx5->Set(0.3);
+        pTalonFx7->Set(0.5);
+        pTalonFx8->Set(0.5);
+        pTalonFx9->Set(1.0);
+        pTalonFx10->Set(1.0);
     }
-    pIntake1->Set(ControlMode::PercentOutput, 0.0);
-    pIntake2->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
-    pShooter1->Set(ControlMode::PercentOutput, 0.0);
-    pShooter2->Set(ControlMode::PercentOutput, 0.0);
-    while (m_pJoystick->GetRawButton(5))
-    {
-        pWinch->Set(ControlMode::PercentOutput, 1.0);
-    }
-    while (m_pJoystick->GetRawButton(6))
-    {
-        pWinch->Set(ControlMode::PercentOutput, -1.0);
-    }
-    pWinch->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx5->Set(0.0);
+    pTalonFx6->Set(0.0);
+    pTalonFx7->Set(0.0);
+    pTalonFx8->Set(0.0);
+    pTalonFx9->Set(0.0);
+    pTalonFx10->Set(0.0);
 }
 
 
