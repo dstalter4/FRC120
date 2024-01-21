@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -20,7 +20,6 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
-#include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
 #include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
 #include "frc/AnalogGyro.h"                     // for using analog gyros
 #include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
@@ -47,6 +46,7 @@
 #include "YtaController.hpp"                    // for controller interaction
 //#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
 //#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
+#include "ctre/phoenix6/Pigeon2.hpp"            // for PigeonIMU
 
 using namespace frc;
 

@@ -6,7 +6,7 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -233,29 +233,29 @@ void YtaRobotTest::CtreSpeedControllerTest()
     
     while (m_pJoystick->GetRawButton(1))
     {
-        pLeft1->Set(ControlMode::PercentOutput, 1.0);
-        pLeft2->Set(ControlMode::PercentOutput, 1.0);
+        pLeft1->Set(1.0);
+        pLeft2->Set(1.0);
     }
     while (m_pJoystick->GetRawButton(2))
     {
-        pLeft1->Set(ControlMode::PercentOutput, -1.0);
-        pLeft2->Set(ControlMode::PercentOutput, -1.0);
+        pLeft1->Set(-1.0);
+        pLeft2->Set(-1.0);
     }
     while (m_pJoystick->GetRawButton(3))
     {
-        pRight1->Set(ControlMode::PercentOutput, 1.0);
-        pRight2->Set(ControlMode::PercentOutput, 1.0);
+        pRight1->Set(1.0);
+        pRight2->Set(1.0);
     }
     while (m_pJoystick->GetRawButton(4))
     {
-        pRight1->Set(ControlMode::PercentOutput, -1.0);
-        pRight2->Set(ControlMode::PercentOutput, -1.0);
+        pRight1->Set(-1.0);
+        pRight2->Set(-1.0);
     }
     
-    pLeft1->Set(ControlMode::PercentOutput, 0.0);
-    pLeft2->Set(ControlMode::PercentOutput, 0.0);
-    pRight1->Set(ControlMode::PercentOutput, 0.0);
-    pRight2->Set(ControlMode::PercentOutput, 0.0);
+    pLeft1->Set(0.0);
+    pLeft2->Set(0.0);
+    pRight1->Set(0.0);
+    pRight2->Set(0.0);
 }
 
 
