@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -37,11 +37,18 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 SwerveDrive::SwerveDrive(Pigeon2 * pPigeon) :
     m_pPigeon(pPigeon),
-    m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
-    m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), {INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION, INITIAL_SWERVE_MODULE_POSITION})
+    // @todo_phoenix6: Figure out why the module reordering is needed.
+    //m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
+    m_SwerveModules{BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG, FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG},
+    m_SwerveModuleStates(wpi::empty_array),
+    m_SwerveModulePositions(wpi::empty_array),
+    m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), m_SwerveModulePositions)
 {
-    m_pPigeon->ConfigFactoryDefault();
-    m_pPigeon->SetYaw(0.0);
+    Pigeon2Configuration pigeon2Config;
+    (void)m_pPigeon->GetConfigurator().Apply(pigeon2Config);
+    (void)m_pPigeon->SetYaw(0.0_deg);
+
+    UpdateOdometry();
 }
 
 
@@ -72,7 +79,9 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
     ChassisSpeeds chassisSpeeds;
     if (bFieldRelative)
     {
-        chassisSpeeds = ChassisSpeeds::FromFieldRelativeSpeeds(xMps, yMps, rotationRadPerSec, units::angle::degree_t(m_pPigeon->GetYaw()));
+        // 2023: m_pPigeon->GetYaw().GetValue()
+        // 2024: getPose()->getRotation()
+        chassisSpeeds = ChassisSpeeds::FromFieldRelativeSpeeds(xMps, yMps, rotationRadPerSec, m_Odometry.GetPose().Rotation());
     }
     else
     {
@@ -80,16 +89,19 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
     }
 
     // Capture the desired module states
-    wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModuleStates = SwerveConfig::Kinematics.ToSwerveModuleStates(chassisSpeeds);
+    m_SwerveModuleStates = SwerveConfig::Kinematics.ToSwerveModuleStates(chassisSpeeds);
 
     // Desaturate the wheel speeds
-    SwerveConfig::Kinematics.DesaturateWheelSpeeds(&swerveModuleStates, SwerveConfig::MAX_DRIVE_VELOCITY_MPS);
+    SwerveConfig::Kinematics.DesaturateWheelSpeeds(&m_SwerveModuleStates, SwerveConfig::MAX_DRIVE_VELOCITY_MPS);
 
     // Set each individual swerve module state
     for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
     {
-        m_SwerveModules[i].SetDesiredState(swerveModuleStates[i], bIsOpenLoop);
+        m_SwerveModules[i].SetDesiredState(m_SwerveModuleStates[i], bIsOpenLoop);
     }
+
+    // Update odometry
+    UpdateOdometry();
 }
 
 
@@ -101,11 +113,14 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
 ////////////////////////////////////////////////////////////////
 void SwerveDrive::UpdateSmartDashboard()
 {
-    // Reference code calls update odometry here on m_Odometry, but it doesn't appear to be used anywhere.
+    SmartDashboard::PutNumber("Odometry X", m_Odometry.GetPose().Translation().X().value());
+    SmartDashboard::PutNumber("Odometry Y", m_Odometry.GetPose().Translation().Y().value());
+    SmartDashboard::PutNumber("Odometry angle", m_Odometry.GetPose().Translation().Angle().Degrees().value());
+    SmartDashboard::PutNumber("Odometry rotation", m_Odometry.GetPose().Rotation().Degrees().value());
 
-    SmartDashboard::PutNumber("Pigeon yaw", m_pPigeon->GetYaw());
-    SmartDashboard::PutNumber("Pigeon pitch", m_pPigeon->GetPitch());
-    SmartDashboard::PutNumber("Pigeon roll", m_pPigeon->GetRoll());
+    SmartDashboard::PutNumber("Pigeon yaw", m_pPigeon->GetYaw().GetValueAsDouble());
+    SmartDashboard::PutNumber("Pigeon pitch", m_pPigeon->GetPitch().GetValueAsDouble());
+    SmartDashboard::PutNumber("Pigeon roll", m_pPigeon->GetRoll().GetValueAsDouble());
 
     for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
     {

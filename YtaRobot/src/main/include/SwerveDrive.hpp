@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEDRIVE_HPP
@@ -15,7 +15,6 @@
 // <none>
 
 // C INCLUDES
-#include "ctre/phoenix/sensors/Pigeon2.h"               // for PigeonIMU
 #include "frc/geometry/Translation2d.h"                 // for class declaration
 #include "frc/kinematics/SwerveDriveOdometry.h"         // for class declaration
 #include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
@@ -27,6 +26,7 @@
 // C++ INCLUDES
 #include "SwerveConfig.hpp"                             // for swerve configuration and constants
 #include "SwerveModule.hpp"                             // for interacting with a swerve module
+#include "ctre/phoenix6/Pigeon2.hpp"                    // for PigeonIMU
 
 using namespace frc;
 
@@ -51,15 +51,38 @@ public:
     // Puts useful values on the dashboard
     void UpdateSmartDashboard();
 
-    // Sets the gyro yaw back to zero degrees
-    inline void ZeroGyroYaw()
+    // Reset the odometry
+    inline void ZeroHeading()
     {
-        m_pPigeon->SetYaw(0.0);
+        // @todo_phoenix6: Verify this is correct.
+        m_Odometry.ResetPosition(m_pPigeon->GetYaw().GetValue(), m_SwerveModulePositions, {m_Odometry.GetPose().Translation(), 0.0_deg});
     }
 
+    // Sets the gyro yaw back to zero degrees
+    /*
+    inline void ZeroGyroYaw()
+    {
+        (void)m_pPigeon->SetYaw(0.0_deg);
+    }
+    */
+
 private:
+    // Update odometry
+    inline void UpdateOdometry()
+    {
+        // Set each individual swerve module state
+        for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+        {
+            m_SwerveModulePositions[i] = m_SwerveModules[i].GetSwerveModulePosition();
+        }
+
+        m_Odometry.Update(m_pPigeon->GetYaw().GetValue(), m_SwerveModulePositions);
+    }
+
     Pigeon2 * m_pPigeon;
     SwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
+    wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_SwerveModuleStates;
+    wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_SwerveModulePositions;
 
     // From https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-odometry.html
     // 0 degrees / radians represents the robot angle when the robot is facing directly toward your opponent’s
@@ -67,8 +90,7 @@ private:
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
 
-    static constexpr const SwerveModulePosition INITIAL_SWERVE_MODULE_POSITION = {0_m, 0_deg};
-
+    // @todo_phoenix6: Convert degrees to turns.
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
     static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 1, 2, 1, 159.521_deg};

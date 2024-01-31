@@ -268,7 +268,9 @@ void YtaRobot::TeleopInit()
 
     // Set the swerve modules to a known angle.  This (somehow) mitigates
     // the random spin when enabling teleop until it can be investigated.
-    m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
+    // @todo_phoenix6: Confirm deletion.
+    //m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
+    //m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
 }
 
 
@@ -700,13 +702,15 @@ void YtaRobot::SwerveDriveSequence()
 
     if (m_pDriveController->DetectButtonChange(ZERO_GYRO_YAW_BUTTON))
     {
-        m_pSwerveDrive->ZeroGyroYaw();
+        //m_pSwerveDrive->ZeroGyroYaw();
+        m_pSwerveDrive->ZeroHeading();
     }
 
+    // @todo_phoenix6: Figure out why the strafe axis doesn't need to be negated.
     // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * 1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
     // Override normal control if a fine positioning request is made
@@ -1164,8 +1168,8 @@ void YtaRobot::DisabledInit()
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     
     // All motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
+    //m_pLeftDriveMotors->Set(OFF);
+    //m_pRightDriveMotors->Set(OFF);
 
     // Motor cooling off
     m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);

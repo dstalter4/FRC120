@@ -5,7 +5,7 @@
 /// @details
 /// Utility routines for swerve drive conversions.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVECONVERSIONS_HPP
@@ -254,6 +254,24 @@ namespace SwerveConversions
     inline static double MetersToFalcon(double meters, double circumference, double gearRatio)
     {
         return meters / (circumference / (gearRatio * 2048.0));
+    }
+
+    // @todo_phoenix6: Formalize and document these.  Remove unused conversions.
+    inline static double RpsToMps(double wheelRps, double circumference)
+    {
+        return wheelRps * circumference;
+    }
+    inline static double MpsToRps(double wheelMps, double circumference)
+    {
+        return wheelMps / circumference;
+    }
+    inline static double RotationsToMeters(double wheelRotations, double circumference)
+    {
+        return wheelRotations * circumference;
+    }
+    inline static double MetersToRotations(double wheelMeters, double circumference)
+    {
+        return wheelMeters / circumference;
     }
 }
 

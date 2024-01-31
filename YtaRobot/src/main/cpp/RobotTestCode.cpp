@@ -159,6 +159,102 @@ void YtaRobotTest::InitializeCommonPointers()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::QuickTestCode()
 {
+    static TalonFX * pTalon1 = new TalonFX(2);
+    static TalonFX * pTalon2 = new TalonFX(4);
+    static TalonFX * pTalon3 = new TalonFX(6);
+    static TalonFX * pTalon4 = new TalonFX(8);
+    static PositionVoltage * pPositionVoltage1 = new PositionVoltage(0.0_tr);
+    static PositionVoltage * pPositionVoltage2 = new PositionVoltage(0.0_tr);
+    static PositionVoltage * pPositionVoltage3 = new PositionVoltage(0.0_tr);
+    static PositionVoltage * pPositionVoltage4 = new PositionVoltage(0.0_tr);
+    static CANcoder * pCanCoder1 = new CANcoder(1, "canivore-120");
+    static CANcoder * pCanCoder2 = new CANcoder(2, "canivore-120");
+    static CANcoder * pCanCoder3 = new CANcoder(3, "canivore-120");
+    static CANcoder * pCanCoder4 = new CANcoder(4, "canivore-120");
+
+    // Bevel R, Bevel L
+    // FL: 0.440186, -0.065186
+    // FR: 0.092773, -0.396484
+    // BL: 0.337646, -0.167725
+    // BR: -0.378418, 0.114990
+    static const units::angle::turn_t TARGET_CANCODER_POS1 = 0.440186_tr;
+    static const units::angle::turn_t TARGET_CANCODER_POS2 = 0.092773_tr;
+    static const units::angle::turn_t TARGET_CANCODER_POS3 = 0.337646_tr;
+    static const units::angle::turn_t TARGET_CANCODER_POS4 = -0.378418_tr;
+    static units::angle::turn_t initialTurn1 = 0.0_tr;
+    static units::angle::turn_t initialTurn2 = 0.0_tr;
+    static units::angle::turn_t initialTurn3 = 0.0_tr;
+    static units::angle::turn_t initialTurn4 = 0.0_tr;
+    static units::angle::turn_t deltaTurns1 = 0.0_tr;
+    static units::angle::turn_t deltaTurns2 = 0.0_tr;
+    static units::angle::turn_t deltaTurns3 = 0.0_tr;
+    static units::angle::turn_t deltaTurns4 = 0.0_tr;
+
+    if (m_pJoystick->GetRawButtonPressed(8))
+    {
+        TalonFXConfiguration angleTalonConfig;
+        angleTalonConfig.MotorOutput.Inverted = InvertedValue::Clockwise_Positive;
+        angleTalonConfig.MotorOutput.NeutralMode = NeutralModeValue::Coast;
+        angleTalonConfig.Feedback.SensorToMechanismRatio = SwerveConfig::ANGLE_GEAR_RATIO;
+        angleTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;
+
+        angleTalonConfig.CurrentLimits.SupplyCurrentLimit = 25.0;
+        angleTalonConfig.CurrentLimits.SupplyCurrentThreshold = 40.0;
+        angleTalonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+        angleTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+
+        angleTalonConfig.Slot0.kP = 50.0;
+        angleTalonConfig.Slot0.kI = 0.0;
+        angleTalonConfig.Slot0.kD = 0.5;
+
+        (void)pTalon1->GetConfigurator().Apply(angleTalonConfig);
+        (void)pTalon2->GetConfigurator().Apply(angleTalonConfig);
+        (void)pTalon3->GetConfigurator().Apply(angleTalonConfig);
+        (void)pTalon4->GetConfigurator().Apply(angleTalonConfig);
+
+        CANcoderConfiguration canCoderConfig;
+        canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue::CounterClockwise_Positive;
+        (void)pCanCoder1->GetConfigurator().Apply(canCoderConfig);
+        (void)pCanCoder2->GetConfigurator().Apply(canCoderConfig);
+        (void)pCanCoder3->GetConfigurator().Apply(canCoderConfig);
+        (void)pCanCoder4->GetConfigurator().Apply(canCoderConfig);
+
+        initialTurn1 = pCanCoder1->GetAbsolutePosition().GetValue();
+        initialTurn2 = pCanCoder2->GetAbsolutePosition().GetValue();
+        initialTurn3 = pCanCoder3->GetAbsolutePosition().GetValue();
+        initialTurn4 = pCanCoder4->GetAbsolutePosition().GetValue();
+        deltaTurns1 = initialTurn1 - TARGET_CANCODER_POS1;
+        deltaTurns2 = initialTurn2 - TARGET_CANCODER_POS2;
+        deltaTurns3 = initialTurn3 - TARGET_CANCODER_POS3;
+        deltaTurns4 = initialTurn4 - TARGET_CANCODER_POS4;
+        pTalon1->SetPosition(-deltaTurns1);
+        pTalon2->SetPosition(-deltaTurns2);
+        pTalon3->SetPosition(-deltaTurns3);
+        pTalon4->SetPosition(-deltaTurns4);
+    }
+
+    SmartDashboard::PutNumber("Debug A", initialTurn1.value());
+    SmartDashboard::PutNumber("Debug B", deltaTurns1.value());
+    SmartDashboard::PutNumber("Debug C", TARGET_CANCODER_POS1.value());
+    static int x;
+    x++;
+    SmartDashboard::PutNumber("Debug D", x);
+
+    if (m_pJoystick->GetRawButtonPressed(5))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(0_tr));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(0_tr));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(0_tr));
+    }
+
+    if (m_pJoystick->GetRawButtonPressed(6))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr + 0.25_tr));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(0_tr + 0.25_tr));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(0_tr + 0.25_tr));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(0_tr + 0.25_tr));
+    }
 }
 
 
@@ -335,7 +431,8 @@ void YtaRobotTest::SwerveDriveTest()
     // Zero the gryo
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(6))
     {
-        pSwerveDrive->ZeroGyroYaw();
+        //pSwerveDrive->ZeroGyroYaw();
+        pSwerveDrive->ZeroHeading();
     }
 
     // Dynamically switch between arcade and GTA drive controls
