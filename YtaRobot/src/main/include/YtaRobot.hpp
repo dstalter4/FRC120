@@ -9,11 +9,14 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
 #define YTAROBOT_HPP
+
+// CTRE output is noisy this year, making it impossible to find real errors
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 // SYSTEM INCLUDES
 #include <cmath>                                // for M_PI

@@ -5,11 +5,14 @@
 /// @details
 /// Implements functionality for a swerve module on a swerve drive robot.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEMODULE_HPP
 #define SWERVEMODULE_HPP
+
+// CTRE output is noisy this year, making it impossible to find real errors
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 // SYSTEM INCLUDES
 #include <cmath>                                        // for M_PI

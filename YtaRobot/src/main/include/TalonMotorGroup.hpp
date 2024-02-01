@@ -6,11 +6,14 @@
 /// A class designed to work with a group of CAN Talon speed controllers working
 /// in tandem.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef TALONMOTORGROUP_HPP
 #define TALONMOTORGROUP_HPP
+
+// CTRE output is noisy this year, making it impossible to find real errors
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 // SYSTEM INCLUDES
 #include <cstdio>                               // for std::snprintf

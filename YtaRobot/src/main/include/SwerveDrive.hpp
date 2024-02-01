@@ -5,11 +5,14 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEDRIVE_HPP
 #define SWERVEDRIVE_HPP
+
+// CTRE output is noisy this year, making it impossible to find real errors
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 // SYSTEM INCLUDES
 // <none>
