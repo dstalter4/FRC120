@@ -32,6 +32,7 @@
 #include "SwerveModule.hpp"                             // for interacting with a swerve module
 
 using namespace frc;
+using namespace ctre::phoenix::sensors;
 
 
 ////////////////////////////////////////////////////////////////

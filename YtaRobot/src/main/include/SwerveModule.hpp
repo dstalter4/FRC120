@@ -18,18 +18,22 @@
 #include <cmath>                                        // for M_PI
 
 // C INCLUDES
-#include "ctre/Phoenix.h"                               // for CTRE library interfaces
+//#include "ctre/Phoenix.h"                               // for CTRE library interfaces
+#include "ctre/phoenix/sensors/CANCoder.h"              // for CANCoder
 #include "frc/controller/SimpleMotorFeedForward.h"      // for feedforward control
 #include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
 #include "frc/kinematics/SwerveModuleState.h"           // for struct declaration
 #include "frc/geometry/Rotation2d.h"                    // for class declaration
+#include "rev/CANSparkMax.h"                            // for interacting with spark max motor controllers
 #include "units/angle.h"                                // for degree user defined literal
 #include "units/voltage.h"                              // for voltage unit user defined literals
 
 // C++ INCLUDES
 // (none)
 
+using namespace ctre::phoenix::sensors;
 using namespace frc;
+using namespace rev;
 
 
 ////////////////////////////////////////////////////////////////
@@ -90,8 +94,10 @@ private:
     static uint32_t m_DetailedModuleDisplayIndex;
 
     ModulePosition m_MotorGroupPosition;
-    TalonFX * m_pDriveTalon;
-    TalonFX * m_pAngleTalon;
+    //TalonFX * m_pDriveTalon;
+    //TalonFX * m_pAngleTalon;
+    CANSparkMax * m_pDriveSpark;
+    CANSparkMax * m_pAngleSpark;
     CANCoder * m_pAngleCanCoder;
     Rotation2d m_AngleOffset;
     Rotation2d m_LastAngle;
@@ -103,8 +109,8 @@ private:
     using Acceleration = units::compound_unit<Velocity, units::inverse<units::seconds>>;
     using kv_unit = units::compound_unit<units::volts, units::inverse<Velocity>>;
     using ka_unit = units::compound_unit<units::volts, units::inverse<Acceleration>>;
-    static constexpr units::volt_t KS = (0.32_V / 12.0);
-    static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(1.51 / 12.0);
+    static constexpr units::volt_t KS = (0.667_V / 12.0);
+    static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(2.44 / 12.0);
     static constexpr units::unit_t<ka_unit> KA = units::unit_t<ka_unit>(0.27 / 12.0);
 
     // Swerve Profiling Values
