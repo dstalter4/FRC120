@@ -12,9 +12,6 @@
 #ifndef TALONMOTORGROUP_HPP
 #define TALONMOTORGROUP_HPP
 
-// CTRE output is noisy this year, making it impossible to find real errors
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 // SYSTEM INCLUDES
 #include <cstdio>                               // for std::snprintf
 
