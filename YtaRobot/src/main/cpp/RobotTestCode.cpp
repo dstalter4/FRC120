@@ -180,40 +180,40 @@ void YtaRobotTest::SuperstructureTest()
     
     while (m_pJoystick->GetRawButton(1))
     {
-        pTalonFx5->Set(ControlMode::PercentOutput, 0.3);
-        pTalonFx6->Set(ControlMode::PercentOutput, 0.3);
+        pTalonFx5->Set(0.3);
+        pTalonFx6->Set(0.3);
     }
-    pTalonFx5->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx6->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx5->Set(0.0);
+    pTalonFx6->Set(0.0);
     while (m_pJoystick->GetRawButton(2))
     {
-        pTalonFx7->Set(ControlMode::PercentOutput, 0.3);
-        pTalonFx8->Set(ControlMode::PercentOutput, 0.3);
+        pTalonFx7->Set(0.3);
+        pTalonFx8->Set(0.3);
     }
-    pTalonFx7->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx8->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx7->Set(0.0);
+    pTalonFx8->Set(0.0);
     while (m_pJoystick->GetRawButton(3))
     {
-        pTalonFx9->Set(ControlMode::PercentOutput, 0.3);
-        pTalonFx10->Set(ControlMode::PercentOutput, 0.3);
+        pTalonFx9->Set(0.3);
+        pTalonFx10->Set(0.3);
     }
-    pTalonFx9->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx10->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx9->Set(0.0);
+    pTalonFx10->Set(0.0);
     while (m_pJoystick->GetRawButton(4))
     {
-        pTalonFx5->Set(ControlMode::PercentOutput, 0.3);
-        pTalonFx5->Set(ControlMode::PercentOutput, 0.3);
-        pTalonFx7->Set(ControlMode::PercentOutput, 0.5);
-        pTalonFx8->Set(ControlMode::PercentOutput, 0.5);
-        pTalonFx9->Set(ControlMode::PercentOutput, 1.0);
-        pTalonFx10->Set(ControlMode::PercentOutput, 1.0);
+        pTalonFx5->Set(0.3);
+        pTalonFx5->Set(0.3);
+        pTalonFx7->Set(0.5);
+        pTalonFx8->Set(0.5);
+        pTalonFx9->Set(1.0);
+        pTalonFx10->Set(1.0);
     }
-    pTalonFx5->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx6->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx7->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx8->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx9->Set(ControlMode::PercentOutput, 0.0);
-    pTalonFx10->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx5->Set(0.0);
+    pTalonFx6->Set(0.0);
+    pTalonFx7->Set(0.0);
+    pTalonFx8->Set(0.0);
+    pTalonFx9->Set(0.0);
+    pTalonFx10->Set(0.0);
 }
 
 
