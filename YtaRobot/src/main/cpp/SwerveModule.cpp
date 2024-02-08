@@ -46,6 +46,10 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     //m_pAngleTalon(new TalonFX(config.m_AngleMotorCanId)),
     m_pDriveSpark(new CANSparkMax(config.m_DriveMotorCanId, CANSparkLowLevel::MotorType::kBrushless)),
     m_pAngleSpark(new CANSparkMax(config.m_AngleMotorCanId, CANSparkLowLevel::MotorType::kBrushless)),
+    m_DriveSparkEncoder(m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor)),
+    m_AngleSparkEncoder(m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor)),
+    m_DrivePidController(m_pDriveSpark->GetPIDController()),
+    m_AnglePidController(m_pAngleSpark->GetPIDController()),
     m_pAngleCanCoder(new CANCoder(config.m_CanCoderId, "canivore-8145")),
     m_AngleOffset(config.m_AngleOffset),
     m_LastAngle(),
@@ -79,13 +83,13 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_pDriveSpark->SetSmartCurrentLimit(80);
     m_pDriveSpark->SetInverted(false);
     m_pDriveSpark->SetIdleMode(CANSparkMax::IdleMode::kCoast);
-    m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).SetPositionConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO);
-    m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).SetVelocityConversionFactor((SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO) / 60.0);
-    m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).SetPosition(0.0);     // countsPerRev = 42
-    m_pDriveSpark->GetPIDController().SetP(0.1);
-    m_pDriveSpark->GetPIDController().SetI(0.0);
-    m_pDriveSpark->GetPIDController().SetD(0.0);
-    m_pDriveSpark->GetPIDController().SetFF(0.0);
+    m_DriveSparkEncoder.SetPositionConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO);
+    m_DriveSparkEncoder.SetVelocityConversionFactor((SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO) / 60.0);
+    m_DriveSparkEncoder.SetPosition(0.0);     // countsPerRev = 42
+    m_DrivePidController.SetP(0.1);
+    m_DrivePidController.SetI(0.0);
+    m_DrivePidController.SetD(0.0);
+    m_DrivePidController.SetFF(0.0);
     m_pDriveSpark->EnableVoltageCompensation(12.0);
     m_pDriveSpark->BurnFlash();
     //CANSparkMaxUtil.setCANSparkMaxBusUsage(driveMotor, Usage.kAll);
@@ -113,11 +117,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_pAngleSpark->SetSmartCurrentLimit(20);
     m_pAngleSpark->SetInverted(false);
     m_pAngleSpark->SetIdleMode(CANSparkMax::IdleMode::kBrake);
-    m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).SetPositionConversionFactor(360.0 / SwerveConfig::ANGLE_GEAR_RATIO);
-    m_pAngleSpark->GetPIDController().SetP(0.01);
-    m_pAngleSpark->GetPIDController().SetI(0.0);
-    m_pAngleSpark->GetPIDController().SetD(0.0);
-    m_pAngleSpark->GetPIDController().SetFF(0.0);
+    m_AngleSparkEncoder.SetPositionConversionFactor(360.0 / SwerveConfig::ANGLE_GEAR_RATIO);
+    m_AnglePidController.SetP(0.01);
+    m_AnglePidController.SetI(0.0);
+    m_AnglePidController.SetD(0.0);
+    m_AnglePidController.SetFF(0.0);
     m_pAngleSpark->EnableVoltageCompensation(12.0);
     m_pAngleSpark->BurnFlash();
     //CANSparkMaxUtil.setCANSparkMaxBusUsage(angleMotor, Usage.kPositionOnly);
@@ -138,7 +142,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // position from manual measurement/calibration).
 
     double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value();
-    m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).SetPosition(absolutePositionDelta);
+    m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
 
 /*
     // SetSelectedSensorPosition() is causing excessive spins when downloading new code without a power cycle
@@ -162,7 +166,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
 
     // Save off the initial angle
     //m_LastAngle = units::degree_t(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
-    m_LastAngle = units::degree_t(m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).GetPosition());
+    m_LastAngle = units::degree_t(m_AngleSparkEncoder.GetPosition());
 }
 
 
@@ -222,7 +226,7 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     {
         //double velocity = SwerveConversions::MpsToFalcon((desiredState.speed).value(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO);
         //m_pDriveTalon->Set(ControlMode::Velocity, velocity, DemandType::DemandType_ArbitraryFeedForward, m_pFeedForward->Calculate(desiredState.speed).value());
-        m_pDriveSpark->GetPIDController().SetReference(desiredState.speed.value(), CANSparkMax::ControlType::kVelocity, 0, m_pFeedForward->Calculate(desiredState.speed).value());
+        m_DrivePidController.SetReference(desiredState.speed.value(), CANSparkMax::ControlType::kVelocity, 0, m_pFeedForward->Calculate(desiredState.speed).value());
     }
 
     // Update the angle motor controller
@@ -238,7 +242,7 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
         angle = desiredState.angle;
     }
     //m_pAngleTalon->Set(ControlMode::Position, SwerveConversions::DegreesToFalcon(angle.Degrees().value(), SwerveConfig::ANGLE_GEAR_RATIO));
-    m_pDriveSpark->GetPIDController().SetReference(angle.Degrees().value(), CANSparkMax::ControlType::kPosition);
+    m_AnglePidController.SetReference(angle.Degrees().value(), CANSparkMax::ControlType::kPosition);
 
     // Save off the updated last angle
     m_LastAngle = angle;
@@ -256,11 +260,11 @@ SwerveModuleState SwerveModule::GetSwerveModuleState()
 {
     // Get the current velocity
     //units::velocity::meters_per_second_t velocity(SwerveConversions::FalconToMps(m_pDriveTalon->GetSelectedSensorVelocity(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO));
-    units::velocity::meters_per_second_t velocity(m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).GetVelocity());
+    units::velocity::meters_per_second_t velocity(m_DriveSparkEncoder.GetVelocity());
 
     // Get the current angle
     //units::angle::degree_t angle(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
-    units::angle::degree_t angle(m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).GetPosition());
+    units::angle::degree_t angle(m_AngleSparkEncoder.GetPosition());
 
     return {velocity, angle};
 }
@@ -277,11 +281,11 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 {
     // Get the current distance
     //units::meter_t distance(SwerveConversions::FalconToMeters(m_pDriveTalon->GetSelectedSensorPosition(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO));
-    units::meter_t distance(m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).GetPosition());
+    units::meter_t distance(m_DriveSparkEncoder.GetPosition());
 
     // Get the current angle
     //units::angle::degree_t angle(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
-    units::angle::degree_t angle(m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor).GetPosition());
+    units::angle::degree_t angle(m_AngleSparkEncoder.GetPosition());
 
     return {distance, angle};
 }

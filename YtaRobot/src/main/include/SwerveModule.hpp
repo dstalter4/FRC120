@@ -98,6 +98,10 @@ private:
     //TalonFX * m_pAngleTalon;
     CANSparkMax * m_pDriveSpark;
     CANSparkMax * m_pAngleSpark;
+    SparkRelativeEncoder m_DriveSparkEncoder;
+    SparkRelativeEncoder m_AngleSparkEncoder;
+    SparkPIDController m_DrivePidController;
+    SparkPIDController m_AnglePidController;
     CANCoder * m_pAngleCanCoder;
     Rotation2d m_AngleOffset;
     Rotation2d m_LastAngle;

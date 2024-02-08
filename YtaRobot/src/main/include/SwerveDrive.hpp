@@ -80,10 +80,10 @@ private:
     // FR: 3-4-2, 324.932
     // BL: 7-8-4, 307.178
     // BR: 1-2-1, 101.602
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 5, 6, 3, 10.459_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 3, 4, 2, 324.932_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 7, 8, 4, 307.178_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 1, 2, 1, 101.602_deg};
+    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 6, 5, 3, 10.459_deg};
+    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 4, 3, 2, 324.932_deg};
+    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 8, 7, 4, 307.178_deg};
+    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 2, 1, 1, 101.602_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;
