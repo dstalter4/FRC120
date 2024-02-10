@@ -159,6 +159,51 @@ void YtaRobotTest::InitializeCommonPointers()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::QuickTestCode()
 {
+    static CANSparkMax * m_pDriveSpark = new CANSparkMax(4, CANSparkLowLevel::MotorType::kBrushless);
+    static CANSparkMax * m_pAngleSpark = new CANSparkMax(3, CANSparkLowLevel::MotorType::kBrushless);
+    static SparkRelativeEncoder m_DriveSparkEncoder = m_pDriveSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor);
+    static SparkRelativeEncoder m_AngleSparkEncoder = m_pAngleSpark->GetEncoder(SparkMaxRelativeEncoder::Type::kHallSensor);
+    static SparkPIDController m_DrivePidController = m_pDriveSpark->GetPIDController();
+    static SparkPIDController m_AnglePidController = m_pAngleSpark->GetPIDController();
+    static CANCoder * m_pAngleCanCoder = new CANCoder(2, "canivore-8145");
+    static bool bInit = false;
+    
+    if (!bInit)
+    {
+        m_pAngleSpark->RestoreFactoryDefaults();
+        m_pAngleSpark->SetSmartCurrentLimit(20);
+        m_pAngleSpark->SetInverted(false);
+        m_pAngleSpark->SetIdleMode(CANSparkMax::IdleMode::kBrake);
+        m_AngleSparkEncoder.SetPositionConversionFactor(360.0 / SwerveConfig::ANGLE_GEAR_RATIO);
+        m_AnglePidController.SetP(0.028);  //Angle PID Tuned 
+        m_AnglePidController.SetI(0.000);
+        m_AnglePidController.SetD(0.0015);
+        m_AnglePidController.SetFF(0.000);
+        m_pAngleSpark->EnableVoltageCompensation(12.0);
+        m_pAngleSpark->BurnFlash();
+
+        CANCoderConfiguration canCoderConfig;
+        canCoderConfig.absoluteSensorRange = AbsoluteSensorRange::Unsigned_0_to_360;
+        canCoderConfig.sensorDirection = false;
+        canCoderConfig.initializationStrategy = SensorInitializationStrategy::BootToAbsolutePosition;
+        canCoderConfig.sensorTimeBase = SensorTimeBase::PerSecond;
+        m_pAngleCanCoder->ConfigFactoryDefault();
+        m_pAngleCanCoder->ConfigAllSettings(canCoderConfig);
+        
+        bInit = true;
+        double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition() - 324.932;
+        SmartDashboard::PutNumber("Debug A", m_AngleSparkEncoder.GetPosition());
+        SmartDashboard::PutNumber("Debug B", absolutePositionDelta);
+        m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
+        m_AnglePidController.SetReference(0.0, CANSparkMax::ControlType::kPosition);
+    }
+
+    // FL: 5-6-3, 10.459
+    // FR: 3-4-2, 324.932
+    // BL: 7-8-4, 307.178
+    // BR: 1-2-1, 101.602
+    SmartDashboard::PutNumber("Debug C", m_pAngleCanCoder->GetAbsolutePosition());
+    SmartDashboard::PutNumber("Debug D", m_AngleSparkEncoder.GetPosition());
 }
 
 

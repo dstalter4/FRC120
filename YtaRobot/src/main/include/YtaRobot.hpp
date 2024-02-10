@@ -267,12 +267,10 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
-    TalonFX *                       m_pIntakeMotor;                         // Intake motor control
     
     // LEDs
-    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
-    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
+    //CANdle *                        m_pCandle;                              // Controls an RGB LED strip
+    //RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
 
     // Interrupts
     // (none)
@@ -562,6 +560,7 @@ inline void YtaRobot::CheckForDriveSwap()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SetLedsToAllianceColor()
 {
+    /*
     switch (m_AllianceColor.value())
     {
         case DriverStation::Alliance::kRed:
@@ -579,6 +578,7 @@ void YtaRobot::SetLedsToAllianceColor()
             break;
         }
     }
+    */
 }
 
 

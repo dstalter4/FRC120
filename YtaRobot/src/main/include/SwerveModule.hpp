@@ -70,6 +70,7 @@ private:
 
     // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
+    void HomeModule();
 
     // Optimizes the desired swerve module state
     SwerveModuleState Optimize(SwerveModuleState desiredState, Rotation2d currentAngle);

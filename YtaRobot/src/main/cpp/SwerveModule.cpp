@@ -86,7 +86,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_DriveSparkEncoder.SetPositionConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO);
     m_DriveSparkEncoder.SetVelocityConversionFactor((SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::DRIVE_GEAR_RATIO) / 60.0);
     m_DriveSparkEncoder.SetPosition(0.0);     // countsPerRev = 42
-    m_DrivePidController.SetP(0.1);
+    m_DrivePidController.SetP(0.02);   //Also Tuned
     m_DrivePidController.SetI(0.0);
     m_DrivePidController.SetD(0.0);
     m_DrivePidController.SetFF(0.0);
@@ -118,10 +118,10 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_pAngleSpark->SetInverted(false);
     m_pAngleSpark->SetIdleMode(CANSparkMax::IdleMode::kBrake);
     m_AngleSparkEncoder.SetPositionConversionFactor(360.0 / SwerveConfig::ANGLE_GEAR_RATIO);
-    m_AnglePidController.SetP(0.01);
-    m_AnglePidController.SetI(0.0);
-    m_AnglePidController.SetD(0.0);
-    m_AnglePidController.SetFF(0.0);
+    m_AnglePidController.SetP(0.028);  //Angle PID Tuned 
+    m_AnglePidController.SetI(0.000);
+    m_AnglePidController.SetD(0.0015);
+    m_AnglePidController.SetFF(0.000);
     m_pAngleSpark->EnableVoltageCompensation(12.0);
     m_pAngleSpark->BurnFlash();
     //CANSparkMaxUtil.setCANSparkMaxBusUsage(angleMotor, Usage.kPositionOnly);
@@ -141,6 +141,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // far the module is from the config passed in (the predetermined
     // position from manual measurement/calibration).
 
+    std::printf("mod %d start pos %f\n", m_MotorGroupPosition, m_AngleSparkEncoder.GetPosition());
     double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value();
     m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
 
@@ -166,7 +167,11 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
 
     // Save off the initial angle
     //m_LastAngle = units::degree_t(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
-    m_LastAngle = units::degree_t(m_AngleSparkEncoder.GetPosition());
+    std::printf("mod %d abs %f\n", m_MotorGroupPosition, m_pAngleCanCoder->GetAbsolutePosition());
+    std::printf("mod %d delta %f\n", m_MotorGroupPosition, absolutePositionDelta);
+    std::printf("mod %d cur pos %f\n", m_MotorGroupPosition, m_AngleSparkEncoder.GetPosition());
+    m_AnglePidController.SetReference(90.0, CANSparkMax::ControlType::kPosition);
+    m_LastAngle = 0.0_deg;//units::degree_t(m_AngleSparkEncoder.GetPosition());
 }
 
 
@@ -290,7 +295,19 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
     return {distance, angle};
 }
 
-
+double globalPos = 0.0;
+void SwerveModule::HomeModule()
+{
+    static bool once = false;
+    if (!once)
+    {
+    double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value();
+    m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
+    m_AnglePidController.SetReference(90.0, CANSparkMax::ControlType::kPosition);
+    m_LastAngle = 0.0_deg;//units::degree_t(m_AngleSparkEncoder.GetPosition());    
+    //once = true;
+    }
+}
 ////////////////////////////////////////////////////////////////
 /// @method SwerveModule::UpdateSmartDashboard
 ///
@@ -299,9 +316,12 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 ////////////////////////////////////////////////////////////////
 void SwerveModule::UpdateSmartDashboard()
 {
+    //m_AnglePidController.SetReference(globalPos, CANSparkMax::ControlType::kPosition);
+
     // Print the encoder values every time
     SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition());
-    SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, GetSwerveModulePosition().angle.Degrees().value());
+    //SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, GetSwerveModulePosition().angle.Degrees().value());
+    SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, m_AngleSparkEncoder.GetPosition());
 
     // Create and start a timer the first time through
     static Timer * pTimer = new Timer();
@@ -312,8 +332,7 @@ void SwerveModule::UpdateSmartDashboard()
         bTimerStarted = true;
     }
 
-/*
-    static units::second_t lastUpdateTime = 0_s;
+/*static units::second_t lastUpdateTime = 0_s;
     units::second_t currentTime = pTimer->Get();
 
     // If it's time for a detailed update, print more info
