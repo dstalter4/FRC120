@@ -229,6 +229,7 @@ private:
     void LedSequence();
     inline void SetLedsToAllianceColor();
     void MarioKartLights(double translation, double strafe, double rotate);
+    void PlayMusic();
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
@@ -264,8 +265,7 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
-    TalonFX *                       m_pIntakeMotor;                         // Intake motor control
+    TalonFX *                       m_pMusicMotor;                         // Music motor control
     
     // LEDs
     //CANdle *                        m_pCandle;                              // Controls an RGB LED strip
