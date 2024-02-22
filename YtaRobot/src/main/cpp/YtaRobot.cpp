@@ -44,13 +44,9 @@ YtaRobot::YtaRobot() :
     //m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     //m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
-    m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pMatchModeTimer                   (new Timer()),
     m_pSafetyTimer                      (new Timer()),
-    m_pAccelerometer                    (new BuiltInAccelerometer),
-    m_pAdxrs450Gyro                     (nullptr),
-    m_Bno055Angle                       (),
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
@@ -80,12 +76,6 @@ YtaRobot::YtaRobot() :
     //candleConfig.stripType = LEDStripType::RGB;
     //m_pCandle->ConfigAllSettings(candleConfig);
     //m_pCandle->Animate(m_RainbowAnimation);
-
-    // Construct the ADXRS450 gyro if configured
-    if (ADXRS450_GYRO_PRESENT)
-    {
-        m_pAdxrs450Gyro = new ADXRS450_Gyro();
-    }
 
     // Spawn the vision thread
     // @todo: Use a control variable to prevent the threads from executing too soon.
@@ -166,6 +156,7 @@ void YtaRobot::ConfigureMotorControllers()
     // BaseTalonConfiguration constructor with FeedbackDevice::IntegratedSensor.
 
     /*
+    // @todo_phoenix6: Update the example for the new API.
     // Example configuration
     TalonFXConfiguration talonConfig;
     talonConfig.slot0.kP = 0.08;
@@ -203,9 +194,6 @@ void YtaRobot::InitialStateSetup()
     // First reset any member data
     ResetMemberData();
 
-    // Solenoids to known state
-    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
-    
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
     m_pMatchModeTimer->Stop();
@@ -253,10 +241,6 @@ void YtaRobot::TeleopInit()
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
-
-    // Set the swerve modules to a known angle.  This (somehow) mitigates
-    // the random spin when enabling teleop until it can be investigated.
-    //m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
 }
 
 
@@ -621,52 +605,6 @@ void YtaRobot::CameraSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DriveMotorsCool
-///
-/// This method controls active or passive cooling of the drive
-/// motors.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::DriveMotorsCool()
-{
-    static Timer * pDriveMotorCoolTimer = new Timer();
-    static units::second_t lastDriveMotorCoolTime = 0_s;
-    static constexpr units::second_t DRIVE_MOTOR_COOL_ON_TIME = 10_s;
-    static constexpr units::second_t DRIVE_MOTOR_COOL_OFF_TIME = 10_s;
-    static bool bTimerStarted = false;
-    static bool bCoolingDriveMotors = true;
-
-    // If the first time here, start the timer
-    if (!bTimerStarted)
-    {
-        pDriveMotorCoolTimer->Reset();
-        pDriveMotorCoolTimer->Start();
-        bTimerStarted = true;
-    }
-
-    // Put a status on the smart dashboard
-    SmartDashboard::PutBoolean("Drive motor cooling", bCoolingDriveMotors);
-
-    // Get the current time
-    units::second_t currentTime = pDriveMotorCoolTimer->Get();
-
-    // Set some values for the common logic based on whether or not cooling is currently active or passive
-    units::second_t timerLimit = bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
-    DoubleSolenoid::Value solenoidValue = bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
-
-    // If the time until the next state change has elapsed
-    if ((currentTime - lastDriveMotorCoolTime) > timerLimit)
-    {
-        // Change solenoid state, update control variables
-        m_pTalonCoolingSolenoid->Set(solenoidValue);
-        bCoolingDriveMotors = !bCoolingDriveMotors;
-        lastDriveMotorCoolTime = currentTime;
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
 /// @method YtaRobot::SwerveDriveSequence
 ///
 /// This method contains the main workflow for swerve drive
@@ -747,11 +685,6 @@ void YtaRobot::SwerveDriveSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
-    if (Yta::Drive::Config::DRIVE_MOTOR_COOLING_ENABLED)
-    {
-        DriveMotorsCool();
-    }
-
     if (Yta::Drive::Config::DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
@@ -1031,8 +964,8 @@ void YtaRobot::DirectionalAlign()
                 destinationAngle = ANGLE_90_DEGREES * degreeMultiplier;
                 
                 // Read the starting angle
-                //RobotI2c::ManualTrigger();
-                int startingAngle = static_cast<int>(GetGyroValue(BNO055));
+                // @todo: Use Pigeon2 to get angle.
+                int startingAngle = 0;
                 
                 // Do some angle math to figure out which direction is faster to turn.
                 // Examples:
@@ -1101,7 +1034,8 @@ void YtaRobot::DirectionalAlign()
             // 2. Safety timer expires
             // 3. User cancels the operation
             // @todo: Is it a problem that (destinationAngle - 1) can be negative when angle == zero?
-            int currentAngle = static_cast<int>(GetGyroValue(BNO055));
+            // @todo: Use Pigeon2 to get angle.
+            int currentAngle = 0;
             if (((currentAngle >= (destinationAngle - 1)) && (currentAngle <= (destinationAngle + 1))) ||
                 (pDirectionalAlignTimer->Get() > DIRECTIONAL_ALIGN_MAX_TIME_S) ||
                 (bStateChangeAllowed))
@@ -1149,13 +1083,6 @@ void YtaRobot::DisabledInit()
     // @todo: Shut off the limelight LEDs?
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
-    
-    // All motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
-
-    // Motor cooling off
-    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
 
     // Turn the rainbow animation back on    
     //m_pCandle->Animate(m_RainbowAnimation);

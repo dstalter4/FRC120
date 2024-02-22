@@ -20,19 +20,14 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
-#include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
-#include "frc/AnalogGyro.h"                     // for using analog gyros
-#include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
 #include "frc/Compressor.h"                     // for retrieving info on the compressor
 #include "frc/DigitalInput.h"                   // for DigitalInput type
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
 #include "frc/DriverStation.h"                  // for interacting with the driver station
 #include "frc/Relay.h"                          // for Relay type
-#include "frc/SerialPort.h"                     // for interacting with a serial port
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
-#include "frc/Ultrasonic.h"                     // for Ultrasonic type
 #include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
@@ -133,13 +128,6 @@ private:
         ROBOT_CLOCKWISE,
         ROBOT_COUNTER_CLOCKWISE
     };
-
-    enum GyroType
-    {
-        ADXRS450,
-        ANALOG,
-        BNO055
-    };
     
     // STRUCTS
     struct LedColors
@@ -169,12 +157,6 @@ private:
 
     // Updates information on the smart dashboard for the drive team
     void UpdateSmartDashboard();
-
-    // Grabs a value from a sonar sensor individually
-    inline double GetSonarValue(Ultrasonic * pSensor);
-   
-    // Get a reading from the gyro sensor
-    inline double GetGyroValue(GyroType gyroType, AnalogGyro * pSensor = nullptr);
 
     // Autonomous wait for something to complete delay routine
     inline void AutonomousDelay(units::second_t time);
@@ -211,7 +193,6 @@ private:
     // Main sequence for drive motor control
     void SwerveDriveSequence();
     void DriveControlSequence();
-    void SideDriveSequence();
 
     // Function to check for drive control direction swap
     inline void CheckForDriveSwap();
@@ -221,9 +202,6 @@ private:
     
     // Function to automatically align the robot to a certain point
     void DirectionalAlign();
-
-    // Function to periodically cool the drive talons
-    void DriveMotorsCool();
 
     // Main sequence for LED control
     void LedSequence();
@@ -261,8 +239,6 @@ private:
     // Motors
     TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
     TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
-    TalonFX *                       m_pIntakeMotor;                         // Intake motor control
     
     // LEDs
     //CANdle *                        m_pCandle;                              // Controls an RGB LED strip
@@ -278,7 +254,6 @@ private:
     // (none)
     
     // Pneumatics
-    DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
     
     // Servos
@@ -292,11 +267,10 @@ private:
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
-    BuiltInAccelerometer *          m_pAccelerometer;                       // Built in roborio accelerometer
+    // (none)
     
     // Gyro
-    ADXRS450_Gyro *                 m_pAdxrs450Gyro;                        // SPI port FRC gyro
-    int                             m_Bno055Angle;                          // Angle from the BNO055 sensor on the RIOduino
+    // (none)
 
     // Camera
     // Note: Only need to have a thread here and tie it to
@@ -341,7 +315,6 @@ private:
     static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     
     // Aux inputs
-    static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
@@ -373,12 +346,10 @@ private:
     // (none)
     
     // Solenoid Signals
-    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
-    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
+    // (none)
 
     // Solenoids
-    static const DoubleSolenoid::Value  TALON_COOLING_ON_SOLENOID_VALUE     = DoubleSolenoid::kReverse;
-    static const DoubleSolenoid::Value  TALON_COOLING_OFF_SOLENOID_VALUE    = DoubleSolenoid::kForward;
+    // (none)
     
     // Misc
     const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
@@ -393,14 +364,11 @@ private:
     static const int                ANGLE_360_DEGREES                       = 360;
     static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
-    static const int                QUADRATURE_ENCODING_ROTATIONS           = 4096;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
     static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
     static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const unsigned           NUMBER_OF_LEDS                          = 8;
-    static const char               NULL_CHARACTER                          = '\0';
-    static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     
@@ -413,7 +381,6 @@ private:
     static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
-    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
 
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
 
@@ -557,80 +524,6 @@ void YtaRobot::SetLedsToAllianceColor()
             break;
         }
     }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetGyroValue
-///
-/// This method is used to get a value from an analog gyro
-/// sensor.  There are three possible places a gyro could be
-/// connected: analog sensor, the on board SPI port (ADXRS450),
-/// or externally (BNO055 on a RIOduino).  This method will
-/// obtain a value from the sensor corresponding to the passed
-/// in parameter.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetGyroValue(GyroType gyroType, AnalogGyro * pSensor)
-{
-    double value = 0.0;
-    
-    switch (gyroType)
-    {
-        case ADXRS450:
-        {
-            if (m_pAdxrs450Gyro != nullptr)
-            {
-                value = m_pAdxrs450Gyro->GetAngle();
-            }
-            break;
-        }
-        case ANALOG:
-        {
-            if (pSensor != nullptr)
-            {
-                value = pSensor->GetAngle();
-            }
-            break;
-        }
-        default:
-        {
-            // Should never happen
-            ASSERT(false);
-            break;
-        }
-    }
-    
-    if (RobotUtils::DEBUG_PRINTS)
-    {
-        SmartDashboard::PutNumber("Gyro angle", value);
-    }
-    
-    return value;
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetSonarValue
-///
-/// This method is used to get a value from the sonar sensor.
-/// It is intended to be used to turn a sensor briefly on and
-/// get a reading from it so as to not interfere with other
-/// sensors that may need to get readings.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetSonarValue(Ultrasonic * pSensor)
-{
-    return 0.0;
-    
-    /*
-    pSensor->SetEnabled(true);
-    double sensorValue = pSensor->GetRangeInches();
-    pSensor->SetEnabled(false);
-    return sensorValue;
-    */
 }
 
 

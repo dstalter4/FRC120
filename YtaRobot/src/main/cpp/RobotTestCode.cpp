@@ -13,11 +13,12 @@
 // <none>
 
 // C INCLUDES
-#include "rev/CANSparkMax.h"    // for interacting with spark max motor controllers
+#include "frc/BuiltInAccelerometer.h"   // for using the built-in accelerometer
+#include "rev/CANSparkMax.h"            // for interacting with spark max motor controllers
 
 // C++ INCLUDES
-#include "RobotUtils.hpp"       // for DisplayMessage(), DisplayFormattedMessage()
-#include "YtaRobot.hpp"         // for robot class declaration
+#include "RobotUtils.hpp"               // for DisplayMessage(), DisplayFormattedMessage()
+#include "YtaRobot.hpp"                 // for robot class declaration
 
 
 // Helper macro to get the robot object, only for use in test class code
@@ -67,7 +68,7 @@ private:
     // Singleton test object with members bound by reference to YtaRobot member objects.
     /*
     YtaRobotTest() :
-        m_pAccelerometer(YtaRobot::GetRobotInstance()->m_pAccelerometer)
+        m_rpDebugOutput(YtaRobot::GetRobotInstance()->m_pDebugOutput)
     {
     }
     static YtaRobotTest * GetInstance() { return m_pRobotTestObj; }
@@ -77,7 +78,7 @@ private:
     }
 
     static YtaRobotTest * m_pRobotTestObj;
-    BuiltInAccelerometer *& m_pAccelerometer;
+    DigitalOutput *& m_rpDebugOutput;
     */
 };
 
@@ -535,9 +536,10 @@ void YtaRobotTest::ButtonChangeTest()
 void YtaRobotTest::AccelerometerTest()
 {
     // Test code for reading the built in accelerometer
-    double x = YTA_ROBOT_OBJ()->m_pAccelerometer->GetX();
-    double y = YTA_ROBOT_OBJ()->m_pAccelerometer->GetY();
-    double z = YTA_ROBOT_OBJ()->m_pAccelerometer->GetZ();
+    static BuiltInAccelerometer * pAccelerometer = new BuiltInAccelerometer();
+    double x = pAccelerometer->GetX();
+    double y = pAccelerometer->GetY();
+    double z = pAccelerometer->GetZ();
     RobotUtils::DisplayFormattedMessage("x: %f, y: %f, z: %f\n", x, y, z);
 }
 
