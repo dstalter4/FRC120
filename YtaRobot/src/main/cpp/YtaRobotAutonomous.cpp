@@ -47,9 +47,6 @@ void YtaRobot::AutonomousInit()
     RobotCamera::SetFullProcessing(true);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_ON);
-    
-    // Indicate to the I2C thread to get data more often
-    RobotI2c::SetThreadUpdateRate(YtaRobotAutonomous::I2C_THREAD_UPDATE_RATE_MS);
 }
 
 

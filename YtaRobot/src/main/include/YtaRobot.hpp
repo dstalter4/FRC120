@@ -39,7 +39,6 @@
 
 // C++ INCLUDES
 #include "DriveConfiguration.hpp"               // for information on the drive config
-#include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                      // for using swerve drive
 #include "TalonMotorGroup.hpp"                  // for Talon group motor control
@@ -236,12 +235,6 @@ private:
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
-
-    // Main sequence for interaction with the serial port
-    void SerialPortSequence();
-    
-    // Main sequence for I2C interaction
-    void I2cSequence();
     
     // Main sequence for vision processing
     void CameraSequence();
@@ -309,21 +302,6 @@ private:
     // Note: Only need to have a thread here and tie it to
     // the RobotCamera class, which handles everything else.
     std::thread                     m_CameraThread;
-
-    // Serial port configuration
-    static const int                SERIAL_PORT_BUFFER_SIZE_BYTES           = 64;
-    static const int                SERIAL_PORT_NUM_DATA_BITS               = 8;
-    static const int                SERIAL_PORT_BAUD_RATE                   = 115200;
-    static const int                ASCII_0_OFFSET                          = 48;
-    const char *                    SERIAL_PORT_PACKET_HEADER               = "Frc120Serial";
-    const int                       SERIAL_PORT_PACKET_HEADER_SIZE_BYTES    = sizeof(SERIAL_PORT_PACKET_HEADER);
-    char                            m_SerialPortBuffer[SERIAL_PORT_BUFFER_SIZE_BYTES];
-
-    // On board serial port
-    SerialPort *                    m_pSerialPort;
-    
-    // I2C configuration
-    std::thread                     m_I2cThread;
     
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
@@ -425,7 +403,6 @@ private:
     static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
-    static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
     
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
@@ -615,27 +592,6 @@ inline double YtaRobot::GetGyroValue(GyroType gyroType, AnalogGyro * pSensor)
             {
                 value = pSensor->GetAngle();
             }
-            break;
-        }
-        case BNO055:
-        {
-            // Read the angle
-            GyroI2cData * pGyroData = RobotI2c::GetGyroData();
-            
-            // Only update the value if valid data came across the wire
-            if (pGyroData != nullptr)
-            {
-                m_Bno055Angle = pGyroData->m_xAxisInfo.m_Angle;
-                
-                // Reapply negative sign if needed
-                if (pGyroData->m_xAxisInfo.m_bIsNegative)
-                {
-                    m_Bno055Angle *= -1;
-                }
-            }
-            
-            value = static_cast<double>(m_Bno055Angle);
-            
             break;
         }
         default:

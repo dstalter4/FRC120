@@ -21,7 +21,6 @@
 // C++ INCLUDES
 #include "YtaRobot.hpp"                 // for class declaration (and other headers)
 #include "RobotCamera.hpp"              // for interacting with cameras
-#include "RobotI2c.hpp"                 // for I2cThread()
 #include "RobotUtils.hpp"               // for Trim(), Limit() and DisplayMessage()
 
 // STATIC MEMBER VARIABLES
@@ -53,9 +52,6 @@ YtaRobot::YtaRobot() :
     m_pAdxrs450Gyro                     (nullptr),
     m_Bno055Angle                       (),
     m_CameraThread                      (RobotCamera::LimelightThread),
-    m_SerialPortBuffer                  (),
-    m_pSerialPort                       (new SerialPort(SERIAL_PORT_BAUD_RATE, SerialPort::kMXP, SERIAL_PORT_NUM_DATA_BITS, SerialPort::kParity_None, SerialPort::kStopBits_One)),
-    m_I2cThread                         (RobotI2c::I2cThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
@@ -91,16 +87,11 @@ YtaRobot::YtaRobot() :
         m_pAdxrs450Gyro = new ADXRS450_Gyro();
     }
 
-    // Reset the serial port and clear buffer
-    m_pSerialPort->Reset();
-    std::memset(&m_SerialPortBuffer, 0U, sizeof(m_SerialPortBuffer));
-    
-    // Spawn the vision and I2C threads
+    // Spawn the vision thread
     // @todo: Use a control variable to prevent the threads from executing too soon.
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
     m_CameraThread.detach();
-    m_I2cThread.detach();
 }
 
 
@@ -259,9 +250,6 @@ void YtaRobot::TeleopInit()
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
-    
-    // Indicate to the I2C thread to get data less often
-    RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
@@ -300,10 +288,6 @@ void YtaRobot::TeleopPeriodic()
     CheckAndResetEncoderCounts();
 
     //PneumaticSequence();
-
-    //SerialPortSequence();
-    
-    //I2cSequence();
     
     //CameraSequence();
 
@@ -589,73 +573,6 @@ void YtaRobot::PneumaticSequence()
 {
     // @todo: Monitor other compressor API data?
     SmartDashboard::PutBoolean("Compressor status", m_pCompressor->IsEnabled());
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::SerialPortSequence
-///
-/// This method contains the main workflow for interaction with
-/// the serial port.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::SerialPortSequence()
-{
-    /*
-    // Check for any incoming transmissions, limit it to our read buffer size
-    int32_t bytesReceived = m_pSerialPort->GetBytesReceived();
-    bytesReceived = (bytesReceived > SERIAL_PORT_BUFFER_SIZE_BYTES) ? SERIAL_PORT_BUFFER_SIZE_BYTES : bytesReceived;
-
-    // If we got data, read it
-    if (bytesReceived > 0)
-    {
-        static_cast<void>(m_pSerialPort->Read(m_SerialPortBuffer, bytesReceived));
-
-        // See if its a packet intended for us
-        if (memcmp(m_SerialPortBuffer, SERIAL_PORT_PACKET_HEADER, SERIAL_PORT_PACKET_HEADER_SIZE_BYTES) == 0)
-        {
-            // Next character is the command.  Array indexing starts at zero, thus no +1 on the size bytes constant
-            int32_t command = static_cast<int32_t>(m_SerialPortBuffer[SERIAL_PORT_PACKET_HEADER_SIZE_BYTES]) - ASCII_0_OFFSET;
-
-            // Sanity check it
-            if (command >= 0 && command <= 9)
-            {
-                RobotUtils::DisplayFormattedMessage("Received a valid packet, command: %d\n", command);
-            }
-            else
-            {
-                RobotUtils::DisplayFormattedMessage("Invalid command received: %d\n", command);
-            }
-        }
-
-        RobotUtils::DisplayFormattedMessage(m_SerialPortBuffer);
-    }
-    m_SerialPortBuffer[0] = NULL_CHARACTER;
-    */
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::I2cSequence
-///
-/// This method contains the main workflow for interaction with
-/// the I2C bus.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::I2cSequence()
-{
-    static std::chrono::time_point<std::chrono::high_resolution_clock> currentTime;
-    static std::chrono::time_point<std::chrono::high_resolution_clock> oldTime;
-    currentTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed = currentTime - oldTime;
-    if (elapsed.count() > I2C_RUN_INTERVAL_MS)
-    {
-        RobotI2c::ManualTrigger();
-        
-        oldTime = currentTime;
-    }
 }
 
 
@@ -1114,7 +1031,7 @@ void YtaRobot::DirectionalAlign()
                 destinationAngle = ANGLE_90_DEGREES * degreeMultiplier;
                 
                 // Read the starting angle
-                RobotI2c::ManualTrigger();
+                //RobotI2c::ManualTrigger();
                 int startingAngle = static_cast<int>(GetGyroValue(BNO055));
                 
                 // Do some angle math to figure out which direction is faster to turn.
@@ -1177,7 +1094,7 @@ void YtaRobot::DirectionalAlign()
         case DIRECTIONAL_ALIGN:
         {   
             // Force update gyro value
-            RobotI2c::ManualTrigger();
+            //RobotI2c::ManualTrigger();
             
             // Three conditions for stopping the align:
             // 1. Destination angle is reached
