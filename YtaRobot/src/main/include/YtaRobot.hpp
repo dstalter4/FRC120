@@ -47,6 +47,7 @@
 //#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
 //#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"            // for PigeonIMU
+#include "ctre/phoenix6/controls/MusicTone.hpp" // for creating music tones
 
 using namespace frc;
 
@@ -229,6 +230,9 @@ private:
     void LedSequence();
     inline void SetLedsToAllianceColor();
     void MarioKartLights(double translation, double strafe, double rotate);
+
+    // Main sequence for music control
+    void MusicSequence();
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
