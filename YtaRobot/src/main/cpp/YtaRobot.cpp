@@ -268,7 +268,7 @@ void YtaRobot::TeleopInit()
 
     // Set the swerve modules to a known angle.  This (somehow) mitigates
     // the random spin when enabling teleop until it can be investigated.
-    m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
+    //m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
 }
 
 
@@ -299,7 +299,7 @@ void YtaRobot::TeleopPeriodic()
     //SuperStructureSequence();
     CheckAndResetEncoderCounts();
 
-    PneumaticSequence();
+    //PneumaticSequence();
 
     //SerialPortSequence();
     

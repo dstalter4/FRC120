@@ -159,6 +159,69 @@ void YtaRobotTest::InitializeCommonPointers()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::QuickTestCode()
 {
+    static TalonFX * pTalon = new TalonFX(4);
+    static CANcoder * pCanCoder = new CANcoder(2, "canivore-120");
+    static PositionVoltage anglePositionVoltage(0.0_tr);
+    static bool bInit = false;
+
+    if (!bInit)
+    {
+        const units::angle::degree_t REFERENCE_CANCODER_POS = 41.221_deg;
+        units::angle::turn_t currentCanCoderInTurns = pCanCoder->GetAbsolutePosition().GetValue();
+        units::angle::degree_t currentCanCoderInDegrees = currentCanCoderInTurns;
+
+        units::angle::degree_t canCoderDeltaDegrees = REFERENCE_CANCODER_POS - currentCanCoderInDegrees;
+        if (canCoderDeltaDegrees.value() < 0.0)
+        {
+            canCoderDeltaDegrees += 360.0_deg;
+        }
+        units::angle::turn_t fxTargetTurns = canCoderDeltaDegrees;
+
+        SmartDashboard::PutNumber("Debug A", pTalon->GetPosition().GetValueAsDouble());
+        SmartDashboard::PutNumber("Debug B", currentCanCoderInDegrees.value());
+        SmartDashboard::PutNumber("Debug C", canCoderDeltaDegrees.value());
+        SmartDashboard::PutNumber("Debug D", fxTargetTurns.value());
+
+        pTalon->SetPosition(fxTargetTurns);
+        bInit = true;
+    }
+    
+    if (m_pJoystick->GetRawButtonPressed(1))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(180.0_deg));
+    }
+    else if (m_pJoystick->GetRawButtonPressed(2))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(90.0_deg));
+    }
+    else if (m_pJoystick->GetRawButtonPressed(3))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(270.0_deg));
+    }
+    else if (m_pJoystick->GetRawButtonPressed(4))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(0.0_deg));
+    }
+    else
+    {
+    }
+
+    if (m_pJoystick->GetRawButtonPressed(5))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(pTalon->GetPosition().GetValue() - 0.10_tr));
+    }    
+    else if (m_pJoystick->GetRawButtonPressed(6))
+    {
+        (void)pTalon->SetControl(anglePositionVoltage.WithPosition(pTalon->GetPosition().GetValue() + 0.10_tr));
+    }
+    else
+    {
+    }
+
+    if (m_pJoystick->GetRawButtonPressed(8))
+    {
+        bInit = false;
+    }
 }
 
 

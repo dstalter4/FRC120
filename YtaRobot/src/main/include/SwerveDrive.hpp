@@ -15,7 +15,6 @@
 // <none>
 
 // C INCLUDES
-#include "ctre/phoenix/sensors/Pigeon2.h"               // for PigeonIMU
 #include "frc/geometry/Translation2d.h"                 // for class declaration
 #include "frc/kinematics/SwerveDriveOdometry.h"         // for class declaration
 #include "frc/kinematics/SwerveModulePosition.h"        // for struct declaration
@@ -27,6 +26,7 @@
 // C++ INCLUDES
 #include "SwerveConfig.hpp"                             // for swerve configuration and constants
 #include "SwerveModule.hpp"                             // for interacting with a swerve module
+#include "ctre/phoenix6/Pigeon2.hpp"                    // for PigeonIMU
 
 using namespace frc;
 
@@ -54,7 +54,16 @@ public:
     // Sets the gyro yaw back to zero degrees
     inline void ZeroGyroYaw()
     {
-        m_pPigeon->SetYaw(0.0);
+        m_pPigeon->SetYaw(0.0_deg);
+    }
+
+    // Points all the modules to zero degrees, which should be straight forward
+    inline void HomeModules()
+    {
+        for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+        {
+            m_SwerveModules[i].HomeModule();
+        }
     }
 
 private:
@@ -71,10 +80,10 @@ private:
 
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 1, 2, 1, 159.521_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 3, 4, 2, 38.848_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 5, 6, 3, 120.146_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 7, 8, 4, 224.648_deg};
+    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 1, 2, 1, 271.670_deg};
+    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 3, 4, 2, 41.221_deg};
+    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 5, 6, 3, 174.639_deg};
+    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 7, 8, 4, 242.051_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;

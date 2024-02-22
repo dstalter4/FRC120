@@ -87,6 +87,7 @@ namespace SwerveConversions
         return newAngle;
     }
 
+#if 0
     ////////////////////////////////////////////////////////////////
     /// @method SwerveConversions::CanCoderToDegrees
     ///
@@ -254,6 +255,25 @@ namespace SwerveConversions
     inline static double MetersToFalcon(double meters, double circumference, double gearRatio)
     {
         return meters / (circumference / (gearRatio * 2048.0));
+    }
+#endif
+
+    // @todo_phoenix6: Formalize and document these.  Remove unused conversions.
+    inline static double RpsToMps(double wheelRps, double circumference)
+    {
+        return wheelRps * circumference;
+    }
+    inline static double MpsToRps(double wheelMps, double circumference)
+    {
+        return wheelMps / circumference;
+    }
+    inline static double RotationsToMeters(double wheelRotations, double circumference)
+    {
+        return wheelRotations * circumference;
+    }
+    inline static double MetersToRotations(double wheelMeters, double circumference)
+    {
+        return wheelMeters / circumference;
     }
 }
 

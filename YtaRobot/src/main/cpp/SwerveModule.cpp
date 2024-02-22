@@ -37,17 +37,20 @@ uint32_t SwerveModule::m_DetailedModuleDisplayIndex = 0U;
 /// on the CANivore bus, which requires a 120 ohm terminating
 /// resistor.
 ///
-/// 2023: Bevels facing right is 1.0 forward on the Talons.
+/// 2024: Bevels facing right is 1.0 forward on the Talons.
 ///
 ////////////////////////////////////////////////////////////////
 SwerveModule::SwerveModule(SwerveModuleConfig config) :
     m_MotorGroupPosition(config.m_Position),
     m_pDriveTalon(new TalonFX(config.m_DriveMotorCanId)),
     m_pAngleTalon(new TalonFX(config.m_AngleMotorCanId)),
-    m_pAngleCanCoder(new CANCoder(config.m_CanCoderId, "canivore-120")),
-    m_AngleOffset(config.m_AngleOffset),
+    m_pAngleCanCoder(new CANcoder(config.m_CanCoderId, "canivore-120")),
     m_LastAngle(),
-    m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA))
+    m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA)),
+    m_DriveDutyCycleOut(0.0),
+    m_DriveVelocityVoltage(0.0_tps),
+    m_AnglePositionVoltage(0.0_tr),
+    CANCODER_REFERENCE_ABSOLUTE_OFFSET(config.m_CancoderReferenceAbsoluteOffset)
 {
     // Build the strings to use in the display method
     std::snprintf(&m_DisplayStrings.m_CancoderAngleString[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "cancoder");
@@ -56,73 +59,90 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     std::snprintf(&m_DisplayStrings.m_AngleTalonTemp[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", config.m_pModuleName, "angle temp (F)");
 
     // Configure drive motor controller
-    // Current limiting values: enable, limit, threshold, duration
-    SupplyCurrentLimitConfiguration driveTalonSupplyLimit = {true, 35, 60, 0.1};
     TalonFXConfiguration driveTalonConfig;
-    driveTalonConfig.slot0.kP = 0.1;
-    driveTalonConfig.slot0.kI = 0.0;
-    driveTalonConfig.slot0.kD = 0.0;
-    driveTalonConfig.slot0.kF = 0.0;        
-    driveTalonConfig.supplyCurrLimit = driveTalonSupplyLimit;
-    driveTalonConfig.openloopRamp = OPEN_LOOP_RAMP;
-    driveTalonConfig.closedloopRamp = CLOSED_LOOP_RAMP;
-    m_pDriveTalon->ConfigFactoryDefault();
-    m_pDriveTalon->ConfigAllSettings(driveTalonConfig);
-    m_pDriveTalon->SetInverted(false);
-    m_pDriveTalon->SetNeutralMode(NeutralMode::Brake);
-    m_pDriveTalon->SetSelectedSensorPosition(0);
+    driveTalonConfig.MotorOutput.Inverted = InvertedValue::CounterClockwise_Positive;
+    driveTalonConfig.MotorOutput.NeutralMode = NeutralModeValue::Brake;
+    driveTalonConfig.Feedback.SensorToMechanismRatio = SwerveConfig::DRIVE_GEAR_RATIO;
+
+    driveTalonConfig.CurrentLimits.SupplyCurrentLimit = 35.0;
+    driveTalonConfig.CurrentLimits.SupplyCurrentThreshold = 60.0;
+    driveTalonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+    driveTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+
+    driveTalonConfig.Slot0.kP = 0.1;
+    driveTalonConfig.Slot0.kI = 0.0;
+    driveTalonConfig.Slot0.kD = 0.0;
+
+    driveTalonConfig.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.25;
+    driveTalonConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = 0.25;
+
+    driveTalonConfig.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.0;
+    driveTalonConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.0;
+
+    (void)m_pDriveTalon->GetConfigurator().Apply(driveTalonConfig);
+    (void)m_pDriveTalon->GetConfigurator().SetPosition(0.0_tr);
 
     // @todo: Should the talons change default group status rates to preserve CAN bandwidth?
     //m_pDriveTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_1_General, 100);
     //m_pDriveTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 100);
 
     // Configure angle motor controller
-    // Current limiting values: enable, limit, threshold, duration
-    SupplyCurrentLimitConfiguration angleTalonSupplyLimit = {true, 25, 40, 0.1};
     TalonFXConfiguration angleTalonConfig;
-    angleTalonConfig.slot0.kP = 0.5;
-    angleTalonConfig.slot0.kI = 0.0;
-    angleTalonConfig.slot0.kD = 0.0;
-    angleTalonConfig.slot0.kF = 0.0;
-    angleTalonConfig.supplyCurrLimit = angleTalonSupplyLimit;
-    m_pAngleTalon->ConfigFactoryDefault();
-    m_pAngleTalon->ConfigAllSettings(angleTalonConfig);
-    m_pAngleTalon->SetInverted(false);
-    m_pAngleTalon->SetNeutralMode(NeutralMode::Coast);
+    angleTalonConfig.MotorOutput.Inverted = InvertedValue::Clockwise_Positive;
+    angleTalonConfig.MotorOutput.NeutralMode = NeutralModeValue::Coast;
+    angleTalonConfig.Feedback.SensorToMechanismRatio = SwerveConfig::ANGLE_GEAR_RATIO;
+    angleTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;
+
+    angleTalonConfig.CurrentLimits.SupplyCurrentLimit = 25.0;
+    angleTalonConfig.CurrentLimits.SupplyCurrentThreshold = 40.0;
+    angleTalonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+    angleTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+
+    // @todo_phoenix6: Tune these, they mostly work.
+    angleTalonConfig.Slot0.kP = 27.0;
+    angleTalonConfig.Slot0.kI = 0.0;
+    angleTalonConfig.Slot0.kD = 0.2;
+
+    (void)m_pAngleTalon->GetConfigurator().Apply(angleTalonConfig);
 
     // Configure CANCoder
-    CANCoderConfiguration canCoderConfig;
-    canCoderConfig.absoluteSensorRange = AbsoluteSensorRange::Unsigned_0_to_360;
-    canCoderConfig.sensorDirection = false;
-    canCoderConfig.initializationStrategy = SensorInitializationStrategy::BootToAbsolutePosition;
-    canCoderConfig.sensorTimeBase = SensorTimeBase::PerSecond;
-    m_pAngleCanCoder->ConfigFactoryDefault();
-    m_pAngleCanCoder->ConfigAllSettings(canCoderConfig);
+    CANcoderConfiguration canCoderConfig;
+    canCoderConfig.MagnetSensor.AbsoluteSensorRange = AbsoluteSensorRangeValue::Unsigned_0To1;
+    canCoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue::CounterClockwise_Positive;
+    (void)m_pAngleCanCoder->GetConfigurator().Apply(canCoderConfig);
 
     // Reset the swerve module to the absolute angle starting position.
     // This reads the current angle from the CANCoder and figures out how
     // far the module is from the config passed in (the predetermined
     // position from manual measurement/calibration).
-    // SetSelectedSensorPosition() is causing excessive spins when downloading new code without a power cycle
-    double fxEncoderAbsPosition = m_pAngleTalon->GetSelectedSensorPosition();
-    double fxEncoderTarget = SwerveConversions::DegreesToFalcon(m_pAngleCanCoder->GetAbsolutePosition() - m_AngleOffset.Degrees().value(), SwerveConfig::ANGLE_GEAR_RATIO);
-    const double FX_ENCODER_UNITS_PER_360_DEGREES = SwerveConversions::DegreesToFalcon(360, SwerveConfig::ANGLE_GEAR_RATIO);
+    units::angle::turn_t currentCanCoderInTurns = m_pAngleCanCoder->GetAbsolutePosition().GetValue();
+    units::angle::degree_t currentCanCoderInDegrees = currentCanCoderInTurns;
 
-    // Adjust the TalonFX target position to something close to its current position
-    while (fxEncoderTarget < fxEncoderAbsPosition)
+    units::angle::degree_t canCoderDeltaDegrees = CANCODER_REFERENCE_ABSOLUTE_OFFSET.Degrees() - currentCanCoderInDegrees;
+    if (canCoderDeltaDegrees.value() < 0.0)
     {
-        fxEncoderTarget += FX_ENCODER_UNITS_PER_360_DEGREES;
+        canCoderDeltaDegrees += 360.0_deg;
     }
-    while (fxEncoderTarget > fxEncoderAbsPosition)
+    units::angle::turn_t fxTargetTurns = canCoderDeltaDegrees;
+
+    std::printf("Swerve mod %d fxTargetTurns (start): %f\n", m_MotorGroupPosition, fxTargetTurns.value());
+    while (fxTargetTurns > 1.0_tr)
     {
-        fxEncoderTarget -= FX_ENCODER_UNITS_PER_360_DEGREES;
+        fxTargetTurns -= 1.0_tr;
     }
 
-    // Set the angle TalonFX built-in encoder position
-    m_pAngleTalon->SetSelectedSensorPosition(fxEncoderTarget);
+    while (fxTargetTurns < -1.0_tr)
+    {
+        fxTargetTurns += 1.0_tr;
+    }
 
-    // Save off the initial angle
-    m_LastAngle = units::degree_t(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
+    std::printf("Swerve mod %d fxPosition: %f\n", m_MotorGroupPosition, m_pAngleTalon->GetPosition().GetValueAsDouble());
+    std::printf("Swerve mod %d canCoderDeg: %f\n", m_MotorGroupPosition, currentCanCoderInDegrees.value());
+    std::printf("Swerve mod %d canCoderDelta: %f\n", m_MotorGroupPosition, canCoderDeltaDegrees.value());
+    std::printf("Swerve mod %d fxTargetTurns (final): %f\n", m_MotorGroupPosition, fxTargetTurns.value());
+
+    m_pAngleTalon->SetPosition(fxTargetTurns);
+    m_LastAngle = units::degree_t(m_pAngleTalon->GetPosition().GetValue());
 }
 
 
@@ -170,18 +190,21 @@ SwerveModuleState SwerveModule::Optimize(SwerveModuleState desiredState, Rotatio
 void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop)
 {
     // Custom optimize command, since default WPILib optimize assumes continuous controller which CTRE is not
-    desiredState = Optimize(desiredState, GetSwerveModuleState().angle);
+    // @todo_phoenix6: This -1 multiplier is critical.
+    desiredState = Optimize(desiredState, -GetSwerveModuleState().angle);
 
     // Update the drive motor controller
     if (bIsOpenLoop)
     {
-        double percentOutput = desiredState.speed / SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
-        m_pDriveTalon->Set(ControlMode::PercentOutput, percentOutput);
+        m_DriveDutyCycleOut.Output = desiredState.speed / SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
+        (void)m_pDriveTalon->SetControl(m_DriveDutyCycleOut);
     }
     else
     {
-        double velocity = SwerveConversions::MpsToFalcon((desiredState.speed).value(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO);
-        m_pDriveTalon->Set(ControlMode::Velocity, velocity, DemandType::DemandType_ArbitraryFeedForward, m_pFeedForward->Calculate(desiredState.speed).value());
+        units::angular_velocity::turns_per_second_t driveTalonDesiredVelocityTps = units::angular_velocity::turns_per_second_t(SwerveConversions::MpsToRps(desiredState.speed.value(), SwerveConfig::WHEEL_CIRCUMFERENCE));
+        m_DriveVelocityVoltage.Velocity = driveTalonDesiredVelocityTps;
+        m_DriveVelocityVoltage.FeedForward = m_pFeedForward->Calculate(desiredState.speed);
+        (void)m_pDriveTalon->SetControl(m_DriveVelocityVoltage);
     }
 
     // Update the angle motor controller
@@ -196,10 +219,52 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     {
         angle = desiredState.angle;
     }
-    m_pAngleTalon->Set(ControlMode::Position, SwerveConversions::DegreesToFalcon(angle.Degrees().value(), SwerveConfig::ANGLE_GEAR_RATIO));
+    
+    units::angle::turn_t targetAngle = angle.Degrees();
+    // @todo_phoenix6: This -1 multiplier is critical.
+    (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(-targetAngle));
 
     // Save off the updated last angle
     m_LastAngle = angle;
+
+/*
+    units::angle::degree_t d = m_pAngleTalon->GetPosition().GetValue();
+    switch (m_MotorGroupPosition)
+    {
+        case 0:
+        {
+            SmartDashboard::PutNumber("Debug A", targetAngle.value());
+            SmartDashboard::PutNumber("Debug E", angle.Degrees().value());
+            SmartDashboard::PutNumber("Debug I", d.value());
+            break;
+        }
+        case 1:
+        {
+            SmartDashboard::PutNumber("Debug B", targetAngle.value());
+            SmartDashboard::PutNumber("Debug F", angle.Degrees().value());
+            SmartDashboard::PutNumber("Debug J", d.value());
+            break;
+        }
+        case 2:
+        {
+            SmartDashboard::PutNumber("Debug C", targetAngle.value());
+            SmartDashboard::PutNumber("Debug G", angle.Degrees().value());
+            SmartDashboard::PutNumber("Debug K", d.value());
+            break;
+        }
+        case 3:
+        {
+            SmartDashboard::PutNumber("Debug D", targetAngle.value());
+            SmartDashboard::PutNumber("Debug H", angle.Degrees().value());
+            SmartDashboard::PutNumber("Debug L", d.value());
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+*/
 }
 
 
@@ -213,10 +278,12 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
 SwerveModuleState SwerveModule::GetSwerveModuleState()
 {
     // Get the current velocity
-    units::velocity::meters_per_second_t velocity(SwerveConversions::FalconToMps(m_pDriveTalon->GetSelectedSensorVelocity(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO));
+    units::angular_velocity::turns_per_second_t driveTalonVelocityRps = m_pDriveTalon->GetVelocity().GetValue();
+    units::velocity::meters_per_second_t velocity(SwerveConversions::RpsToMps(driveTalonVelocityRps.value(), SwerveConfig::WHEEL_CIRCUMFERENCE));
 
     // Get the current angle
-    units::angle::degree_t angle(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
+    units::angle::turn_t angleTalonPositionInTurns = m_pAngleTalon->GetPosition().GetValue();
+    units::angle::degree_t angle = angleTalonPositionInTurns;
 
     return {velocity, angle};
 }
@@ -232,10 +299,12 @@ SwerveModuleState SwerveModule::GetSwerveModuleState()
 SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 {
     // Get the current distance
-    units::meter_t distance(SwerveConversions::FalconToMeters(m_pDriveTalon->GetSelectedSensorPosition(), SwerveConfig::WHEEL_CIRCUMFERENCE, SwerveConfig::DRIVE_GEAR_RATIO));
+    units::angle::turn_t driveTalonPositionInTurns = m_pDriveTalon->GetPosition().GetValue();
+    units::meter_t distance(SwerveConversions::RotationsToMeters(driveTalonPositionInTurns.value(), SwerveConfig::WHEEL_CIRCUMFERENCE));
 
     // Get the current angle
-    units::angle::degree_t angle(SwerveConversions::FalconToDegrees(m_pAngleTalon->GetSelectedSensorPosition(), SwerveConfig::ANGLE_GEAR_RATIO));
+    units::angle::turn_t angleTalonPositionInTurns = m_pAngleTalon->GetPosition().GetValue();
+    units::angle::degree_t angle = angleTalonPositionInTurns;
 
     return {distance, angle};
 }
@@ -250,7 +319,7 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 void SwerveModule::UpdateSmartDashboard()
 {
     // Print the encoder values every time
-    SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition());
+    SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition().GetValueAsDouble());
     SmartDashboard::PutNumber(m_DisplayStrings.m_FxEncoderAngleString, GetSwerveModulePosition().angle.Degrees().value());
 
     // Create and start a timer the first time through
@@ -271,8 +340,8 @@ void SwerveModule::UpdateSmartDashboard()
         // Even at the slower update rate, only do one swerve module at a time
         if (m_DetailedModuleDisplayIndex == static_cast<uint32_t>(m_MotorGroupPosition))
         {
-            SmartDashboard::PutNumber(m_DisplayStrings.m_DriveTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pDriveTalon->GetTemperature()));
-            SmartDashboard::PutNumber(m_DisplayStrings.m_AngleTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pAngleTalon->GetTemperature()));
+            SmartDashboard::PutNumber(m_DisplayStrings.m_DriveTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pDriveTalon->GetDeviceTemp().GetValueAsDouble()));
+            SmartDashboard::PutNumber(m_DisplayStrings.m_AngleTalonTemp, RobotUtils::ConvertCelsiusToFahrenheit(m_pAngleTalon->GetDeviceTemp().GetValueAsDouble()));
 
             m_DetailedModuleDisplayIndex++;
             if (m_DetailedModuleDisplayIndex == SwerveConfig::NUM_SWERVE_DRIVE_MODULES)
