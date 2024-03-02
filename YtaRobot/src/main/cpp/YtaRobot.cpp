@@ -60,6 +60,7 @@ YtaRobot::YtaRobot() :
     LiveWindow::SetEnabled(false);
     
     // Set the autonomous options
+    // @todo: Update these outside the constructor?
     m_AutonomousChooser.SetDefaultOption(AUTO_ROUTINE_1_STRING, AUTO_ROUTINE_1_STRING);
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_2_STRING, AUTO_ROUTINE_2_STRING);
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_3_STRING, AUTO_ROUTINE_3_STRING);
