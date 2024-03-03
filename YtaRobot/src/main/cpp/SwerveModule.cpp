@@ -217,7 +217,7 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     // @todo_phoenix6: Formalize this code.  Figure out the math.
     static units::angle::turn_t initialTurn = 0.0_tr;
     static units::angle::turn_t deltaTurns = 0.0_tr;
-    deltaTurns = m_pAngleCanCoder->GetAbsolutePosition().GetValue();
+    initialTurn = m_pAngleCanCoder->GetAbsolutePosition().GetValue();
     // Delta might end up > abs(.5), but still aligns with the correct position
     deltaTurns = initialTurn - TARGET_CANCODER_POS;
     m_pAngleTalon->SetPosition(-deltaTurns);
@@ -272,7 +272,8 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
 {
     // Custom optimize command, since default WPILib optimize assumes continuous controller which CTRE is not
     // 2024: No more custom command
-    desiredState = SwerveModuleState::Optimize(desiredState, GetSwerveModuleState().angle);
+    // @todo_phoenix6: This negative sign is critical for some reason.  Figure out why.
+    desiredState = SwerveModuleState::Optimize(desiredState, -GetSwerveModuleState().angle);
 
     // Update the drive motor controller
     if (bIsOpenLoop)
@@ -307,7 +308,8 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     }
     m_pAngleTalon->Set(ControlMode::Position, SwerveConversions::DegreesToFalcon(angle.Degrees().value(), SwerveConfig::ANGLE_GEAR_RATIO));
     */
-    units::angle::turn_t targetAngle = desiredState.angle.Degrees();
+    // @todo_phoenix6: This negative sign is critical for some reason.  Figure out why.
+    units::angle::turn_t targetAngle = -desiredState.angle.Degrees();
 
     (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(targetAngle));
 }

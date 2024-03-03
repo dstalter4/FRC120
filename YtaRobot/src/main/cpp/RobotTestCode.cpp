@@ -231,18 +231,25 @@ void YtaRobotTest::QuickTestCode()
         pTalon2->SetPosition(-deltaTurns2);
         pTalon3->SetPosition(-deltaTurns3);
         pTalon4->SetPosition(-deltaTurns4);
+
+        SmartDashboard::PutNumber("Debug A", pCanCoder1->GetAbsolutePosition().GetValueAsDouble());
+        SmartDashboard::PutNumber("Debug B", pCanCoder2->GetAbsolutePosition().GetValueAsDouble());
+        SmartDashboard::PutNumber("Debug C", pCanCoder3->GetAbsolutePosition().GetValueAsDouble());
+        SmartDashboard::PutNumber("Debug D", pCanCoder4->GetAbsolutePosition().GetValueAsDouble());
+        SmartDashboard::PutNumber("Debug E", -deltaTurns1.value());
+        SmartDashboard::PutNumber("Debug F", -deltaTurns2.value());
+        SmartDashboard::PutNumber("Debug G", -deltaTurns3.value());
+        SmartDashboard::PutNumber("Debug H", -deltaTurns4.value());
     }
 
-    SmartDashboard::PutNumber("Debug A", initialTurn1.value());
-    SmartDashboard::PutNumber("Debug B", deltaTurns1.value());
-    SmartDashboard::PutNumber("Debug C", TARGET_CANCODER_POS1.value());
-    static int x;
-    x++;
-    SmartDashboard::PutNumber("Debug D", x);
+    units::angle::turn_t turns = pTalon1->GetPosition().GetValue();
+    SmartDashboard::PutNumber("Debug I", turns.value());
+    SmartDashboard::PutNumber("Debug J", pCanCoder1->GetAbsolutePosition().GetValueAsDouble());
 
     if (m_pJoystick->GetRawButtonPressed(5))
     {
-        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr));
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(turns - 0.25_tr));
+        //(void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr));
         (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(0_tr));
         (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(0_tr));
         (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(0_tr));
@@ -250,10 +257,40 @@ void YtaRobotTest::QuickTestCode()
 
     if (m_pJoystick->GetRawButtonPressed(6))
     {
-        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr + 0.25_tr));
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(turns + 0.25_tr));
+        //(void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_tr + 0.25_tr));
         (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(0_tr + 0.25_tr));
         (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(0_tr + 0.25_tr));
         (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(0_tr + 0.25_tr));
+    }
+
+    if (m_pJoystick->GetRawButtonPressed(1))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(180_deg));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(180_deg));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(180_deg));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(180_deg));
+    }
+    if (m_pJoystick->GetRawButtonPressed(2))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(90_deg));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(90_deg));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(90_deg));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(90_deg));
+    }
+    if (m_pJoystick->GetRawButtonPressed(3))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(-90_deg));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(-90_deg));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(-90_deg));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(-90_deg));
+    }
+    if (m_pJoystick->GetRawButtonPressed(4))
+    {
+        (void)pTalon1->SetControl(pPositionVoltage1->WithPosition(0_deg));
+        (void)pTalon2->SetControl(pPositionVoltage2->WithPosition(0_deg));
+        (void)pTalon3->SetControl(pPositionVoltage3->WithPosition(0_deg));
+        (void)pTalon4->SetControl(pPositionVoltage4->WithPosition(0_deg));
     }
 }
 

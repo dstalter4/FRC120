@@ -37,9 +37,7 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 SwerveDrive::SwerveDrive(Pigeon2 * pPigeon) :
     m_pPigeon(pPigeon),
-    // @todo_phoenix6: Figure out why the module reordering is needed.
-    //m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
-    m_SwerveModules{BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG, FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG},
+    m_SwerveModules{FRONT_LEFT_MODULE_CONFIG, FRONT_RIGHT_MODULE_CONFIG, BACK_LEFT_MODULE_CONFIG, BACK_RIGHT_MODULE_CONFIG},
     m_SwerveModuleStates(wpi::empty_array),
     m_SwerveModulePositions(wpi::empty_array),
     m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), m_SwerveModulePositions)

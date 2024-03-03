@@ -65,6 +65,12 @@ private:
     // Constructor
     SwerveModule(SwerveModuleConfig config);
 
+    inline void HomeModule()
+    {
+        
+        (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(0_deg));
+    }
+
     // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
 

@@ -66,6 +66,15 @@ public:
     }
     */
 
+    inline void HomeModules()
+    {
+        // Set each individual swerve module state
+        for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+        {
+            m_SwerveModules[i].HomeModule();
+        }
+    }
+
 private:
     // Update odometry
     inline void UpdateOdometry()
