@@ -199,16 +199,20 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     switch (m_MotorGroupPosition)
     {
         case 0:
-            TARGET_CANCODER_POS = 0.440186_tr;
+            // 159.521_deg
+            TARGET_CANCODER_POS = 0.443114_tr;
             break;
         case 1:
-            TARGET_CANCODER_POS = 0.092773_tr;
+            // 38.848_deg
+            TARGET_CANCODER_POS = 0.107911_tr;
             break;
         case 2:
-            TARGET_CANCODER_POS = 0.337646_tr;
+            // 120.146_deg
+            TARGET_CANCODER_POS = 0.333739_tr;
             break;
         case 3:
-            TARGET_CANCODER_POS = -0.378418_tr;
+            // 224.648
+            TARGET_CANCODER_POS = -0.375978_tr;
             break;
         default:
             break;
