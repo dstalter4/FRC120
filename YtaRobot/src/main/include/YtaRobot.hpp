@@ -36,8 +36,8 @@
 #include "DriveConfiguration.hpp"               // for information on the drive config
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                      // for using swerve drive
-#include "TalonMotorGroup.hpp"                  // for Talon group motor control
 #include "YtaController.hpp"                    // for controller interaction
+#include "YtaTalon.hpp"                         // for custom Talon control
 //#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
 //#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"            // for PigeonIMU

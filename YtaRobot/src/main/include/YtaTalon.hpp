@@ -1,16 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file   TalonMotorGroup.hpp
+/// @file   YtaTalon.hpp
 /// @author David Stalter
 ///
 /// @details
-/// A class designed to work with a group of CAN Talon speed controllers working
-/// in tandem.
+/// Custom functionality for easier robot programming of CTRE Talon controllers.
 ///
 /// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef TALONMOTORGROUP_HPP
-#define TALONMOTORGROUP_HPP
+#ifndef YTATALON_HPP
+#define YTATALON_HPP
 
 // SYSTEM INCLUDES
 #include <cstdio>                               // for std::snprintf
@@ -510,4 +509,4 @@ void TalonMotorGroup<TalonType>::DisplayStatusInformation()
     }
 }
 
-#endif // TALONMOTORGROUP_HPP
+#endif // YTATALON_HPP

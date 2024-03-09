@@ -6,7 +6,7 @@
 /// A class designed to work with a group of CAN Talon speed controllers working
 /// in tandem.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // Control building of the template functions for the TalonMotorGroup class.
@@ -32,7 +32,7 @@
 // (none)
 
 // C++ INCLUDES
-#include "TalonMotorGroup.hpp"      // for class declaration
+#include "YtaTalon.hpp"         // for class declaration
 
 // STATIC MEMBER DATA
 // (none)
