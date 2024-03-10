@@ -50,6 +50,38 @@ namespace YtaTalon
         CUSTOM                  // Motor needs to be set later to an option above
     };
 
+    // Represents a combination of objects to use with a TalonFX motor controller
+    struct TalonFxMotorController
+    {
+        // The Phoenix 6 API requires using different objects with SetControl()
+        // function calls.  Create different possible objects to the main robot
+        // code doesn't have to worry about it.
+        TalonFX * m_pTalonFx;
+        DutyCycleOut m_DutyCycleOut;
+        PositionVoltage m_PositionVoltage;
+
+        // Constructor
+        TalonFxMotorController(int canId) :
+            m_pTalonFx(new TalonFX(canId)),
+            m_DutyCycleOut(0.0),
+            m_PositionVoltage(0.0_tr)
+        {}
+
+        // Set the output using duty cycle
+        void SetDutyCycle(double dutyCycle)
+        {
+            (void)m_pTalonFx->SetControl(m_DutyCycleOut.WithOutput(dutyCycle));
+        }
+
+        // Set the output to hold a specified position
+        void SetPositionVoltage(double angle)
+        {
+            units::angle::degree_t degrees(angle);
+            units::angle::turn_t turns(degrees);
+            (void)m_pTalonFx->SetControl(m_PositionVoltage.WithPosition(turns));
+        }
+    };
+
     static const bool CURRENT_LIMITING_ENABLED = false;
 }
 
@@ -60,6 +92,8 @@ namespace YtaTalon
 ///
 /// Class that provides methods for interacting with a group of
 /// Talon speed controllers.
+///
+/// @todo: Remove template.
 ///
 ////////////////////////////////////////////////////////////////
 template <class TalonType>
@@ -87,6 +121,9 @@ public:
     
     // Function to set the speed of each motor in the group
     void Set(double value, double offset = 0.0);
+    
+    // Function to set the motor group output to hold specified angle
+    void SetAngle(double angle);
     
     // Sets the control mode of a motor in a group (intended for use with the CUSTOM group control mode)
     bool SetMotorInGroupControlMode(unsigned canId, MotorGroupControlMode controlMode);
@@ -118,6 +155,8 @@ private:
 
         // Member data
         TalonType * m_pTalon;
+        DutyCycleOut m_DutyCycleOut;
+        PositionVoltage m_PositionVoltage;
         const char * m_pName;
         MotorGroupControlMode m_ControlMode;
         unsigned m_CanId;
@@ -129,6 +168,8 @@ private:
         
         MotorInfo(const char * pName, MotorGroupControlMode controlMode, NeutralModeValue neutralMode, unsigned canId, unsigned groupNumber, bool bIsDriveMotor = false) :
             m_pTalon(new TalonType(static_cast<int>(canId))),
+            m_DutyCycleOut(0.0),
+            m_PositionVoltage(0.0_tr),
             m_pName(pName),
             m_ControlMode(controlMode),
             m_CanId(canId),
@@ -163,11 +204,11 @@ private:
         }
 
         // Helper routine for configuring some settings on follower talons
-        void SetAsFollower(unsigned leaderCanId)
+        void SetAsFollower(unsigned leaderCanId, bool bInvert)
         {
-            // Set it as a strict follower (use Follower type to allow invert control)
-            StrictFollower strictFollower(leaderCanId);
-            (void)m_pTalon->SetControl(strictFollower);
+            // Follower will honor invert control, StrictFollower ignores invert control
+            Follower follower(leaderCanId, bInvert);
+            (void)m_pTalon->SetControl(follower);
 
             // Phoenix 6 Example: Get the StatusSignal objects and call SetUpdateFrequency() on them.
             //(void)m_pTalon->GetDeviceTemp().SetUpdateFrequency(100_Hz);
@@ -270,7 +311,8 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
             // the Set() method, so we only need to set the followers here.
             if ((nonLeaderControlMode == YtaTalon::FOLLOW) || (nonLeaderControlMode == YtaTalon::FOLLOW_INVERSE))
             {
-                m_pMotorsInfo[i]->SetAsFollower(leaderCanId);
+                bool bInvert = (nonLeaderControlMode == YtaTalon::FOLLOW) ? false : true;
+                m_pMotorsInfo[i]->SetAsFollower(leaderCanId, bInvert);
             }
         }
     }
@@ -302,7 +344,8 @@ bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMo
         // If this Talon will be a follower, be sure to call Set() to enable it
         if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
         {
-            m_pMotorsInfo[m_NumMotors]->SetAsFollower(m_LeaderCanId);
+            bool bInvert = (controlMode == YtaTalon::FOLLOW) ? false : true;
+            m_pMotorsInfo[m_NumMotors]->SetAsFollower(m_LeaderCanId, bInvert);
         }
 
         // Increase the number of motors
@@ -340,7 +383,8 @@ bool TalonMotorGroup<TalonType>::SetMotorInGroupControlMode(unsigned canId, Moto
             // If this Talon will be a follower, be sure to call Set() to enable it
             if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
             {
-                m_pMotorsInfo[i]->SetAsFollower(m_LeaderCanId);
+                bool bInvert = (controlMode == YtaTalon::FOLLOW) ? false : true;
+                m_pMotorsInfo[i]->SetAsFollower(m_LeaderCanId, bInvert);
             }
             else
             {
@@ -435,15 +479,15 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
             case YtaTalon::LEADER:
             case YtaTalon::INDEPENDENT:
             {
-                // The leader always gets set via percent voltage, as do
-                // motors that are independently controlled (not follow or inverse).
+                // The leader always gets set via duty cycle, as do motors
+                // that are independently controlled (not follow or inverse).
                 valueToSet = value;
                 break;
             }
             case YtaTalon::FOLLOW:
             case YtaTalon::FOLLOW_INVERSE:
             {
-                // Nothing to do, motor had Set() called during object construction
+                // Nothing to do, motor had SetControl() called during object construction
                 bCallSet = false;
                 break;
             }
@@ -476,9 +520,36 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
         if (bCallSet)
         {
             // Set the value in the Talon
-            m_pMotorsInfo[i]->m_pTalon->Set(valueToSet);
+            m_pMotorsInfo[i]->m_pTalon->SetControl(m_pMotorsInfo[i]->m_DutyCycleOut.WithOutput(valueToSet));
         }
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method TalonMotorGroup::SetAngle
+///
+/// Method to set the output of a motor to hold a specified
+/// angle.
+///
+////////////////////////////////////////////////////////////////
+template <class TalonType>
+void TalonMotorGroup<TalonType>::SetAngle(double angle)
+{
+    // The first entry in the motor info array should always
+    // be a leader, so that one will be the only one updated.
+    // When holding position, we don't want to have to manage
+    // the target angles for multiple motors since it would
+    // require tracking different set points based on the
+    // encoders.  For a motor group to successfully hold
+    // position, one of them needs to be a follower.
+    // @todo: Check that this configuration is only applied to follower groups.
+
+    // Set the control output
+    units::angle::degree_t degrees(angle);
+    units::angle::turn_t turns(degrees);
+    m_pMotorsInfo[0]->m_pTalon->SetControl(m_pMotorsInfo[0]->m_PositionVoltage.WithPosition(turns));
 }
 
 

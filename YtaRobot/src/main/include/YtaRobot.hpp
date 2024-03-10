@@ -91,6 +91,7 @@ private:
 
     // TYPEDEFS
     typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
+    typedef YtaTalon::TalonFxMotorController TalonFxMotorController;
     typedef Yta::Controller::Config::Models ControllerModels;
     typedef Yta::Controller::Config::Mappings ControllerMappings;
     typedef YtaDriveController<YtaCustomController> DriveControllerType;
