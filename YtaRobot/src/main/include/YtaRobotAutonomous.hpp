@@ -165,7 +165,7 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
 /// using swerve drive modules.
 ///
 ////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative)
+inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative, bool bWait)
 {
     units::meter_t translation = 0.0_m;
     units::meter_t strafe = 0.0_m;
@@ -220,16 +220,24 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, Ro
     }
 
     Translation2d translation2d = {translation, strafe};
-    units::second_t duration = 0.0_s;
-    while (duration < time)
+
+    if (bWait)
+    {
+        units::second_t duration = 0.0_s;
+        while (duration < time)
+        {
+            m_pSwerveDrive->SetModuleStates(translation2d, rotateSpeed, bFieldRelative, true);
+            AutonomousDelay(YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S);
+            duration += YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S;
+        }
+
+        // Stop motion
+        m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
+    }
+    else
     {
         m_pSwerveDrive->SetModuleStates(translation2d, rotateSpeed, bFieldRelative, true);
-        AutonomousDelay(YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S);
-        duration += YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S;
     }
-
-    // Stop motion
-    m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
 }
 
 

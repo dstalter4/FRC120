@@ -141,6 +141,8 @@ private:
     // Compute some useful information about the reflective tape
     static void CalculateReflectiveTapeValues();
 
+    static void AveryTest();
+
     // Constructor
     RobotCamera();
 

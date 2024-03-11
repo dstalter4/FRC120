@@ -280,6 +280,7 @@ void YtaRobot::TeleopInit()
 /// periodically while the robot is in teleop control.
 ///
 ////////////////////////////////////////////////////////////////
+extern uint32_t alignInProgress;
 void YtaRobot::TeleopPeriodic()
 {
     // Log a mode change if one occurred
@@ -289,7 +290,10 @@ void YtaRobot::TeleopPeriodic()
 
     if (Yta::Drive::Config::USE_SWERVE_DRIVE)
     {
-        SwerveDriveSequence();
+        if (alignInProgress == 0U)
+        {
+            SwerveDriveSequence();
+        }
     }
     else
     {

@@ -293,6 +293,12 @@ void RobotCamera::LimelightThread()
     
     while (true)
     {
+        // This enables Avery's code
+        //if (m_bDoFullProcessing)
+        {
+            AveryTest();
+        }
+
         // Be sure to relinquish the CPU when done
         std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
     }
@@ -809,4 +815,157 @@ void RobotCamera::CalculateReflectiveTapeValues()
     */
     
     m_VisionTargetReport.m_bTargetInRange = false;
+}
+
+
+//Vision Processing with Limelight three
+
+#include "frc/smartdashboard/Smartdashboard.h"
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableInstance.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableValue.h"
+#include "wpi/SpanExtras.h"
+#include "LimelightHelpers.h"
+#include "YtaRobotAutonomous.hpp"
+#include "frc/Encoder.h"
+extern uint32_t alignInProgress;
+uint32_t alignInProgress = 0U;
+int estimatedShooterAngle;
+void RobotCamera::AveryTest()
+{
+    // Make sure the robot object has been created (the thread will start running very early)
+    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+    if (pRobotObj == nullptr)
+    {
+        return;
+    }
+
+    int32_t yawAngle = static_cast<int32_t>(pRobotObj->m_pPigeon->GetYaw().GetValueAsDouble());
+    yawAngle %= 360;
+
+    //Pulling Network table from limelight
+
+    //Have the physical camera offset a constant, used for distance calculations
+    //int cameraHorizontalOffset = 0; //assuming this is zero for now
+    //int cameraVerticalOffset = 0;
+    //int cameraAngleOffset = 30;
+    //int armAngle = 0;
+
+    //Pull x coordinates from the tracking
+    std::shared_ptr<nt::NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
+    double tx = table->GetNumber("tx",0.0);
+    LimelightHelpers::setPipelineIndex("limelight",0);
+    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 1 );
+    //get total camera latency and display to the dashboard for troubleshooting issues //Displayed in ms
+    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("cl",0.0);
+    SmartDashboard::PutNumber("debug b",  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("cl",0.0)); 
+    
+    SmartDashboard::PutNumber("Debug A", yawAngle);
+
+    //When button is selected, in this case 1, execute tracking and send coordinates to the chassis modules
+    int buttonPressed = static_cast<int>(pRobotObj->m_pDriveController->GetButtonState(1));
+    if (buttonPressed == 1U)
+    {   
+        nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 0 );
+
+        //Selects Appropriate Limelight pipeline for tracking, in this instance that is 1
+        nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("pipeline",1);
+        LimelightHelpers::setPipelineIndex("limelight",1);
+        nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("priorityid",(4 && 8));
+        
+        //Determine the rotation direction based on the location of the april tag
+        if ((yawAngle > -120) && (yawAngle < 120))  //If the robot is angled out of range, do nothing
+        {       
+            //Estimate distance for use in finding the ideal shooting angle
+            //Unless otherwise noted, measurements are in feet from here forward
+            //double targetOffsetAngle_Vertical = table->GetNumber("ty",0.0);
+            //double limelightMountAngleDegrees = 25.0;
+            //double cameraVerticalOffset = 20.0; 
+            //double angleToGoal = cameraVerticalOffset + targetOffsetAngle_Vertical;
+            //double targetHeight = 51.9;
+
+            //Estimates the distance, which can be used for the angle of the shooter
+            //double estimateDistance = (targetHeight- cameraVerticalOffset)/tan(angleToGoal);
+            
+            //Calculate the ideal shooter angle based on the estimated distance
+            //int estimatedShooterAngle =tan(79.4/estimateDistance);
+           
+            if (tx<-5.5)
+            {
+                pRobotObj->AutonomousSwerveDriveSequence(YtaRobot::ROBOT_NO_DIRECTION,YtaRobot::ROBOT_COUNTER_CLOCKWISE, 0.0, 0.1, 0.0_s, true, false);
+                alignInProgress = 1U;
+            }
+            else if (tx>5.5)
+            {
+                pRobotObj->AutonomousSwerveDriveSequence(YtaRobot::ROBOT_NO_DIRECTION,YtaRobot::ROBOT_CLOCKWISE, 0.0, 0.1, 0.0_s, true, false);//rotate right, negative
+                alignInProgress = 1U;
+            }
+            else 
+            {
+                //set arm position based on calculated distances
+                pRobotObj->AutonomousSwerveDriveSequence(YtaRobot::ROBOT_NO_DIRECTION,YtaRobot::ROBOT_NO_ROTATE, 0.0, 0.0, 0.0_s, true, false);
+                alignInProgress = 0U;
+            }
+        }
+        else
+        {
+            pRobotObj->AutonomousSwerveDriveSequence(YtaRobot::ROBOT_NO_DIRECTION, YtaRobot::ROBOT_NO_ROTATE, 0.0, 0.0, 0.0_s, true, false);
+            alignInProgress = 0U;
+        }
+    }
+    else
+    {
+        //Sets the lights to whatever the selected pipeline indicates
+        nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledmode",0);
+        if (alignInProgress == 1U)
+        {
+            pRobotObj->AutonomousSwerveDriveSequence(YtaRobot::ROBOT_NO_DIRECTION, YtaRobot::ROBOT_NO_ROTATE, 0.0, 0.0, 0.0_s, true, false);
+        }
+        alignInProgress = 0U;        
+    }
+
+
+//Putting the coding for the shooter angle stuff here just so it's all in the same spot 
+
+//Get the current angle being read from the encoder
+
+int currentShooterAngle; //just act like this is correct for now 
+int targetShooterAngle = currentShooterAngle-estimatedShooterAngle; 
+int moveShooterAngle = static_cast<int>(pRobotObj->m_pAuxController->GetButtonState(1)); //Controlled by copilot
+
+//Establish pid tuning for shooter target
+//Slot0.kP = 0.0;
+//Slot0.kI = 0.0;
+//Slot0.kD = 0.0;
+
+//Pardon the silly line of code underneath this, it's 4am and it's full of errors :(
+//Encoder::Encoder (DigitalSource&(aSource),(DigitalSource & (bSource)), (bool (reverseDirection = false)), EncodingType( encodingType = k1X)) 	
+
+//encoder 0 is 1 pulse // Encoder 360 is 1025 pulse
+
+//turns pulse into useful units
+//encoder 0 is 1 pulse // Encoder 360 is 1025 pulse //scale factor of 2.85
+void SetDistancePerPulse(double distancePerPulse=2.85);	
+
+
+
+if (moveShooterAngle)
+{
+    if (targetShooterAngle > 1)
+    {
+        //rotate shooter motor
+    }
+
+    else if(targetShooterAngle <-1)
+    {
+        //rotate shooter motor the other way
+    }
+    else 
+    {
+        //run shooter motors maybe
+    }
+
+}
+
 }
