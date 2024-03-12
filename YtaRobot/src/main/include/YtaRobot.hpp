@@ -91,8 +91,8 @@ public:
 private:
 
     // TYPEDEFS
-    typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
-    typedef YtaTalon::TalonFxMotorController TalonFxMotorController;
+    typedef Yta::Talon::MotorGroupControlMode MotorGroupControlMode;
+    typedef Yta::Talon::TalonFxMotorController TalonFxMotorController;
     typedef Yta::Controller::Config::Models ControllerModels;
     typedef Yta::Controller::Config::Mappings ControllerMappings;
     typedef YtaDriveController<YtaCustomController> DriveControllerType;
@@ -405,10 +405,6 @@ private:
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
-    static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
-    static const unsigned           NUMBER_OF_SHOOTER_MOTORS                = 2;
-    static const unsigned           NUMBER_OF_PIVOT_MOTORS                  = 2;
     static const unsigned           NUMBER_OF_LEDS                          = 8;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;

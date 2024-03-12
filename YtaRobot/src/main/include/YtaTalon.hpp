@@ -29,13 +29,15 @@ using namespace ctre::phoenix6::signals;
 
 
 ////////////////////////////////////////////////////////////////
-/// @namespace YtaTalon
+/// @namespace Yta::Talon
 ///
 /// Namespace that contains declarations for interacting with
 /// Talon speed controllers specific to YTA.
 ///
 ////////////////////////////////////////////////////////////////
-namespace YtaTalon
+namespace Yta
+{
+namespace Talon
 {
     // Represents how a motor will be controlled
     enum MotorGroupControlMode
@@ -84,6 +86,7 @@ namespace YtaTalon
 
     static const bool CURRENT_LIMITING_ENABLED = false;
 }
+}
 
 
 
@@ -101,7 +104,7 @@ class TalonMotorGroup
 {
 public:
 
-    typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
+    typedef Yta::Talon::MotorGroupControlMode MotorGroupControlMode;
     
     // Constructor
     TalonMotorGroup(
@@ -180,13 +183,13 @@ private:
         {
             m_pTalon->SetNeutralMode(neutralMode);
 
-            if (controlMode == YtaTalon::FOLLOW_INVERSE)
+            if (controlMode == Yta::Talon::FOLLOW_INVERSE)
             {
                 m_pTalon->SetInverted(true);
             }
 
             // @todo: Move in sensor too?
-            if (YtaTalon::CURRENT_LIMITING_ENABLED && bIsDriveMotor)
+            if (Yta::Talon::CURRENT_LIMITING_ENABLED && bIsDriveMotor)
             {
                 // Limits were 40.0, 55.0, 0.1
                 CurrentLimitsConfigs driveMotorCurrentLimits;
@@ -298,7 +301,7 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
         if (i == 0U)
         {
             // Create it
-            m_pMotorsInfo[i] = new MotorInfo(pName, YtaTalon::LEADER, neutralMode, leaderCanId, groupId, bIsDriveMotor);
+            m_pMotorsInfo[i] = new MotorInfo(pName, Yta::Talon::LEADER, neutralMode, leaderCanId, groupId, bIsDriveMotor);
         }
         // Non-leader Talons
         else
@@ -309,9 +312,9 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
             // Only set follow for Talon groups that will be configured as
             // such.  The CTRE Phoenix library now passes the control mode in
             // the Set() method, so we only need to set the followers here.
-            if ((nonLeaderControlMode == YtaTalon::FOLLOW) || (nonLeaderControlMode == YtaTalon::FOLLOW_INVERSE))
+            if ((nonLeaderControlMode == Yta::Talon::FOLLOW) || (nonLeaderControlMode == Yta::Talon::FOLLOW_INVERSE))
             {
-                bool bInvert = (nonLeaderControlMode == YtaTalon::FOLLOW) ? false : true;
+                bool bInvert = (nonLeaderControlMode == Yta::Talon::FOLLOW) ? false : true;
                 m_pMotorsInfo[i]->SetAsFollower(leaderCanId, bInvert);
             }
         }
@@ -342,9 +345,9 @@ bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMo
         m_pMotorsInfo[m_NumMotors] = new MotorInfo(m_pMotorsInfo[0]->m_pName, controlMode, newMotorCanId, (m_NumMotors + 1), bIsDriveMotor);
         
         // If this Talon will be a follower, be sure to call Set() to enable it
-        if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
+        if ((controlMode == Yta::Talon::FOLLOW) || (controlMode == Yta::Talon::FOLLOW_INVERSE))
         {
-            bool bInvert = (controlMode == YtaTalon::FOLLOW) ? false : true;
+            bool bInvert = (controlMode == Yta::Talon::FOLLOW) ? false : true;
             m_pMotorsInfo[m_NumMotors]->SetAsFollower(m_LeaderCanId, bInvert);
         }
 
@@ -381,9 +384,9 @@ bool TalonMotorGroup<TalonType>::SetMotorInGroupControlMode(unsigned canId, Moto
             m_pMotorsInfo[i]->m_ControlMode = controlMode;
 
             // If this Talon will be a follower, be sure to call Set() to enable it
-            if ((controlMode == YtaTalon::FOLLOW) || (controlMode == YtaTalon::FOLLOW_INVERSE))
+            if ((controlMode == Yta::Talon::FOLLOW) || (controlMode == Yta::Talon::FOLLOW_INVERSE))
             {
-                bool bInvert = (controlMode == YtaTalon::FOLLOW) ? false : true;
+                bool bInvert = (controlMode == Yta::Talon::FOLLOW) ? false : true;
                 m_pMotorsInfo[i]->SetAsFollower(m_LeaderCanId, bInvert);
             }
             else
@@ -394,7 +397,7 @@ bool TalonMotorGroup<TalonType>::SetMotorInGroupControlMode(unsigned canId, Moto
             }
 
             // Update the inverted status.  Only FOLLOW_INVERSE uses the built-in invert.
-            if (controlMode == YtaTalon::FOLLOW_INVERSE)
+            if (controlMode == Yta::Talon::FOLLOW_INVERSE)
             {
                 m_pMotorsInfo[i]->m_pTalon->SetInverted(true);
             }
@@ -476,34 +479,34 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
         // as if they need to drive in different directions).
         switch (m_pMotorsInfo[i]->m_ControlMode)
         {
-            case YtaTalon::LEADER:
-            case YtaTalon::INDEPENDENT:
+            case Yta::Talon::LEADER:
+            case Yta::Talon::INDEPENDENT:
             {
                 // The leader always gets set via duty cycle, as do motors
                 // that are independently controlled (not follow or inverse).
                 valueToSet = value;
                 break;
             }
-            case YtaTalon::FOLLOW:
-            case YtaTalon::FOLLOW_INVERSE:
+            case Yta::Talon::FOLLOW:
+            case Yta::Talon::FOLLOW_INVERSE:
             {
                 // Nothing to do, motor had SetControl() called during object construction
                 bCallSet = false;
                 break;
             }
-            case YtaTalon::INVERSE:
+            case Yta::Talon::INVERSE:
             {
                 // Motor is attached to drive in opposite direction of leader
                 valueToSet = -value;
                 break;
             }
-            case YtaTalon::INDEPENDENT_OFFSET:
+            case Yta::Talon::INDEPENDENT_OFFSET:
             {
                 // The non-leader motor has a different value in this case
                 valueToSet = value + offset;
                 break;
             }
-            case YtaTalon::INVERSE_OFFSET:
+            case Yta::Talon::INVERSE_OFFSET:
             {
                 // The non-leader motor has a different value in this case
                 valueToSet = -(value + offset);

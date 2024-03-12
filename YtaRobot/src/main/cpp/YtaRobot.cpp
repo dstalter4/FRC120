@@ -39,12 +39,12 @@ YtaRobot::YtaRobot() :
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pIntakeMotor                      (new TalonFxMotorController(INTAKE_MOTOR_CAN_ID)),
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", NUMBER_OF_SHOOTER_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, true)),
-    m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", NUMBER_OF_PIVOT_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, true)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, true)),
+    m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, true)),
     //m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     //m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
@@ -186,7 +186,7 @@ void YtaRobot::ConfigureMotorControllers()
     pTalon->ConfigStatorCurrentLimit(INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG);
     */
 
-    // Configure angle motor controller
+    // Configure mechanism pivot motor controller
     TalonFXConfiguration talonConfig;
     talonConfig.Feedback.SensorToMechanismRatio = 25.0;
     talonConfig.ClosedLoopGeneral.ContinuousWrap = true;
