@@ -403,7 +403,6 @@ void YtaRobot::PivotSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootSequence()
 {
-
     if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON))
     {
         m_bShootSpeaker = !m_bShootSpeaker;
