@@ -230,8 +230,6 @@ private:
 
     // Main sequence for shoot control
     void ShootSequence();
-    void ShootSpeaker();
-    void ShootAmp();
 
     // Superstructure control testing sequence
     void SuperStructureTestSequence();
