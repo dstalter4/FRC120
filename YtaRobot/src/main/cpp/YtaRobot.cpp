@@ -59,6 +59,8 @@ YtaRobot::YtaRobot() :
     m_bDriveSwap                        (false),
     m_bShootSpeaker                     (true),
     m_bShotInProgress                   (false),
+    m_bIntakeInProgress                 (false),
+    m_PivotTargetDegrees                (0.0_deg),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -196,9 +198,9 @@ void YtaRobot::ConfigureMotorControllers()
     talonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
     talonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-    talonConfig.Slot0.kP = 15.0;
+    talonConfig.Slot0.kP = 18.0;
     talonConfig.Slot0.kI = 0.0;
-    talonConfig.Slot0.kD = 0.2;
+    talonConfig.Slot0.kD = 0.1;
 
     (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().Apply(talonConfig);
     (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
@@ -336,31 +338,26 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
-    if (m_pAuxController->GetButtonState(AUX_INTAKE_BUTTON))
+    if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND)
     {
         m_pIntakeMotor->SetDutyCycle(INTAKE_MOTOR_SPEED);
-        if (!m_bShootSpeaker)
-        {
-            m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
-        }
+        m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
+        m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
+        m_bIntakeInProgress = true;
     }
-    else if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_OUT_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    else if (m_pAuxController->GetButtonState(AUX_INTAKE_OUT_BUTTON))
     {
         m_pIntakeMotor->SetDutyCycle(-INTAKE_MOTOR_SPEED);
-        if (!m_bShootSpeaker)
-        {
-            m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
-        }
+        m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
+        m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
+        m_bIntakeInProgress = true;
     }
     else
     {
         m_pIntakeMotor->SetDutyCycle(0.0);
-
-        // Only turn off the feeder if a shot is not in progress (for the amp use case)
-        if (!m_bShootSpeaker && !m_bShotInProgress)
-        {
-            m_pFeederMotor->SetDutyCycle(0.0);
-        }
+        m_pFeederMotor->SetDutyCycle(0.0);
+        m_PivotTargetDegrees = PIVOT_ANGLE_RUNTIME_BASE;
+        m_bIntakeInProgress = false;
     }
 }
 
@@ -387,30 +384,13 @@ void YtaRobot::PivotSequence()
     units::angle::degree_t pivotAngleDegrees = pivotAngleTurns;
     SmartDashboard::PutNumber("Pivot angle", pivotAngleDegrees.value());
 
-    // 50 degrees: robot aligned to speaker base
-    // 90 degrees: robot aligned to amp base
-
-    units::angle::degree_t pivotTargetDegrees = pivotAngleDegrees;
-    if (m_pAuxController->DetectButtonChange(AUX_PIVOT_TO_SHOOT_BUTTON))
+    if (m_bShotInProgress)
     {
-        if (m_bShootSpeaker)
-        {
-            pivotTargetDegrees = -50.0_deg;
-        }
-        else
-        {
-            pivotTargetDegrees = -90.0_deg;
-        }
-        (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(pivotTargetDegrees));
+        // If an intake is in progress, it will set the target pivot angle.
+        // If an intake is not in progress, move to the target position for amp or speaker
+        m_PivotTargetDegrees = (m_bShootSpeaker) ? PIVOT_ANGLE_TOUCHING_SPEAKER : PIVOT_ANGLE_TOUCHING_AMP;
     }
-    else if (m_pAuxController->DetectButtonChange(AUX_PIVOT_TO_ZERO_BUTTON))
-    {
-        pivotTargetDegrees = 0.0_deg;
-        (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(pivotTargetDegrees));
-    }
-    else
-    {
-    }
+    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(m_PivotTargetDegrees));
 }
 
 
@@ -431,13 +411,117 @@ void YtaRobot::ShootSequence()
 
     SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
 
-    if (m_bShootSpeaker)
+    enum ShootState
     {
-        ShootSpeaker();
+        NOT_SHOOTING,
+        WAIT_FOR_PIVOT,
+        BACK_FEED,
+        RAMPING_UP,
+        SHOOTING
+    };
+    static ShootState shootState = NOT_SHOOTING;
+    static Timer * pShootTimer = new Timer();
+
+    // Constants used in the cases below
+    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : SHOOTER_MOTOR_AMP_SPEED;
+    const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED : 0.0;
+    const double BACK_FEED_SPEED = 0.2;
+    const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.5_s : 0.08_s;
+    const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = 0.5_s;
+    const units::time::second_t RAMP_UP_TIME_S = 1.0_s;
+
+    double feederSpeed = 0.0;
+    double shootSpeed = 0.0;
+    double shootSpeedOffset = 0.0;
+    if (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    {
+        switch (shootState)
+        {
+            case NOT_SHOOTING:
+            {
+                // Start a timer to control the shooting process.
+                // Make sure all motors are off.
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+                shootSpeedOffset = 0.0;
+
+                pShootTimer->Reset();
+                pShootTimer->Start();
+                m_bShotInProgress = true;
+                shootState = WAIT_FOR_PIVOT;
+                break;
+            }
+            case WAIT_FOR_PIVOT:
+            {
+                // A brief delay for the mechanism to move into the
+                // appropriate shooting position.  Motors still off.
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+                shootSpeedOffset = 0.0;
+
+                if (pShootTimer->Get() > WAIT_FOR_PIVOT_MECHANISM_TIME_S)
+                {
+                    pShootTimer->Reset();
+                    shootState = BACK_FEED;
+                }
+                break;
+            }
+            case BACK_FEED:
+            {
+                // Mechanism in position.  Feeder on reverse, shooter
+                // slowly spinning in case the note is touching.
+                feederSpeed = -FEEDER_MOTOR_SPEED;
+                shootSpeed = BACK_FEED_SPEED;
+                shootSpeedOffset = 0.0;
+
+                if (pShootTimer->Get() > TARGET_BACK_FEED_TIME_S)
+                {
+                    pShootTimer->Reset();
+                    shootState = RAMPING_UP;
+                }
+                break;
+            }
+            case RAMPING_UP:
+            {
+                // Mechanism in position.  Feeder off, start ramping
+                // up the shooter motors.
+                feederSpeed = 0.0;
+                shootSpeed = TARGET_SHOOTER_SPEED;
+                shootSpeedOffset = TARGET_SHOOTER_OFFSET_SPEED;
+
+                if (pShootTimer->Get() > RAMP_UP_TIME_S)
+                {
+                    pShootTimer->Stop();
+                    shootState = SHOOTING;
+                }
+                break;
+            }
+            case SHOOTING:
+            {
+                // Mechanism in position, shooter motors at speed.
+                // Enable feeder to take the shot.
+                feederSpeed = FEEDER_MOTOR_SPEED;
+                shootSpeed = TARGET_SHOOTER_SPEED;
+                shootSpeedOffset = TARGET_SHOOTER_OFFSET_SPEED;
+            }
+            default:
+            {
+                break;
+            }
+        }
+
+        // Sets the motors to the values configured above
+        m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
+        m_pFeederMotor->SetDutyCycle(feederSpeed);
     }
     else
     {
-        ShootAmp();
+        // Feeder motor is not disabled because it is controlled
+        // by the intake sequence.
+        pShootTimer->Stop();
+        m_pShooterMotors->Set(0.0, 0.0);
+        m_bShotInProgress = false;
+        shootState = NOT_SHOOTING;
     }
 }
 
@@ -451,57 +535,106 @@ void YtaRobot::ShootSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootSpeaker()
 {
-    enum SpeakerShootState
+    enum AmpShootState
     {
         NOT_SHOOTING,
+        WAIT_FOR_PIVOT,
+        BACK_FEED,
         RAMPING_UP,
         SHOOTING
     };
-    static SpeakerShootState shootState = NOT_SHOOTING;
-    static Timer * pShootRampUpTimer = new Timer();
+    static AmpShootState shootState = NOT_SHOOTING;
+    static Timer * pShootTimer = new Timer();
 
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
     double shootSpeedOffset = 0.0;
     if (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
     {
-        shootSpeed = SHOOTER_MOTOR_SPEAKER_SPEED;
-        shootSpeedOffset = SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED;
+        // Start with some default speeds, the cases will override as needed.
+        // Feeder is usually custom set.  Offset is always zero for the amp.
         switch (shootState)
         {
             case NOT_SHOOTING:
             {
-                pShootRampUpTimer->Reset();
-                pShootRampUpTimer->Start();
-                shootState = RAMPING_UP;
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+                shootSpeedOffset = 0.0;
+
+                pShootTimer->Reset();
+                pShootTimer->Start();
+                m_bShotInProgress = true;
+                shootState = WAIT_FOR_PIVOT;
+                break;
+            }
+            case WAIT_FOR_PIVOT:
+            {
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+                shootSpeedOffset = 0.0;
+
+                if (pShootTimer->Get() > 0.5_s)
+                {
+                    pShootTimer->Reset();
+                    shootState = BACK_FEED;
+                }
+                break;
+            }
+            case BACK_FEED:
+            {
+                // Feeder on reverse, shooter off
+                feederSpeed = -FEEDER_MOTOR_SPEED;
+                shootSpeed = 0.2;
+                shootSpeedOffset = 0.0;
+
+                if (pShootTimer->Get() > 0.5_s)
+                {
+                    pShootTimer->Reset();
+                    shootState = RAMPING_UP;
+                }
                 break;
             }
             case RAMPING_UP:
             {
-                if (pShootRampUpTimer->Get() > 1.0_s)
+                feederSpeed = 0.0;
+                shootSpeed = SHOOTER_MOTOR_SPEAKER_SPEED;
+                shootSpeedOffset = SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED;
+
+                if (pShootTimer->Get() > 1.0_s)
                 {
-                    pShootRampUpTimer->Stop();
+                    pShootTimer->Stop();
                     shootState = SHOOTING;
                 }
                 break;
             }
             case SHOOTING:
             {
+                // Turn the feeder on too
                 feederSpeed = FEEDER_MOTOR_SPEED;
+                shootSpeed = SHOOTER_MOTOR_SPEAKER_SPEED;
+                shootSpeedOffset = SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED;
             }
             default:
             {
                 break;
             }
         }
+        m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
+        m_pFeederMotor->SetDutyCycle(feederSpeed);
     }
     else
     {
+        pShootTimer->Stop();
+        m_pShooterMotors->Set(0.0, 0.0);
+        m_bShotInProgress = false;
         shootState = NOT_SHOOTING;
     }
 
-    m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
-    m_pFeederMotor->SetDutyCycle(feederSpeed);
+    //m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
+    //if (m_bShotInProgress)
+    //{
+    //    m_pFeederMotor->SetDutyCycle(feederSpeed);
+    //}
 }
 
 
@@ -514,16 +647,16 @@ void YtaRobot::ShootSpeaker()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootAmp()
 {
-    
     enum AmpShootState
     {
         NOT_SHOOTING,
+        WAIT_FOR_PIVOT,
         BACK_FEED,
         RAMPING_UP,
         SHOOTING
     };
     static AmpShootState shootState = NOT_SHOOTING;
-    static Timer * pShootRampUpTimer = new Timer();
+    static Timer * pShootTimer = new Timer();
 
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
@@ -532,15 +665,29 @@ void YtaRobot::ShootAmp()
     {
         // Start with some default speeds, the cases will override as needed.
         // Feeder is usually custom set.  Offset is always zero for the amp.
-        shootSpeed = SHOOTER_MOTOR_AMP_SPEED;
         switch (shootState)
         {
             case NOT_SHOOTING:
             {
-                pShootRampUpTimer->Reset();
-                pShootRampUpTimer->Start();
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+
+                pShootTimer->Reset();
+                pShootTimer->Start();
                 m_bShotInProgress = true;
-                shootState = BACK_FEED;
+                shootState = WAIT_FOR_PIVOT;
+                break;
+            }
+            case WAIT_FOR_PIVOT:
+            {
+                feederSpeed = 0.0;
+                shootSpeed = 0.0;
+
+                if (pShootTimer->Get() > 0.5_s)
+                {
+                    pShootTimer->Reset();
+                    shootState = BACK_FEED;
+                }
                 break;
             }
             case BACK_FEED:
@@ -549,19 +696,21 @@ void YtaRobot::ShootAmp()
                 feederSpeed = -FEEDER_MOTOR_SPEED;
                 shootSpeed = 0.0;
 
-                if (pShootRampUpTimer->Get() > 0.25_s)
+                if (pShootTimer->Get() > 0.08_s)
                 {
-                    pShootRampUpTimer->Reset();
+                    pShootTimer->Reset();
                     shootState = RAMPING_UP;
                 }
                 break;
             }
             case RAMPING_UP:
             {
-                // Uses default speeds (feeder off, shooter on)
-                if (pShootRampUpTimer->Get() > 0.5_s)
+                feederSpeed = 0.0;
+                shootSpeed = SHOOTER_MOTOR_AMP_SPEED;
+
+                if (pShootTimer->Get() > 1.0_s)
                 {
-                    pShootRampUpTimer->Stop();
+                    pShootTimer->Stop();
                     shootState = SHOOTING;
                 }
                 break;
@@ -570,24 +719,29 @@ void YtaRobot::ShootAmp()
             {
                 // Turn the feeder on too
                 feederSpeed = FEEDER_MOTOR_SPEED;
+                shootSpeed = SHOOTER_MOTOR_AMP_SPEED;
             }
             default:
             {
                 break;
             }
         }
+        m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
+        m_pFeederMotor->SetDutyCycle(feederSpeed);
     }
     else
     {
+        pShootTimer->Stop();
+        m_pShooterMotors->Set(0.0, 0.0);
         m_bShotInProgress = false;
         shootState = NOT_SHOOTING;
     }
 
-    m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
-    if (m_bShotInProgress)
-    {
-        m_pFeederMotor->SetDutyCycle(feederSpeed);
-    }
+    //m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
+    //if (m_bShotInProgress)
+    //{
+    //    m_pFeederMotor->SetDutyCycle(feederSpeed);
+    //}
 }
 
 
