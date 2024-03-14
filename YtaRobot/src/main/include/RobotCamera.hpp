@@ -289,7 +289,10 @@ private:
 ////////////////////////////////////////////////////////////////
 inline void RobotCamera::SetLimelightPipeline(int32_t pipelineNum)
 {
-    m_pLimelightNetworkTable->PutNumber("pipeline", pipelineNum);
+    if (m_pLimelightNetworkTable != nullptr)
+    {
+        m_pLimelightNetworkTable->PutNumber("pipeline", pipelineNum);
+    }
 }
 
 
@@ -302,7 +305,10 @@ inline void RobotCamera::SetLimelightPipeline(int32_t pipelineNum)
 ////////////////////////////////////////////////////////////////
 inline void RobotCamera::SetLimelightMode(LimelightMode mode)
 {
-    m_pLimelightNetworkTable->PutNumber("camMode", static_cast<int>(mode));
+    if (m_pLimelightNetworkTable != nullptr)
+    {
+        m_pLimelightNetworkTable->PutNumber("camMode", static_cast<int>(mode));
+    }
 }
 
 
@@ -315,7 +321,10 @@ inline void RobotCamera::SetLimelightMode(LimelightMode mode)
 ////////////////////////////////////////////////////////////////
 inline void RobotCamera::SetLimelightLedMode(LimelightLedMode ledMode)
 {
-    m_pLimelightNetworkTable->PutNumber("ledMode", static_cast<int>(ledMode));
+    if (m_pLimelightNetworkTable != nullptr)
+    {
+        m_pLimelightNetworkTable->PutNumber("ledMode", static_cast<int>(ledMode));
+    }
 }
 
 

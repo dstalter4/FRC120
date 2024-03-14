@@ -312,6 +312,7 @@ private:
     bool                            m_bShootSpeakerClose;                   // Indicates if shooting the speaker from close up or further away
     bool                            m_bShotInProgress;                      // Indicates whether a shot is in progress or not
     bool                            m_bIntakeInProgress;                    // Indicates whether a note is being picked up
+    bool                            m_bPivotTareInProgress;                 // Indicates whether or not a tare of the pivot mechanism is in progress
     units::angle::degree_t          m_PivotTargetDegrees;                   // Tracks the desired angle position of the superstructure mechanism
     units::angle::degree_t          m_AmpTargetDegrees;                     // The current target angle for the pivot mechanism when shooting at the amp
     double                          m_AmpTargetSpeed;                       // The current target speed for the shooter motors when shooting at the amp

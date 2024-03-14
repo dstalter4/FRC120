@@ -63,6 +63,7 @@ YtaRobot::YtaRobot() :
     m_bShootSpeakerClose                (true),
     m_bShotInProgress                   (false),
     m_bIntakeInProgress                 (false),
+    m_bPivotTareInProgress              (false),
     m_PivotTargetDegrees                (0.0_deg),
     m_AmpTargetDegrees                  (PIVOT_ANGLE_TOUCHING_AMP),
     m_AmpTargetSpeed                    (SHOOTER_MOTOR_AMP_SPEED),
@@ -389,7 +390,7 @@ void YtaRobot::IntakeSequence()
     {
         m_pIntakeMotor->SetDutyCycle(0.0);
         m_pFeederMotor->SetDutyCycle(0.0);
-        if (!m_bShotInProgress && !m_bCameraAlignInProgress)
+        if (!m_bShotInProgress && !m_bPivotTareInProgress && !m_bCameraAlignInProgress)
         {
             m_PivotTargetDegrees = PIVOT_ANGLE_RUNTIME_BASE;
         }
@@ -421,20 +422,27 @@ void YtaRobot::PivotSequence()
         {
             // Limit manual control max speed
             constexpr const double MANUAL_PIVOT_SCALING_FACTOR = 0.15;
-            pivotDutyCycle.Output = manualPivotInput * MANUAL_PIVOT_SCALING_FACTOR;
+            pivotDutyCycle.Output = -(manualPivotInput * MANUAL_PIVOT_SCALING_FACTOR);
             pPivotLeaderTalon->SetControl(pivotDutyCycle);
         }
+        m_bPivotTareInProgress = true;
     }
     // When the tare button is released, set the new zero
     if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE), Yta::Controller::ButtonStateChanges::BUTTON_RELEASED)
     {
         (void)pPivotLeaderTalon->GetConfigurator().SetPosition(0.0_tr);
+        m_bPivotTareInProgress = false;
     }
 
     units::angle::turn_t pivotAngleTurns = pPivotLeaderTalon->GetPosition().GetValue();
     units::angle::degree_t pivotAngleDegrees = pivotAngleTurns;
     SmartDashboard::PutNumber("Pivot angle", pivotAngleDegrees.value());
     SmartDashboard::PutNumber("Target pivot angle", m_PivotTargetDegrees.value());
+
+    if (m_bPivotTareInProgress)
+    {
+        return;
+    }
 
     // Only update the pivot target if the auto camera align didn't set one
     if (m_bShotInProgress && !m_bCameraAlignInProgress)
