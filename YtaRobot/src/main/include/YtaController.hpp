@@ -238,7 +238,7 @@ public:
     ///
     ////////////////////////////////////////////////////////////////
     inline bool DetectButtonChange(int buttonNumber, Yta::Controller::ButtonStateChanges::Transitions transition = Yta::Controller::ButtonStateChanges::BUTTON_PRESSED)
-    {   
+    {
         // Create the mask to the bit position for this button
         const uint32_t BUTTON_BIT_POSITION_MASK = 1U << buttonNumber;
 

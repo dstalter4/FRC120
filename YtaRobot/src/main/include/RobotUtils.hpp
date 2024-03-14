@@ -54,6 +54,20 @@
 ////////////////////////////////////////////////////////////////
 namespace RobotUtils
 {
+    // For use with creating more advanced SmartDashboard prints
+    struct DebugDigits
+    {
+        unsigned m_1;
+        unsigned m_10;
+        unsigned m_100;
+        unsigned m_1000;
+        unsigned m_10000;
+        unsigned m_100000;
+        unsigned m_1000000;
+        DebugDigits() : m_1(), m_10(), m_100(), m_1000(), m_10000(), m_100000(), m_1000000() {}
+        inline unsigned Value() { return (m_1 + m_10 + m_100 + m_1000 + m_10000 + m_100000 + m_1000000); }
+    };
+
     static const bool DEBUG_PRINTS = true;
     
     ////////////////////////////////////////////////////////////////
