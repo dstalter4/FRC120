@@ -46,7 +46,8 @@ void YtaRobot::AutonomousInit()
     // Autonomous needs full camera processing
     RobotCamera::SetFullProcessing(true);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_ON);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
+    RobotCamera::SetLimelightPipeline(0);
 }
 
 

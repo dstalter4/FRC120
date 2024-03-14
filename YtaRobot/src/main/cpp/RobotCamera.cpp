@@ -178,7 +178,93 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 ////////////////////////////////////////////////////////////////
 void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
 {
+    // Note: LimelightHelpers.h uses a series of inline functions that expands to
+    //       m_pLimelightNetworkTable->GetEntry("pipeline").SetDouble(0);
+
+    // Make sure the robot object has been created (the thread will start running very early)
     YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+    if (pRobotObj == nullptr)
+    {
+        return;
+    }
+
+    int32_t yawAngle = static_cast<int32_t>(pRobotObj->m_pPigeon->GetYaw().GetValueAsDouble());
+    yawAngle %= 360;
+    //SmartDashboard::PutNumber("Camera yaw", yawAngle);
+
+    //get total camera latency and display to the dashboard for troubleshooting issues (displayed in ms)
+    //double cameraLatency = m_pLimelightNetworkTable->GetNumber("cl",0.0);
+    //SmartDashboard::PutNumber("Camera latency", cameraLatency);
+
+    //Pipeline number and camera mode were set by YtaRobot::CameraSequence().
+    //The LEDs should be controlled by the pipeline selected.
+
+    //Determine the rotation direction based on the location of the april tag
+    if ((yawAngle > -120) && (yawAngle < 120))  //If the robot is angled out of range, do nothing
+    {
+        double tx = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
+
+        if (tx < -5.5)
+        {
+            //Negative rotation value is CCW
+            pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, -0.1, true, true);
+        }
+        else if (tx > 5.5)
+        {
+            //Positive rotation value is CW
+            pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, -0.1, true, true);
+        }
+        else 
+        {
+            pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
+        }
+    }
+    else
+    {
+        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
+    }
+
+    //Putting the coding for the shooter angle stuff here just so it's all in the same spot 
+
+    //Estimate distance for use in finding the ideal shooting angle
+    //Unless otherwise noted, measurements are in feet from here forward
+    //constexpr double limelightMountAngleDegrees = 25.0;
+    constexpr double cameraVerticalOffset = 20.0; 
+    constexpr double targetHeight = 51.9;
+    double targetOffsetAngleVertical = m_pLimelightNetworkTable->GetNumber("ty",0.0);
+    double angleToGoal = cameraVerticalOffset + targetOffsetAngleVertical;
+
+    //Estimates the distance, which can be used for the angle of the shooter
+    double estimateDistance = (targetHeight - cameraVerticalOffset) / std::tan(angleToGoal);
+
+    //Calculate the ideal shooter angle based on the estimated distance
+    double estimatedShooterAngle = std::tan(79.4/estimateDistance);
+    //Get the current angle being read from the encoder (should be between 0 and 95)
+    double currentShooterAngle = pRobotObj->m_PivotTargetDegrees.value();
+    double targetShooterAngle = currentShooterAngle-estimatedShooterAngle;
+
+    bool bMoveShooterAngle = false;
+    if (bMoveShooterAngle)
+    {
+        if (targetShooterAngle > 1)
+        {
+            //rotate shooter motor
+        }
+        else if(targetShooterAngle < -1)
+        {
+            //rotate shooter motor the other way
+        }
+        else 
+        {
+            //run shooter motors maybe
+        }
+    }
+
+    return;
+
+
+
+    // 2024: Go no further
 
     // Get the x-axis target value
     double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
@@ -276,6 +362,7 @@ void RobotCamera::LimelightThread()
     // Get the limelight network table
     while (m_pLimelightNetworkTable == nullptr)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
         m_pLimelightNetworkTable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
     }
 
@@ -290,6 +377,9 @@ void RobotCamera::LimelightThread()
     }
 
     // The limelight camera mode will be set by autonomous or teleop
+    // 2024: Set april tag priority (red speaker center is 3, blue speaker center is 7)
+    const uint32_t APRIL_TAG_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 3U : 7U;
+    m_pLimelightNetworkTable->PutNumber("priorityid", APRIL_TAG_PRIORITY);
     
     while (true)
     {

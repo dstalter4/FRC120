@@ -58,6 +58,7 @@ YtaRobot::YtaRobot() :
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
+    m_bCameraAlignInProgress            (false),
     m_bShootSpeaker                     (true),
     m_bShootSpeakerClose                (true),
     m_bShotInProgress                   (false),
@@ -94,7 +95,7 @@ YtaRobot::YtaRobot() :
     // Spawn the vision thread
     // @todo: Use a control variable to prevent the threads from executing too soon.
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     m_CameraThread.detach();
 }
 
@@ -286,7 +287,7 @@ void YtaRobot::TeleopInit()
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
@@ -310,7 +311,10 @@ void YtaRobot::TeleopPeriodic()
 
     if (Yta::Drive::Config::USE_SWERVE_DRIVE)
     {
-        SwerveDriveSequence();
+        if (!m_bCameraAlignInProgress)
+        {
+            SwerveDriveSequence();
+        }
     }
     else
     {
@@ -385,7 +389,7 @@ void YtaRobot::IntakeSequence()
     {
         m_pIntakeMotor->SetDutyCycle(0.0);
         m_pFeederMotor->SetDutyCycle(0.0);
-        if (!m_bShotInProgress)
+        if (!m_bShotInProgress && !m_bCameraAlignInProgress)
         {
             m_PivotTargetDegrees = PIVOT_ANGLE_RUNTIME_BASE;
         }
@@ -432,7 +436,8 @@ void YtaRobot::PivotSequence()
     SmartDashboard::PutNumber("Pivot angle", pivotAngleDegrees.value());
     SmartDashboard::PutNumber("Target pivot angle", m_PivotTargetDegrees.value());
 
-    if (m_bShotInProgress)
+    // Only update the pivot target if the auto camera align didn't set one
+    if (m_bShotInProgress && !m_bCameraAlignInProgress)
     {
         // If an intake is in progress, it will set the target pivot angle.
         // If an intake is not in progress, move to the target position for amp or speaker
@@ -1060,6 +1065,23 @@ void YtaRobot::PneumaticSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CameraSequence()
 {
+    if (m_pDriveController->GetButtonState(DRIVE_ALIGN_WITH_CAMERA_BUTTON))
+    {
+        m_bCameraAlignInProgress = true;
+        RobotCamera::SetLimelightPipeline(1);
+        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
+        RobotCamera::AutonomousCamera::AlignToTargetSwerve();
+    }
+    else
+    {
+        m_bCameraAlignInProgress = false;
+        RobotCamera::SetLimelightPipeline(0);
+        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    }
+    return;
+
+    // 2024: Go no further
+
     static bool bFullProcessing = false;
     
     // @note: Use std::chrono if precise time control is needed.
@@ -1572,7 +1594,7 @@ void YtaRobot::DisabledInit()
 
     // @todo: Shut off the limelight LEDs?
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Turn the rainbow animation back on    
     m_pCandle->Animate(m_RainbowAnimation);
