@@ -456,7 +456,26 @@ void YtaRobot::ShootSequence()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : SHOOTER_MOTOR_AMP_SPEED;
+    static double shooterAmpSpeed = SHOOTER_MOTOR_AMP_SPEED;
+    static Yta::Controller::PovDirections lastAuxPovDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
+    Yta::Controller::PovDirections currentAuxPovDirection  = m_pAuxController->GetPovAsDirection();
+    if (currentAuxPovDirection != lastAuxPovDirection)
+    {
+        if (currentAuxPovDirection == Yta::Controller::PovDirections::POV_UP)
+        {
+            // Motor output is negative, so decrease for faster speed
+            shooterAmpSpeed -= SHOOTER_STEP_SPEED;
+        }
+        if (currentAuxPovDirection == Yta::Controller::PovDirections::POV_DOWN)
+        {
+            // Motor output is negative, so decrease for faster speed
+            shooterAmpSpeed += SHOOTER_STEP_SPEED;
+        }
+        lastAuxPovDirection = currentAuxPovDirection;
+    }
+    SmartDashboard::PutNumber("Amp speed", shooterAmpSpeed);
+
+    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : shooterAmpSpeed;
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
     const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.5_s : 0.08_s;
