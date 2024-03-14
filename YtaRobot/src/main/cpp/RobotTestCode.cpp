@@ -290,11 +290,25 @@ void YtaRobotTest::SuperstructureTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::CtreSpeedControllerTest()
 {
-    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
-    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
-    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
-    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
-    
+    TalonFX * pLeft1 = nullptr;
+    TalonFX * pLeft2 = nullptr;
+    TalonFX * pRight1 = nullptr;
+    TalonFX * pRight2 = nullptr;
+    static bool bCreatedObjs = false;
+
+    // This approach is used instead of static objects in case calling
+    // constructors at program startup create the TalonFX objects instead
+    // of first function invocation.  The TalonFX IDs may be invalid in
+    // some scenarios.
+    if (!bCreatedObjs)
+    {
+        pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
+        pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
+        pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
+        pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
+        bCreatedObjs = true;
+    }
+
     while (m_pJoystick->GetRawButton(1))
     {
         pLeft1->Set(1.0);

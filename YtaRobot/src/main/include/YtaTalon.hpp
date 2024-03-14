@@ -84,6 +84,17 @@ namespace Talon
         }
     };
 
+    // A structure that doesn't create real TalonFX objects.
+    // Intended to be used to keep multiple robot configuration
+    // options available (i.e. interchange with TalonMotorGroup).
+    struct EmptyTalonFx
+    {
+        EmptyTalonFx(const char *, unsigned, unsigned, MotorGroupControlMode, NeutralModeValue, bool) {}
+        inline void Set(double) {}
+        inline void Set(double, double) {}
+        inline void DisplayStatusInformation() {}
+    };
+
     static const bool CURRENT_LIMITING_ENABLED = false;
 }
 }

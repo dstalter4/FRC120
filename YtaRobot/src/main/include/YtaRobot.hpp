@@ -248,8 +248,9 @@ private:
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
-    TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
-    TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
+    typedef Yta::Talon::EmptyTalonFx ArcadeDriveTalonFxType;                // Switch to TalonMotorGroup<TalonFX> for real implementation
+    ArcadeDriveTalonFxType *        m_pLeftDriveMotors;                     // Left drive motor control
+    ArcadeDriveTalonFxType *        m_pRightDriveMotors;                    // Right drive motor control
     TalonFxMotorController *        m_pIntakeMotor;                         // Intake motor control
     TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
     TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motors control
