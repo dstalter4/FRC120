@@ -404,10 +404,25 @@ void YtaRobot::IntakeSequence()
 void YtaRobot::PivotSequence()
 {
     static TalonFX * pPivotLeaderTalon = m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID);
+    static DutyCycleOut pivotDutyCycle(0.0);
     static PositionVoltage pivotPositionVoltage(0.0_tr);
     (void)m_pPivotThroughBoreEncoder->Get();
 
-    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE))
+    // If the tare button is being held
+    if (m_pAuxController->GetButtonState(AUX_TARE_PIVOT_ANGLE))
+    {
+        // Allow manual movement
+        double manualPivotInput = m_pAuxController->GetAxisValue(AUX_MANUAL_PIVOT_AXIS);
+        if (std::abs(manualPivotInput) > AXIS_INPUT_DEAD_BAND)
+        {
+            // Limit manual control max speed
+            constexpr const double MANUAL_PIVOT_SCALING_FACTOR = 0.15;
+            pivotDutyCycle.Output = manualPivotInput * MANUAL_PIVOT_SCALING_FACTOR;
+            pPivotLeaderTalon->SetControl(pivotDutyCycle);
+        }
+    }
+    // When the tare button is released, set the new zero
+    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE), Yta::Controller::ButtonStateChanges::BUTTON_RELEASED)
     {
         (void)pPivotLeaderTalon->GetConfigurator().SetPosition(0.0_tr);
     }
