@@ -420,7 +420,6 @@ private:
     static const int                ANGLE_90_DEGREES                        = 90;
     static const int                ANGLE_180_DEGREES                       = 180;
     static const int                ANGLE_360_DEGREES                       = 360;
-    static const int                AXIS_INPUT_DEAD_BAND                    = 0.10;
     static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
@@ -438,6 +437,7 @@ private:
     static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
+    static constexpr double         AXIS_INPUT_DEAD_BAND                    =  0.10;
 
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
 
