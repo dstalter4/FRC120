@@ -39,12 +39,15 @@
 #include "SwerveDrive.hpp"                      // for using swerve drive
 #include "YtaController.hpp"                    // for controller interaction
 #include "YtaTalon.hpp"                         // for custom Talon control
-//#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
-//#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
+#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
+#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"            // for PigeonIMU
 #include "ctre/phoenix6/controls/MusicTone.hpp" // for creating music tones
 
 using namespace frc;
+using namespace ctre::phoenix6::controls;
+using namespace ctre::phoenix6::hardware;
+using namespace ctre::phoenix::led;
 
 
 ////////////////////////////////////////////////////////////////
@@ -262,8 +265,8 @@ private:
     TalonMotorGroup<TalonFX> *      m_pLiftMotors;                          // Lift motors control
     
     // LEDs
-    //CANdle *                        m_pCandle;                              // Controls an RGB LED strip
-    //RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
+    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
+    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
 
     // Interrupts
     // (none)
@@ -424,7 +427,7 @@ private:
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = 8;
+    static const unsigned           NUMBER_OF_LEDS                          = 8 + 44;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     
@@ -568,12 +571,12 @@ void YtaRobot::SetLedsToAllianceColor()
     {
         case DriverStation::Alliance::kRed:
         {
-            //m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
             break;
         }
         case DriverStation::Alliance::kBlue:
         {
-            //m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
             break;
         }
         default:

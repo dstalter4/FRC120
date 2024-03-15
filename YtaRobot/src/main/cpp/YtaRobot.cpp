@@ -46,8 +46,8 @@ YtaRobot::YtaRobot() :
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, false)),
     m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
     m_pLiftMotors                       (new TalonMotorGroup<TalonFX>("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
-    //m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
-    //m_RainbowAnimation                  ({1, 0.5, 308}),
+    m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
+    m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pPivotThroughBoreEncoder          (new DutyCycleEncoder(0)),
@@ -86,10 +86,10 @@ YtaRobot::YtaRobot() :
 
     ConfigureMotorControllers();
 
-    //CANdleConfiguration candleConfig;
-    //candleConfig.stripType = LEDStripType::RGB;
-    //m_pCandle->ConfigAllSettings(candleConfig);
-    //m_pCandle->Animate(m_RainbowAnimation);
+    CANdleConfiguration candleConfig;
+    candleConfig.stripType = LEDStripType::RGB;
+    m_pCandle->ConfigAllSettings(candleConfig);
+    m_pCandle->Animate(m_RainbowAnimation);
 
     // Spawn the vision thread
     // @todo: Use a control variable to prevent the threads from executing too soon.
@@ -241,7 +241,7 @@ void YtaRobot::InitialStateSetup()
     m_AllianceColor = DriverStation::GetAlliance();
 
     // Disable the rainbow animation
-    //m_pCandle->ClearAnimation(0);
+    m_pCandle->ClearAnimation(0);
 
     // Set the LEDs to the alliance color
     SetLedsToAllianceColor();
@@ -1429,7 +1429,7 @@ void YtaRobot::DisabledInit()
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
 
     // Turn the rainbow animation back on    
-    //m_pCandle->Animate(m_RainbowAnimation);
+    m_pCandle->Animate(m_RainbowAnimation);
 }
 
 
