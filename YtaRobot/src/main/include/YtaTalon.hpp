@@ -534,7 +534,7 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
         if (bCallSet)
         {
             // Set the value in the Talon
-            m_pMotorsInfo[i]->m_pTalon->SetControl(m_pMotorsInfo[i]->m_DutyCycleOut.WithOutput(valueToSet));
+            (void)m_pMotorsInfo[i]->m_pTalon->SetControl(m_pMotorsInfo[i]->m_DutyCycleOut.WithOutput(valueToSet));
         }
     }
 }
@@ -563,7 +563,7 @@ void TalonMotorGroup<TalonType>::SetAngle(double angle)
     // Set the control output
     units::angle::degree_t degrees(angle);
     units::angle::turn_t turns(degrees);
-    m_pMotorsInfo[0]->m_pTalon->SetControl(m_pMotorsInfo[0]->m_PositionVoltage.WithPosition(turns));
+    (void)m_pMotorsInfo[0]->m_pTalon->SetControl(m_pMotorsInfo[0]->m_PositionVoltage.WithPosition(turns));
 }
 
 

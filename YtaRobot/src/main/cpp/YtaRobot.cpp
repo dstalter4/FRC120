@@ -43,8 +43,9 @@ YtaRobot::YtaRobot() :
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pIntakeMotor                      (new TalonFxMotorController(INTAKE_MOTOR_CAN_ID)),
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, true)),
-    m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, true)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, false)),
+    m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
+    m_pLiftMotors                       (new TalonMotorGroup<TalonFX>("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
     //m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     //m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
@@ -304,6 +305,7 @@ void YtaRobot::TeleopPeriodic()
     IntakeSequence();
     ShootSequence();
     PivotSequence();
+    LiftSequence();
     //SuperStructureTestSequence();
     CheckAndResetEncoderCounts();
 
@@ -577,6 +579,26 @@ void YtaRobot::ShootSequence()
         }
         m_bShotInProgress = false;
         shootState = NOT_SHOOTING;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::LiftSequence
+///
+/// Main workflow for handling lift requests.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::LiftSequence()
+{
+    if (m_pDriveController->GetButtonState(DRIVE_LIFT_ROBOT_BUTTON))
+    {
+        m_pLiftMotors->Set(LIFT_MOTOR_SPEED);
+    }
+    else
+    {
+        m_pLiftMotors->Set(0.0);
     }
 }
 
