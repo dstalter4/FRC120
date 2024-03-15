@@ -63,6 +63,8 @@ YtaRobot::YtaRobot() :
     m_bShotInProgress                   (false),
     m_bIntakeInProgress                 (false),
     m_PivotTargetDegrees                (0.0_deg),
+    m_AmpTargetDegrees                  (PIVOT_ANGLE_TOUCHING_AMP),
+    m_AmpTargetSpeed                    (SHOOTER_MOTOR_AMP_SPEED),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -308,6 +310,7 @@ void YtaRobot::TeleopPeriodic()
     LiftSequence();
     //SuperStructureTestSequence();
     CheckAndResetEncoderCounts();
+    CheckAndUpdateAmpValues();
 
     //PneumaticSequence();
     
@@ -362,7 +365,7 @@ void YtaRobot::IntakeSequence()
         // Same angle as when touching the amp
         m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
         m_pShooterMotors->Set(SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED);
-        m_PivotTargetDegrees = PIVOT_ANGLE_TOUCHING_AMP;
+        m_PivotTargetDegrees = m_AmpTargetDegrees;
         m_bIntakeInProgress = true;
     }
     else
@@ -418,7 +421,7 @@ void YtaRobot::PivotSequence()
         }
         else
         {
-            m_PivotTargetDegrees = PIVOT_ANGLE_TOUCHING_AMP;
+            m_PivotTargetDegrees = m_AmpTargetDegrees;
         }
     }
     (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(m_PivotTargetDegrees));
@@ -458,29 +461,10 @@ void YtaRobot::ShootSequence()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    static double shooterAmpSpeed = SHOOTER_MOTOR_AMP_SPEED;
-    static Yta::Controller::PovDirections lastAuxPovDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
-    Yta::Controller::PovDirections currentAuxPovDirection  = m_pAuxController->GetPovAsDirection();
-    if (currentAuxPovDirection != lastAuxPovDirection)
-    {
-        if (currentAuxPovDirection == Yta::Controller::PovDirections::POV_UP)
-        {
-            // Motor output is negative, so decrease for faster speed
-            shooterAmpSpeed -= SHOOTER_STEP_SPEED;
-        }
-        if (currentAuxPovDirection == Yta::Controller::PovDirections::POV_DOWN)
-        {
-            // Motor output is negative, so decrease for faster speed
-            shooterAmpSpeed += SHOOTER_STEP_SPEED;
-        }
-        lastAuxPovDirection = currentAuxPovDirection;
-    }
-    SmartDashboard::PutNumber("Amp speed", shooterAmpSpeed);
-
-    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : shooterAmpSpeed;
+    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : m_AmpTargetSpeed;
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
-    const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.5_s : 0.08_s;
+    const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.15_s : 0.08_s;
     const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = 0.5_s;
     const units::time::second_t RAMP_UP_TIME_S = 1.0_s;
 
@@ -600,6 +584,59 @@ void YtaRobot::LiftSequence()
     {
         m_pLiftMotors->Set(0.0);
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::CheckAndUpdateAmpValues
+///
+/// Checks for change requests to the amp target angle or
+/// shooter motors speed values.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::CheckAndUpdateAmpValues()
+{
+    static Yta::Controller::PovDirections lastAuxPovDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
+    Yta::Controller::PovDirections currentAuxPovDirection  = m_pAuxController->GetPovAsDirection();
+    if (currentAuxPovDirection != lastAuxPovDirection)
+    {
+        switch (currentAuxPovDirection)
+        {
+            case Yta::Controller::PovDirections::POV_UP:
+            {
+                // Motor output is negative, so decrease for faster speed
+                m_AmpTargetSpeed -= SHOOTER_STEP_SPEED;
+                break;
+            }
+            case Yta::Controller::PovDirections::POV_DOWN:
+            {
+                // Motor output is negative, so increase for slower speed
+                m_AmpTargetSpeed += SHOOTER_STEP_SPEED;
+                break;
+            }
+            case Yta::Controller::PovDirections::POV_RIGHT:
+            {
+                // Motor output is negative, so increase for slower speed
+                m_AmpTargetDegrees += SHOOTER_STEP_ANGLE;
+                break;
+            }
+            case Yta::Controller::PovDirections::POV_LEFT:
+            {
+                // Motor output is negative, so increase for slower speed
+                m_AmpTargetDegrees -= SHOOTER_STEP_ANGLE;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+
+        lastAuxPovDirection = currentAuxPovDirection;
+    }
+    SmartDashboard::PutNumber("Amp speed", m_AmpTargetSpeed);
+    SmartDashboard::PutNumber("Amp angle", m_AmpTargetDegrees.value());
 }
 
 

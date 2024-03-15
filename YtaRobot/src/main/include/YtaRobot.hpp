@@ -227,6 +227,7 @@ private:
 
     // Main sequence for superstructure mechanism pivot control
     void PivotSequence();
+    void CheckAndUpdateAmpValues();
 
     // Main sequence for shoot control
     void ShootSequence();
@@ -308,6 +309,8 @@ private:
     bool                            m_bShotInProgress;                      // Indicates whether a shot is in progress or not
     bool                            m_bIntakeInProgress;                    // Indicates whether a note is being picked up
     units::angle::degree_t          m_PivotTargetDegrees;                   // Tracks the desired angle position of the superstructure mechanism
+    units::angle::degree_t          m_AmpTargetDegrees;                     // The current target angle for the pivot mechanism when shooting at the amp
+    double                          m_AmpTargetSpeed;                       // The current target speed for the shooter motors when shooting at the amp
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -395,7 +398,7 @@ private:
     static constexpr double         FEEDER_MOTOR_SPEED                      =  0.5;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_SPEED             = -0.7;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED      =  0.2;
-    static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.25;
+    static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.20;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      =  0.25;
     static constexpr double         SHOOTER_STEP_SPEED                      =  0.05;
     static constexpr double         LIFT_MOTOR_SPEED                        =  0.50;
@@ -409,7 +412,8 @@ private:
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 60.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 45.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 30.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 95.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 92.0_deg;
+    static constexpr units::angle::degree_t SHOOTER_STEP_ANGLE              =  2.0_deg;
 
     static const int                OFF                                     = 0;
     static const int                ON                                      = 1;
