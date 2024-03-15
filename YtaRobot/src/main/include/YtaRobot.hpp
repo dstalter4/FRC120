@@ -358,7 +358,7 @@ private:
     static const int                AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON     = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_INTAKE_AT_SOURCE_BUTTON             = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                AUX_TARE_PIVOT_ANGLE                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
-    static const int                AUX_MANUAL_PIVOT_AXIS                   = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS;
+    static const int                AUX_MANUAL_PIVOT_AXIS                   = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
 
     // CAN Signals
     // Note: The use of high CAN values if swerve drive is in use is

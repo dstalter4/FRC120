@@ -409,8 +409,6 @@ void YtaRobot::IntakeSequence()
 void YtaRobot::PivotSequence()
 {
     static TalonFX * pPivotLeaderTalon = m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID);
-    static DutyCycleOut pivotDutyCycle(0.0);
-    static PositionVoltage pivotPositionVoltage(0.0_tr);
     (void)m_pPivotThroughBoreEncoder->Get();
 
     // If the tare button is being held
@@ -422,13 +420,12 @@ void YtaRobot::PivotSequence()
         {
             // Limit manual control max speed
             constexpr const double MANUAL_PIVOT_SCALING_FACTOR = 0.15;
-            pivotDutyCycle.Output = -(manualPivotInput * MANUAL_PIVOT_SCALING_FACTOR);
-            pPivotLeaderTalon->SetControl(pivotDutyCycle);
+            m_pPivotMotors->Set(-(manualPivotInput * MANUAL_PIVOT_SCALING_FACTOR));
         }
         m_bPivotTareInProgress = true;
     }
     // When the tare button is released, set the new zero
-    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE), Yta::Controller::ButtonStateChanges::BUTTON_RELEASED)
+    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
     {
         (void)pPivotLeaderTalon->GetConfigurator().SetPosition(0.0_tr);
         m_bPivotTareInProgress = false;
@@ -465,7 +462,7 @@ void YtaRobot::PivotSequence()
             m_PivotTargetDegrees = m_AmpTargetDegrees;
         }
     }
-    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(m_PivotTargetDegrees));
+    m_pPivotMotors->SetAngle(m_PivotTargetDegrees.value());
 }
 
 
