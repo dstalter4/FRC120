@@ -171,6 +171,7 @@ void YtaRobot::ConfigureMotorControllers()
 
     /*
     // @todo_phoenix6: Update the example for the new API.
+    // @todo_phoenix6: The parameter is a reference.  Is that an issue?
     // Example configuration
     TalonFXConfiguration talonConfig;
     talonConfig.slot0.kP = 0.08;
@@ -193,21 +194,31 @@ void YtaRobot::ConfigureMotorControllers()
     */
 
     // Configure mechanism pivot motor controller
-    TalonFXConfiguration talonConfig;
-    talonConfig.Feedback.SensorToMechanismRatio = 25.0;
-    talonConfig.ClosedLoopGeneral.ContinuousWrap = true;
+    TalonFXConfiguration pivotTalonConfig;
+    pivotTalonConfig.Feedback.SensorToMechanismRatio = 25.0;
+    pivotTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;
 
-    talonConfig.CurrentLimits.SupplyCurrentLimit = 25.0;
-    talonConfig.CurrentLimits.SupplyCurrentThreshold = 40.0;
-    talonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
-    talonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
+    pivotTalonConfig.CurrentLimits.SupplyCurrentLimit = 25.0;
+    pivotTalonConfig.CurrentLimits.SupplyCurrentThreshold = 40.0;
+    pivotTalonConfig.CurrentLimits.SupplyTimeThreshold = 0.1;
+    pivotTalonConfig.CurrentLimits.SupplyCurrentLimitEnable = true;
 
-    talonConfig.Slot0.kP = 18.0;
-    talonConfig.Slot0.kI = 0.0;
-    talonConfig.Slot0.kD = 0.1;
+    pivotTalonConfig.Slot0.kP = 18.0;
+    pivotTalonConfig.Slot0.kI = 0.0;
+    pivotTalonConfig.Slot0.kD = 0.1;
 
-    (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().Apply(talonConfig);
+    (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().Apply(pivotTalonConfig);
     (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+
+    // Configure lift motor controller
+    TalonFXConfiguration liftTalonConfig;
+    liftTalonConfig.Feedback.SensorToMechanismRatio = 25.0;
+    liftTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;
+
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetConfigurator().Apply(liftTalonConfig);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1)->GetConfigurator().Apply(liftTalonConfig);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1)->GetConfigurator().SetPosition(0.0_tr);
 
     m_pIntakeMotor->m_pTalonFx->SetNeutralMode(NeutralModeValue::Coast);
     m_pFeederMotor->m_pTalonFx->SetNeutralMode(NeutralModeValue::Coast);
@@ -229,6 +240,8 @@ void YtaRobot::InitialStateSetup()
     ResetMemberData();
 
     (void)m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1)->GetConfigurator().SetPosition(0.0_tr);
 
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
@@ -576,14 +589,132 @@ void YtaRobot::ShootSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::LiftSequence()
 {
-    if (m_pDriveController->GetButtonState(DRIVE_LIFT_ROBOT_BUTTON))
+    // CCW is positive rotation, CW is negative rotation.
+    // Pigeon orientation is such that robot roll is the reported pitch.
+    // 14 inches of total travel, 80:1, need effective rotation radius/diameter.
+    // ~4 inch circumference -> 1.2732 diameter => 14 inches = 3.5 turns
+    // Measured travel distance is 11.78 in turns.  ~56.55 inches (off by factor of 4?).
+
+    enum TiltDirection
     {
-        m_pLiftMotors->Set(LIFT_MOTOR_SPEED);
-    }
-    else
+        NO_TILT,
+        LEFT_TILT,
+        RIGHT_TILT
+    };
+    static enum TiltDirection tiltDirection = NO_TILT;
+
+    static TalonFX * pLiftLeaderTalon = m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID);
+    static TalonFX * pLiftFollowerTalon = m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1);
+    double liftLeaderTurns = std::abs(pLiftLeaderTalon->GetPosition().GetValue().value());
+    double liftFollowerTurns = std::abs(pLiftFollowerTalon->GetPosition().GetValue().value());
+    double highestTurns = std::max(liftLeaderTurns, liftFollowerTurns);
+    double lowestTurns = std::min(liftLeaderTurns, liftFollowerTurns);
+    const double LIFT_MIN_TURNS = 1.0;
+    const double LIFT_MAX_TURNS = 9.0;
+
+    bool bTravelAllowed = false;
+    double liftSpeed = 0.0;
+    Yta::Controller::PovDirections drivePovDirection = m_pDriveController->GetPovAsDirection();
+    switch (drivePovDirection)
     {
-        m_pLiftMotors->Set(0.0);
+        // Going up to grab the chain
+        case Yta::Controller::PovDirections::POV_UP:
+        {
+            if (highestTurns < LIFT_MAX_TURNS)
+            {
+                bTravelAllowed = true;
+                liftSpeed = LIFT_MOTOR_SPEED;
+            }
+            break;
+        }
+        // Pulling down to raise the robot
+        case Yta::Controller::PovDirections::POV_DOWN:
+        {
+            if (lowestTurns > LIFT_MIN_TURNS)
+            {
+                bTravelAllowed = true;
+                liftSpeed = -LIFT_MOTOR_SPEED;
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
+
+    double liftOffsetSpeed = 0.0;
+    double robotRoll = m_pPigeon->GetPitch().GetValue().value();
+
+    switch (tiltDirection)
+    {
+        case NO_TILT:
+        {    
+            // Positive angle means left side needs to drive harder.
+            // Negative angle means right side needs to drive harder.
+            // This needs to be updated to not stop until is passes a threshold (probably zero).
+            if ((robotRoll > LIFT_MAX_ROLL_DEGREES) && bTravelAllowed)
+            {
+                liftOffsetSpeed = LIFT_MOTOR_OFFSET_SPEED;
+                tiltDirection = LEFT_TILT;
+            }
+            else if ((robotRoll < -LIFT_MAX_ROLL_DEGREES) && bTravelAllowed)
+            {
+                liftOffsetSpeed = -LIFT_MOTOR_OFFSET_SPEED;
+                tiltDirection = RIGHT_TILT;
+            }
+            else
+            {
+                // The offset is still zero from variable initialization
+            }
+            break;
+        }
+        case LEFT_TILT:
+        {
+            // Robot roll was positive, watch for it to drop back near zero
+            if (robotRoll < LIFT_OFFSET_STOP_POINT_DEGREES)
+            {
+                // The offset is still zero from variable initialization
+                tiltDirection = NO_TILT;
+            }
+            else
+            {
+                if (bTravelAllowed)
+                {
+                    liftOffsetSpeed = LIFT_MOTOR_OFFSET_SPEED;
+                }
+            }
+            break;
+        }
+        case RIGHT_TILT:
+        {
+            // Robot roll was negative, watch for it to rise back near zero
+            if (robotRoll > -LIFT_OFFSET_STOP_POINT_DEGREES)
+            {
+                // The offset is still zero from variable initialization
+                tiltDirection = NO_TILT;
+            }
+            else
+            {
+                if (bTravelAllowed)
+                {
+                    liftOffsetSpeed = -LIFT_MOTOR_OFFSET_SPEED;
+                }
+            }
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    SmartDashboard::PutNumber("Debug A", liftLeaderTurns);
+    SmartDashboard::PutNumber("Debug B", liftFollowerTurns);
+    SmartDashboard::PutNumber("Debug C", liftSpeed);
+    SmartDashboard::PutNumber("Debug D", liftOffsetSpeed);
+    SmartDashboard::PutNumber("Debug E", tiltDirection);
+    m_pLiftMotors->Set(liftSpeed, liftOffsetSpeed);
 }
 
 
@@ -598,9 +729,10 @@ void YtaRobot::LiftSequence()
 void YtaRobot::CheckAndUpdateAmpValues()
 {
     static Yta::Controller::PovDirections lastAuxPovDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
-    Yta::Controller::PovDirections currentAuxPovDirection  = m_pAuxController->GetPovAsDirection();
+    Yta::Controller::PovDirections currentAuxPovDirection = m_pAuxController->GetPovAsDirection();
     if (currentAuxPovDirection != lastAuxPovDirection)
     {
+        // @todo: Limit these to min/max values
         switch (currentAuxPovDirection)
         {
             case Yta::Controller::PovDirections::POV_UP:

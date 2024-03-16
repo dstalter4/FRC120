@@ -333,7 +333,6 @@ private:
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
-    static const int                DRIVE_LIFT_ROBOT_BUTTON                 = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
@@ -404,7 +403,8 @@ private:
     static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.20;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      =  0.25;
     static constexpr double         SHOOTER_STEP_SPEED                      =  0.05;
-    static constexpr double         LIFT_MOTOR_SPEED                        =  0.50;
+    static constexpr double         LIFT_MOTOR_SPEED                        =  0.70;
+    static constexpr double         LIFT_MOTOR_OFFSET_SPEED                 =  0.15;
 
     // Misc
     const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
@@ -441,6 +441,8 @@ private:
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
     static constexpr double         AXIS_INPUT_DEAD_BAND                    =  0.10;
+    static constexpr double         LIFT_MAX_ROLL_DEGREES                   =  5.00;
+    static constexpr double         LIFT_OFFSET_STOP_POINT_DEGREES          =  0.50;
 
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
 
