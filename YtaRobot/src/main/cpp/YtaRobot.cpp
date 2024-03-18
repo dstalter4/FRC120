@@ -478,7 +478,7 @@ void YtaRobot::ShootSequence()
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
     const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.15_s : 0.08_s;
-    const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = 0.5_s;
+    const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = (m_bShootSpeaker) ? 0.5_s : 1.0_s;
     const units::time::second_t RAMP_UP_TIME_S = 1.5_s;
 
     double feederSpeed = 0.0;
