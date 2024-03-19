@@ -604,10 +604,8 @@ void YtaRobot::LiftSequence()
     };
     static enum TiltDirection tiltDirection = NO_TILT;
 
-    static TalonFX * pLiftLeaderTalon = m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID);
-    static TalonFX * pLiftFollowerTalon = m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1);
-    double liftLeaderTurns = std::abs(pLiftLeaderTalon->GetPosition().GetValue().value());
-    double liftFollowerTurns = std::abs(pLiftFollowerTalon->GetPosition().GetValue().value());
+    double liftLeaderTurns = std::abs(m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetPosition().GetValue().value());
+    double liftFollowerTurns = std::abs(m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1)->GetPosition().GetValue().value());
     double highestTurns = std::max(liftLeaderTurns, liftFollowerTurns);
     double lowestTurns = std::min(liftLeaderTurns, liftFollowerTurns);
     const double LIFT_MIN_TURNS = 1.0;

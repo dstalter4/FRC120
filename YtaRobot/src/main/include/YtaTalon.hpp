@@ -90,9 +90,24 @@ namespace Talon
     struct EmptyTalonFx
     {
         EmptyTalonFx(const char *, unsigned, unsigned, MotorGroupControlMode, NeutralModeValue, bool) {}
+
+        // TalonMotorGroup stubs
         inline void Set(double) {}
         inline void Set(double, double) {}
         inline void DisplayStatusInformation() {}
+        inline EmptyTalonFx * GetMotorObject(unsigned) { return &m_EmptyTalonFxObj; }
+
+        // TalonFX stubs
+        template <typename Type>
+        inline void Apply(Type) {}
+        inline void SetPosition(units::angle::turn_t) {}
+        inline EmptyTalonFx & GetPosition() { return m_EmptyTalonFxObj; }
+        inline EmptyTalonFx & GetConfigurator() { return m_EmptyTalonFxObj; }
+        inline EmptyTalonFx & GetValue() { return m_EmptyTalonFxObj; }
+        inline double value() { return 0.0; }
+
+        // Singleton
+        static EmptyTalonFx m_EmptyTalonFxObj;
     };
 
     static const bool CURRENT_LIMITING_ENABLED = false;
