@@ -398,7 +398,8 @@ private:
     // Motor speeds
     static constexpr double         INTAKE_MOTOR_SPEED                      = -1.0;
     static constexpr double         FEEDER_MOTOR_SPEED                      =  0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_SPEED             = -0.7;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_SPEED       = -0.5;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_SPEED         = -0.7;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED      =  0.2;
     static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.20;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      =  0.25;
@@ -412,7 +413,7 @@ private:
     const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 60.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 45.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 30.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 92.0_deg;

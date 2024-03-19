@@ -474,7 +474,8 @@ void YtaRobot::ShootSequence()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_SPEED : m_AmpTargetSpeed;
+    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bShootSpeakerClose) ? SHOOTER_MOTOR_SPEAKER_CLOSE_SPEED : SHOOTER_MOTOR_SPEAKER_FAR_SPEED;
+    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
     const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.15_s : 0.08_s;
