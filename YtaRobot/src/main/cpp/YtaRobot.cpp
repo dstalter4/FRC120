@@ -94,7 +94,6 @@ YtaRobot::YtaRobot() :
     m_pCandle->Animate(m_RainbowAnimation);
 
     // Spawn the vision thread
-    // @todo: Use a control variable to prevent the threads from executing too soon.
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     m_CameraThread.detach();
@@ -260,7 +259,10 @@ void YtaRobot::InitialStateSetup()
 
     // Set the LEDs to the alliance color
     SetLedsToAllianceColor();
-    
+
+    // Indicate the camera thread can continue
+    RobotCamera::ReleaseThread();
+
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
 
@@ -332,7 +334,7 @@ void YtaRobot::TeleopPeriodic()
 
     //PneumaticSequence();
     
-    //CameraSequence();
+    CameraSequence();
 
     LedSequence();
 

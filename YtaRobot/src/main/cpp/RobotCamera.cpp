@@ -5,7 +5,7 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -43,6 +43,7 @@ std::vector<std::vector<cv::Point>>             RobotCamera::m_FilteredContours;
 
 std::vector<RobotCamera::VisionTargetReport>    RobotCamera::m_ContourTargetReports;
 RobotCamera::VisionTargetReport                 RobotCamera::m_VisionTargetReport;
+bool                                            RobotCamera::m_bThreadReleased;
 bool                                            RobotCamera::m_bDoFullProcessing;
 unsigned                                        RobotCamera::m_CameraHeartBeat;
 const char *                                    RobotCamera::CAMERA_OUTPUT_NAME = "Camera Output";
@@ -360,13 +361,21 @@ void RobotCamera::LimelightThread()
     RobotUtils::DisplayMessage("Limelight vision thread detached.");
     
     // Get the limelight network table
-    while (m_pLimelightNetworkTable == nullptr)
+    while (m_pLimelightNetworkTable.get() == nullptr)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
         m_pLimelightNetworkTable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
     }
 
     RobotUtils::DisplayMessage("Limelight network table found.");
+
+    // Wait for the robot program to release the thread
+    while (m_bThreadReleased == false)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
+    }
+
+    RobotUtils::DisplayMessage("Limelight thread released.");
 
     // Enable port forwarding for the limelight while tethered via USB
     const int LIMELIGHT_START_PORT = 5800;
@@ -378,7 +387,7 @@ void RobotCamera::LimelightThread()
 
     // The limelight camera mode will be set by autonomous or teleop
     // 2024: Set april tag priority (red speaker center is 3, blue speaker center is 7)
-    const uint32_t APRIL_TAG_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 3U : 7U;
+    const uint32_t APRIL_TAG_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 4U : 7U;
     m_pLimelightNetworkTable->PutNumber("priorityid", APRIL_TAG_PRIORITY);
     
     while (true)
