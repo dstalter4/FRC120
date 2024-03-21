@@ -415,9 +415,9 @@ private:
     static constexpr double         LIFT_MOTOR_OFFSET_SPEED                 =  0.15;
 
     // Misc
-    const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
-    const std::string               AUTO_ROUTINE_2_STRING                   = "Autonomous Routine 2";
-    const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
+    const std::string               AUTO_ROUTINE_1_STRING                   = "Speaker center";
+    const std::string               AUTO_ROUTINE_2_STRING                   = "Speaker source";
+    const std::string               AUTO_ROUTINE_3_STRING                   = "Speaker amp";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
