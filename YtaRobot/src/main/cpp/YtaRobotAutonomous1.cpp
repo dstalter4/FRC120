@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous routine 1 for YtaRobot.
 ///
-/// Copyright (c) 2021 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -50,7 +50,7 @@ void YtaRobot::AutonomousRoutine1()
     // Start the intake to pick it up, keep feeder on.
     m_pShooterMotors->Set(0.1);
     m_pIntakeMotor->SetDutyCycle(INTAKE_MOTOR_SPEED);
-    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_FORWARD, ROBOT_NO_ROTATE, 0.30, 0.0, 1.5_s, true);
+    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_FORWARD, ROBOT_NO_ROTATE, 0.30, 0.0, 0.0, 1.5_s, true);
 
     // Stop for a brief period allowing the piece to get picked up
     AutonomousDelay(1.0_s);
@@ -58,7 +58,7 @@ void YtaRobot::AutonomousRoutine1()
     // Intake/feeder motors off, drive back to the speaker
     m_pIntakeMotor->SetDutyCycle(0.0);
     m_pFeederMotor->SetDutyCycle(0.0);
-    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, ROBOT_NO_ROTATE, 0.30, 0.0, 1.5_s, true);
+    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, ROBOT_NO_ROTATE, 0.30, 0.0, 0.0, 1.5_s, true);
 
     // Should be in position, go through shooting again.  Back feed real quick, ramp up, feed to shoot.
     m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);

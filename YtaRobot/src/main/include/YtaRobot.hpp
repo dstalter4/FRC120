@@ -118,13 +118,15 @@ private:
         DIRECTIONAL_ALIGN
     };
     
-    enum RobotDirection
+    enum RobotDirection : uint32_t
     {
-        ROBOT_NO_DIRECTION,
-        ROBOT_FORWARD,
-        ROBOT_REVERSE,
-        ROBOT_LEFT,
-        ROBOT_RIGHT
+        ROBOT_NO_DIRECTION = 0x0,
+        ROBOT_FORWARD = 0x1,
+        ROBOT_REVERSE = 0x2,
+        ROBOT_LEFT = 0x10,
+        ROBOT_RIGHT = 0x20,
+        ROBOT_TRANSLATION_MASK = 0xF,
+        ROBOT_STRAFE_MASK = 0xF0
     };
     
     enum RobotRotate
@@ -168,7 +170,7 @@ private:
 
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
-    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
