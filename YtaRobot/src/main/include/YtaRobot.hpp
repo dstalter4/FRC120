@@ -443,6 +443,7 @@ private:
     static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
     static constexpr double         SWERVE_ROTATE_SLOW_JOYSTICK_THRESHOLD   =  0.10;
+    static constexpr double         SWERVE_DRIVE_SLOW_SPEED                 =  0.10;
     static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
