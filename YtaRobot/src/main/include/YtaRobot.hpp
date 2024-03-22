@@ -428,8 +428,10 @@ private:
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 45.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 30.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 92.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 100.0_deg;
     static constexpr units::angle::degree_t SHOOTER_STEP_ANGLE              =  2.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_MIN                 =  4.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_MAX                 = 106.0_deg;
 
     static const int                OFF                                     = 0;
     static const int                ON                                      = 1;
