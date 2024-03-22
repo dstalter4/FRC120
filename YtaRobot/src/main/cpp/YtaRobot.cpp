@@ -65,6 +65,7 @@ YtaRobot::YtaRobot() :
     m_bIntakeInProgress                 (false),
     m_bPivotTareInProgress              (false),
     m_PivotTargetDegrees                (0.0_deg),
+    m_SpeakerTargetDegrees              (PIVOT_ANGLE_TOUCHING_SPEAKER),
     m_AmpTargetDegrees                  (PIVOT_ANGLE_TOUCHING_AMP),
     m_AmpTargetSpeed                    (SHOOTER_MOTOR_AMP_SPEED),
     m_HeartBeat                         (0U)
@@ -330,7 +331,7 @@ void YtaRobot::TeleopPeriodic()
     LiftSequence();
     //SuperStructureTestSequence();
     CheckAndResetEncoderCounts();
-    CheckAndUpdateAmpValues();
+    CheckAndUpdateShootValues();
 
     //PneumaticSequence();
     
@@ -452,7 +453,7 @@ void YtaRobot::PivotSequence()
         {
             if (m_bShootSpeakerClose)
             {
-                m_PivotTargetDegrees = PIVOT_ANGLE_TOUCHING_SPEAKER;
+                m_PivotTargetDegrees = m_SpeakerTargetDegrees;
             }
             else
             {
@@ -746,13 +747,13 @@ void YtaRobot::LiftSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::CheckAndUpdateAmpValues
+/// @method YtaRobot::CheckAndUpdateShootValues
 ///
 /// Checks for change requests to the amp target angle or
 /// shooter motors speed values.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::CheckAndUpdateAmpValues()
+void YtaRobot::CheckAndUpdateShootValues()
 {
     static Yta::Controller::PovDirections lastAuxPovDirection = Yta::Controller::PovDirections::POV_NOT_PRESSED;
     Yta::Controller::PovDirections currentAuxPovDirection = m_pAuxController->GetPovAsDirection();
@@ -777,16 +778,32 @@ void YtaRobot::CheckAndUpdateAmpValues()
             }
             case Yta::Controller::PovDirections::POV_RIGHT:
             {
-                // Angle increases moving toward amp
-                m_AmpTargetDegrees += SHOOTER_STEP_ANGLE;
-                m_AmpTargetDegrees = (m_AmpTargetDegrees > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : m_AmpTargetDegrees;
+                if (m_bShootSpeaker)
+                {
+                    m_SpeakerTargetDegrees += SHOOTER_STEP_ANGLE;
+                    m_SpeakerTargetDegrees = (m_SpeakerTargetDegrees > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : m_SpeakerTargetDegrees;
+                }
+                else
+                {
+                    // Angle increases moving toward amp
+                    m_AmpTargetDegrees += SHOOTER_STEP_ANGLE;
+                    m_AmpTargetDegrees = (m_AmpTargetDegrees > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : m_AmpTargetDegrees;
+                }
                 break;
             }
             case Yta::Controller::PovDirections::POV_LEFT:
             {
-                // Angle decreases moving from amp
-                m_AmpTargetDegrees -= SHOOTER_STEP_ANGLE;
-                m_AmpTargetDegrees = (m_AmpTargetDegrees < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : m_AmpTargetDegrees;
+                if (m_bShootSpeaker)
+                {
+                    m_SpeakerTargetDegrees -= SHOOTER_STEP_ANGLE;
+                    m_SpeakerTargetDegrees = (m_SpeakerTargetDegrees < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : m_SpeakerTargetDegrees;
+                }
+                else
+                {
+                    // Angle decreases moving from amp
+                    m_AmpTargetDegrees -= SHOOTER_STEP_ANGLE;
+                    m_AmpTargetDegrees = (m_AmpTargetDegrees < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : m_AmpTargetDegrees;
+                }
                 break;
             }
             default:
@@ -797,6 +814,7 @@ void YtaRobot::CheckAndUpdateAmpValues()
 
         lastAuxPovDirection = currentAuxPovDirection;
     }
+    SmartDashboard::PutNumber("Speaker angle", m_SpeakerTargetDegrees.value());
     SmartDashboard::PutNumber("Amp speed", m_AmpTargetSpeed);
     SmartDashboard::PutNumber("Amp angle", m_AmpTargetDegrees.value());
 }

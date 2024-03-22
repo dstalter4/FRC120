@@ -232,7 +232,7 @@ private:
 
     // Main sequence for superstructure mechanism pivot control
     void PivotSequence();
-    void CheckAndUpdateAmpValues();
+    void CheckAndUpdateShootValues();
 
     // Main sequence for shoot control
     void ShootSequence();
@@ -316,6 +316,7 @@ private:
     bool                            m_bIntakeInProgress;                    // Indicates whether a note is being picked up
     bool                            m_bPivotTareInProgress;                 // Indicates whether or not a tare of the pivot mechanism is in progress
     units::angle::degree_t          m_PivotTargetDegrees;                   // Tracks the desired angle position of the superstructure mechanism
+    units::angle::degree_t          m_SpeakerTargetDegrees;                 // The current target angle for the pivot mechanism when shooting at the speaker
     units::angle::degree_t          m_AmpTargetDegrees;                     // The current target angle for the pivot mechanism when shooting at the amp
     double                          m_AmpTargetSpeed;                       // The current target speed for the shooter motors when shooting at the amp
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
@@ -426,7 +427,7 @@ private:
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 45.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 47.5_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 30.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 100.0_deg;
     static constexpr units::angle::degree_t SHOOTER_STEP_ANGLE              =  2.0_deg;
