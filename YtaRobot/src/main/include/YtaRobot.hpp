@@ -405,12 +405,17 @@ private:
     // Motor speeds
     static constexpr double         INTAKE_MOTOR_SPEED                      = -1.0;
     static constexpr double         FEEDER_MOTOR_SPEED                      =  0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_SPEED       = -0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_SPEED         = -0.7;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_OFFSET_SPEED      =  0.2;
-    static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.20;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED    = -0.5;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_CW_SPEED      = -0.7;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED   =  0.2;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CCW_SPEED   = -0.3;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_CCW_SPEED     = -0.5;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED  = -0.2;
+    static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 = -0.18;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      =  0.25;
-    static constexpr double         SHOOTER_STEP_SPEED                      =  0.05;
+    static constexpr double         SHOOTER_STEP_SPEED                      =  0.02;
+    static constexpr double         SHOOTER_AMP_SPEED_MIN                   = -1.00;
+    static constexpr double         SHOOTER_AMP_SPEED_MAX                   =  0.00;
     static constexpr double         LIFT_MOTOR_SPEED                        =  0.70;
     static constexpr double         LIFT_MOTOR_OFFSET_SPEED                 =  0.15;
 
