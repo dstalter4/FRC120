@@ -214,6 +214,7 @@ private:
     void LedSequence();
     inline void SetLedsToAllianceColor();
     void MarioKartLights(double translation, double strafe, double rotate);
+    void BlinkMorseCodePattern();
 
     // Main sequence for music control
     void MusicSequence();

@@ -338,7 +338,8 @@ void YtaRobot::TeleopPeriodic()
     
     CameraSequence();
 
-    LedSequence();
+    //LedSequence();
+    BlinkMorseCodePattern();
 
     UpdateSmartDashboard();
 }
@@ -1010,6 +1011,136 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
         }
     }
     */
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::BlinkMorseCodePattern
+///
+/// This method contains the main workflow for blinking a Morse
+/// code pattern through the robot LEDs.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::BlinkMorseCodePattern()
+{
+    enum MorseCodeSignal
+    {
+        END_MARKER,
+        DOT,
+        DASH,
+        EMPTY
+    };
+
+    // Alphanumerical characters include the letter break.
+    // The word break only contains four empty signals because
+    // the characters always end with the first three empty signals.
+    const MorseCodeSignal MORSE_O[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    const MorseCodeSignal MORSE_S[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    const MorseCodeSignal MORSE_WORD_BREAK[] = {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
+    const MorseCodeSignal MORSE_MESSAGE_END[] = {END_MARKER};
+
+    static const MorseCodeSignal * MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+
+    // Deliberately start this index as all Fs so the initial state change rolls over
+    static uint32_t currentCharacterSignalIndex = 0xFFFFFFFFU;
+    static uint32_t currentCharacterIndex = 0U;
+    static const MorseCodeSignal * pCurrentMorseCharacter = MORSE_MESSAGE[0];
+
+    // Signal display and time variables
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_UNIT_S = 0.25_s;
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DOT = SIGNAL_DISPLAY_TIME_UNIT_S;
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DASH = SIGNAL_DISPLAY_TIME_UNIT_S * 3.0;
+    static units::time::second_t currentSignalDisplayLengthSeconds = 1.0_s;
+    static Timer * pMorseTimer = new Timer();
+    static bool bInit = false;
+
+    // Start the timer
+    if (!bInit)
+    {
+        // Start with the LEDs off
+        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        pMorseTimer->Reset();
+        pMorseTimer->Start();
+        bInit = true;
+    }
+
+    // Check if a signal change is required
+    if (pMorseTimer->Get() > currentSignalDisplayLengthSeconds)
+    {
+        // Move on to the next signal
+        currentCharacterSignalIndex++;
+        pMorseTimer->Reset();
+    }
+    else
+    {
+        // The timer has not reached a point for a change, do nothing different
+        return;
+    }
+
+    // If we make it here, a state change is needed
+
+    // Examine the next signal
+    bool bLedsOn = false;
+    switch (pCurrentMorseCharacter[currentCharacterSignalIndex])
+    {
+        case DOT:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_DOT;
+            bLedsOn = true;
+            break;
+        }
+        case DASH:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_DASH;
+            bLedsOn = true;
+            break;
+        }
+        case EMPTY:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_UNIT_S;
+            bLedsOn = false;
+            break;
+        }
+        // At the end of the current character signals
+        case END_MARKER:
+        default:
+        {
+            currentSignalDisplayLengthSeconds = 0.0_s;
+            bLedsOn = false;
+
+            // Move to the next character
+            pCurrentMorseCharacter = MORSE_MESSAGE[++currentCharacterIndex];
+            currentCharacterSignalIndex = 0xFFFFFFFFU;
+
+            // Check if the next character is actually the end of message marker
+            if (pCurrentMorseCharacter[0] == END_MARKER)
+            {
+                // Back to the start of the message
+                currentCharacterIndex = 0U;
+                pCurrentMorseCharacter = MORSE_MESSAGE[0];
+            }
+
+            break;
+        }
+    }
+
+    // Update the state of the LEDs
+    if (bLedsOn)
+    {
+        if (m_AllianceColor.value() == DriverStation::Alliance::kRed)
+        {
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        }
+        else
+        {
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+        }
+    }
+    else
+    {
+        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+    }
 }
 
 
