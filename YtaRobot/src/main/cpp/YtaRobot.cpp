@@ -62,6 +62,7 @@ YtaRobot::YtaRobot() :
     m_bShootSpeaker                     (true),
     m_bShootSpeakerClose                (true),
     m_bShotInProgress                   (false),
+    m_bPass                             (false),
     m_bIntakeInProgress                 (false),
     m_bPivotTareInProgress              (false),
     m_PivotTargetDegrees                (0.0_deg),
@@ -449,7 +450,11 @@ void YtaRobot::PivotSequence()
     {
         // If an intake is in progress, it will set the target pivot angle.
         // If an intake is not in progress, move to the target position for amp or speaker
-        if (m_bShootSpeaker)
+        if (m_bPass)
+        {
+            m_PivotTargetDegrees = PIVOT_ANGLE_RUNTIME_BASE;
+        }
+        else if (m_bShootSpeaker)
         {
             if (m_bShootSpeakerClose)
             {
@@ -487,6 +492,15 @@ void YtaRobot::ShootSequence()
         m_bShootSpeakerClose = !m_bShootSpeakerClose;
     }
 
+    if (m_pAuxController->GetButtonState(AUX_PASS_BUTTON))
+    {
+        m_bPass = true;
+    }
+    else
+    {
+        m_bPass = false;
+    }
+
     SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
     SmartDashboard::PutBoolean("Speaker close", m_bShootSpeakerClose);
 
@@ -513,7 +527,7 @@ void YtaRobot::ShootSequence()
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
     double shootSpeedOffset = 0.0;
-    if (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    if (m_bPass || (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
     {
         switch (shootState)
         {

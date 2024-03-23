@@ -313,6 +313,7 @@ private:
     bool                            m_bShootSpeaker;                        // Differentiates between shooting at the speaker or the amp
     bool                            m_bShootSpeakerClose;                   // Indicates if shooting the speaker from close up or further away
     bool                            m_bShotInProgress;                      // Indicates whether a shot is in progress or not
+    bool                            m_bPass;                                // Indicates whether or not a note is being passed
     bool                            m_bIntakeInProgress;                    // Indicates whether a note is being picked up
     bool                            m_bPivotTareInProgress;                 // Indicates whether or not a tare of the pivot mechanism is in progress
     units::angle::degree_t          m_PivotTargetDegrees;                   // Tracks the desired angle position of the superstructure mechanism
@@ -359,6 +360,7 @@ private:
     static const int                AUX_INTAKE_OUT_BUTTON                   = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                AUX_TOGGLE_SPEAKER_SHOOT_CLOSE          = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON     = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
+    static const int                AUX_PASS_BUTTON                         = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                AUX_INTAKE_AT_SOURCE_BUTTON             = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                AUX_TARE_PIVOT_ANGLE                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                AUX_MANUAL_PIVOT_AXIS                   = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
