@@ -265,7 +265,7 @@ private:
     TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
     TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motors control
     TalonMotorGroup<TalonFX> *      m_pPivotMotors;                         // Pivot motors control
-    TalonMotorGroup<TalonFX> *      m_pLiftMotors;                          // Lift motors control
+    Yta::Talon::EmptyTalonFx *      m_pLiftMotors;                          // Lift motors control
     
     // LEDs
     CANdle *                        m_pCandle;                              // Controls an RGB LED strip

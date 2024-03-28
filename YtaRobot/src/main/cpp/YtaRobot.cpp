@@ -45,7 +45,7 @@ YtaRobot::YtaRobot() :
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID)),
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, false)),
     m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
-    m_pLiftMotors                       (new TalonMotorGroup<TalonFX>("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
+    m_pLiftMotors                       (new Yta::Talon::EmptyTalonFx("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
@@ -329,7 +329,7 @@ void YtaRobot::TeleopPeriodic()
     IntakeSequence();
     ShootSequence();
     PivotSequence();
-    LiftSequence();
+    //LiftSequence();
     //SuperStructureTestSequence();
     CheckAndResetEncoderCounts();
     CheckAndUpdateShootValues();
@@ -751,11 +751,11 @@ void YtaRobot::LiftSequence()
         }
     }
 
-    SmartDashboard::PutNumber("Debug A", liftLeaderTurns);
-    SmartDashboard::PutNumber("Debug B", liftFollowerTurns);
-    SmartDashboard::PutNumber("Debug C", liftSpeed);
-    SmartDashboard::PutNumber("Debug D", liftOffsetSpeed);
-    SmartDashboard::PutNumber("Debug E", tiltDirection);
+    //SmartDashboard::PutNumber("Debug A", liftLeaderTurns);
+    //SmartDashboard::PutNumber("Debug B", liftFollowerTurns);
+    //SmartDashboard::PutNumber("Debug C", liftSpeed);
+    //SmartDashboard::PutNumber("Debug D", liftOffsetSpeed);
+    //SmartDashboard::PutNumber("Debug E", tiltDirection);
     m_pLiftMotors->Set(liftSpeed, liftOffsetSpeed);
 }
 
