@@ -1035,51 +1035,57 @@ void YtaRobot::BlinkMorseCodePattern()
     // Alphanumerical characters include the letter break.
     // The word break only contains four empty signals because
     // the characters always end with the first three empty signals.
-    const MorseCodeSignal MORSE_A[] = {DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_B[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_C[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_D[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_E[] = {DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_F[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_G[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_H[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_I[] = {DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_J[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_K[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_L[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_M[] = {DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_N[] = {DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_O[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_P[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_Q[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_R[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_S[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_T[] = {DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_U[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_V[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_W[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_X[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_Y[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_Z[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_0[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_1[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_2[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_3[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_4[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_5[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_6[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_7[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_8[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_9[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_WORD_BREAK[] = {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
-    const MorseCodeSignal MORSE_MESSAGE_END[] = {END_MARKER};
+    constexpr const MorseCodeSignal MORSE_A[] = {DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_B[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_C[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_D[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_E[] = {DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_F[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_G[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_H[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_I[] = {DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_J[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_K[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_L[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_M[] = {DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_N[] = {DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_O[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_P[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Q[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_R[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_S[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_T[] = {DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_U[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_V[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_W[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_X[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Y[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Z[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_0[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_1[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_2[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_3[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_4[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_5[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_6[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_7[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_8[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_9[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_WORD_BREAK[] = {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_MESSAGE_END[] = {END_MARKER};
+    const MorseCodeSignal * ALPHANUMERIC_MESSAGE[] = {MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G, MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M,
+                                                      MORSE_N, MORSE_O, MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W, MORSE_X, MORSE_Y, MORSE_Z,
+                                                      MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7, MORSE_8, MORSE_9, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+    
 
+    // @todo: Write constexpr function to convert string to enum?
     static const MorseCodeSignal * MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
 
-    // Deliberately start this index as all Fs so the initial state change rolls over
+    // Deliberately start this index as all Fs so the initial state change rolls over.
+    // The use of (true) with the ternary operator is to silence unused variable warnings.
     static uint32_t currentCharacterSignalIndex = 0xFFFFFFFFU;
     static uint32_t currentCharacterIndex = 0U;
-    static const MorseCodeSignal * pCurrentMorseCharacter = MORSE_MESSAGE[0];
+    static const MorseCodeSignal * pCurrentMorseCharacter = (true) ? MORSE_MESSAGE[0] : ALPHANUMERIC_MESSAGE[0];
 
     // Signal display and time variables
     constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_UNIT_S = 0.25_s;
