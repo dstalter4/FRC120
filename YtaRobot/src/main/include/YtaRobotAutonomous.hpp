@@ -112,25 +112,25 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
 
     switch (direction)
     {
-        case ROBOT_FORWARD:
+        case RobotDirection::ROBOT_FORWARD:
         {
             leftSpeed = speed * LEFT_DRIVE_FORWARD_SCALAR;
             rightSpeed = speed * RIGHT_DRIVE_FORWARD_SCALAR;
             break;
         }
-        case ROBOT_REVERSE:
+        case RobotDirection::ROBOT_REVERSE:
         {
             leftSpeed = speed * LEFT_DRIVE_REVERSE_SCALAR;
             rightSpeed = speed * RIGHT_DRIVE_REVERSE_SCALAR;
             break;
         }
-        case ROBOT_LEFT:
+        case RobotDirection::ROBOT_LEFT:
         {
             leftSpeed = speed * LEFT_DRIVE_REVERSE_SCALAR;
             rightSpeed = speed * RIGHT_DRIVE_FORWARD_SCALAR;
             break;
         }
-        case ROBOT_RIGHT:
+        case RobotDirection::ROBOT_RIGHT:
         {
             leftSpeed = speed * LEFT_DRIVE_FORWARD_SCALAR;
             rightSpeed = speed * RIGHT_DRIVE_REVERSE_SCALAR;
@@ -165,22 +165,19 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
 /// using swerve drive modules.
 ///
 ////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative)
+inline void YtaRobot::AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative)
 {
-    RobotDirection translationDirection = static_cast<RobotDirection>(direction & ROBOT_TRANSLATION_MASK);
-    RobotDirection strafeDirection = static_cast<RobotDirection>(direction & ROBOT_STRAFE_MASK);
-
     units::meter_t translation = 0.0_m;
     units::meter_t strafe = 0.0_m;
 
-    switch (translationDirection)
+    switch (rSwerveDirections.GetTranslation())
     {
-        case ROBOT_FORWARD:
+        case RobotTranslation::ROBOT_TRANSLATION_FORWARD:
         {
             translation = units::meter_t(translationSpeed);
             break;
         }
-        case ROBOT_REVERSE:
+        case RobotTranslation::ROBOT_TRANSLATION_REVERSE:
         {
             translation = units::meter_t(-translationSpeed);
             break;
@@ -191,14 +188,14 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, Ro
         }
     }
 
-    switch (strafeDirection)
+    switch (rSwerveDirections.GetStrafe())
     {
-        case ROBOT_LEFT:
+        case RobotStrafe::ROBOT_STRAFE_LEFT:
         {
             strafe = units::meter_t(strafeSpeed);
             break;
         }
-        case ROBOT_RIGHT:
+        case RobotStrafe::ROBOT_STRAFE_RIGHT:
         {
             strafe = units::meter_t(-strafeSpeed);
             break;
@@ -209,20 +206,20 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, Ro
         }
     }
 
-    switch (rotate)
+    switch (rSwerveDirections.GetRotation())
     {
-        case ROBOT_NO_ROTATE:
+        case RobotRotation::ROBOT_NO_ROTATION:
         {
             // Just in case the user decided to pass a speed anyway
             rotateSpeed = 0.0;
             break;
         }
-        case ROBOT_CLOCKWISE:
+        case RobotRotation::ROBOT_CLOCKWISE:
         {
             rotateSpeed *= -1.0;
             break;
         }
-        case ROBOT_COUNTER_CLOCKWISE:
+        case RobotRotation::ROBOT_COUNTER_CLOCKWISE:
         default:
         {
             break;
@@ -240,6 +237,10 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotDirection direction, Ro
 
     // Stop motion
     m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
+
+    // Clear the swerve directions to prevent the caller from
+    // accidentally reusing them without explicitly setting them again.
+    rSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
 }
 
 
@@ -258,14 +259,14 @@ inline void YtaRobot::AutonomousBackDrive(RobotDirection currentDirection)
     switch (currentDirection)
     {
         // If we are currently going forward, back drive is reverse
-        case ROBOT_FORWARD:
+        case RobotDirection::ROBOT_FORWARD:
         {
             leftSpeed *= LEFT_DRIVE_REVERSE_SCALAR;
             rightSpeed *= RIGHT_DRIVE_REVERSE_SCALAR;
             break;
         }
         // If we are currently going reverse, back drive is forward
-        case ROBOT_REVERSE:
+        case RobotDirection::ROBOT_REVERSE:
         {
             leftSpeed *= LEFT_DRIVE_FORWARD_SCALAR;
             rightSpeed *= RIGHT_DRIVE_FORWARD_SCALAR;
@@ -310,14 +311,14 @@ inline void YtaRobot::AutonomousBackDriveTurn(RobotDirection currentDirection)
     switch (currentDirection)
     {
         // If the turn is left, counteract is right
-        case ROBOT_LEFT:
+        case RobotDirection::ROBOT_LEFT:
         {
             leftSpeed *= LEFT_DRIVE_FORWARD_SCALAR;
             rightSpeed *= RIGHT_DRIVE_REVERSE_SCALAR;
             break;
         }
         // If the turn is right, counteract is left
-        case ROBOT_RIGHT:
+        case RobotDirection::ROBOT_RIGHT:
         {
             leftSpeed *= LEFT_DRIVE_REVERSE_SCALAR;
             rightSpeed *= RIGHT_DRIVE_FORWARD_SCALAR;

@@ -100,7 +100,7 @@ private:
     typedef Yta::Controller::Config::Mappings ControllerMappings;
     typedef YtaDriveController<YtaCustomController> DriveControllerType;
     typedef YtaController<YtaCustomController> AuxControllerType;
-    
+
     // ENUMS
     enum RobotMode
     {
@@ -110,33 +110,64 @@ private:
         ROBOT_MODE_DISABLED,
         ROBOT_MODE_NOT_SET
     };
-    
-    enum DriveState
+
+    enum RobotDriveState
     {
         MANUAL_CONTROL,
         DIRECTIONAL_INCH,
         DIRECTIONAL_ALIGN
     };
     
-    enum RobotDirection : uint32_t
+    enum class RobotDirection
     {
-        ROBOT_NO_DIRECTION = 0x0,
-        ROBOT_FORWARD = 0x1,
-        ROBOT_REVERSE = 0x2,
-        ROBOT_LEFT = 0x10,
-        ROBOT_RIGHT = 0x20,
-        ROBOT_TRANSLATION_MASK = 0xF,
-        ROBOT_STRAFE_MASK = 0xF0
+        ROBOT_NO_DIRECTION,
+        ROBOT_FORWARD,
+        ROBOT_REVERSE,
+        ROBOT_LEFT,
+        ROBOT_RIGHT
     };
-    
-    enum RobotRotate
+
+    enum class RobotTranslation
     {
-        ROBOT_NO_ROTATE,
+        ROBOT_NO_TRANSLATION,
+        ROBOT_TRANSLATION_FORWARD,
+        ROBOT_TRANSLATION_REVERSE
+    };
+
+    enum class RobotStrafe
+    {
+        ROBOT_NO_STRAFE,
+        ROBOT_STRAFE_LEFT,
+        ROBOT_STRAFE_RIGHT
+    };
+
+    enum class RobotRotation
+    {
+        ROBOT_NO_ROTATION,
         ROBOT_CLOCKWISE,
         ROBOT_COUNTER_CLOCKWISE
     };
-    
+
     // STRUCTS
+    struct RobotSwerveDirections
+    {
+      public:
+        RobotSwerveDirections() : m_Translation(RobotTranslation::ROBOT_NO_TRANSLATION), m_Strafe(RobotStrafe::ROBOT_NO_STRAFE), m_Rotation(RobotRotation::ROBOT_NO_ROTATION) {}
+        inline void SetSwerveDirections(RobotTranslation translationDirection, RobotStrafe strafeDirection, RobotRotation rotationDirection)
+        {
+            m_Translation = translationDirection;
+            m_Strafe = strafeDirection;
+            m_Rotation = rotationDirection;
+        }
+        inline RobotTranslation GetTranslation() { return m_Translation; }
+        inline RobotStrafe GetStrafe() { return m_Strafe; }
+        inline RobotRotation GetRotation() { return m_Rotation; }
+      private:
+        RobotTranslation m_Translation;
+        RobotStrafe m_Strafe;
+        RobotRotation m_Rotation;
+    };
+
     struct LedColors
     {
         int m_Red;
@@ -144,7 +175,7 @@ private:
         int m_Blue;
         int m_White;
     };
-    
+
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
     // variable inside the function StartRobot() in the RobotBase class.
@@ -170,7 +201,7 @@ private:
 
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
-    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+    inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -248,6 +279,7 @@ private:
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
+    RobotSwerveDirections           m_AutoSwerveDirections;                 // Used by autonomous routines to control swerve drive movements
     
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
@@ -307,7 +339,7 @@ private:
     
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
-    DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
+    RobotDriveState                 m_RobotDriveState;                      // Keep track of how the drive sequence flows
     std::optional
     <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse

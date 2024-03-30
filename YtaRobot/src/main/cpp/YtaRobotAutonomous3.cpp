@@ -58,10 +58,10 @@ void YtaRobot::AutonomousRoutine3()
     (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_INTAKE_NOTE));
 
     // Compute the direction of movement based on alliance color since the field is not symmetrical
-    RobotDirection autoLeaveByAmpDirection = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotDirection::ROBOT_LEFT : RobotDirection::ROBOT_RIGHT;
-    RobotRotate autoLeaveByAmpRotate = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotate::ROBOT_COUNTER_CLOCKWISE : RobotRotate::ROBOT_CLOCKWISE;
-    RobotDirection autoLeaveDirection = static_cast<RobotDirection>(RobotDirection::ROBOT_FORWARD | autoLeaveByAmpDirection);
-    AutonomousSwerveDriveSequence(autoLeaveDirection, autoLeaveByAmpRotate, 0.15, 0.18, 0.05, 2.5_s, true);
+    RobotStrafe autoLeaveByAmpStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_LEFT : RobotStrafe::ROBOT_STRAFE_RIGHT;
+    RobotRotation autoLeaveByAmpRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_COUNTER_CLOCKWISE : RobotRotation::ROBOT_CLOCKWISE;
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, autoLeaveByAmpStrafe, autoLeaveByAmpRotation);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.18, 0.05, 2.5_s, true);
     AutonomousDelay(1.0_s);
 
     // Note should be picked up, intake off
@@ -78,8 +78,9 @@ void YtaRobot::AutonomousRoutine3()
     (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_FROM_PODIUM - 3.5_deg));
 
     // Adjust robot angle toward speaker
-    RobotRotate towardSpeakerRotate = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotate::ROBOT_CLOCKWISE : RobotRotate::ROBOT_COUNTER_CLOCKWISE;
-    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_NO_DIRECTION, towardSpeakerRotate, 0.0, 0.0, 0.08, 1.0_s, true);
+    RobotRotation towardSpeakerRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE;
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_NO_STRAFE, towardSpeakerRotation);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.0, 0.08, 1.0_s, true);
 
     // Feeder motor to take the shot
     m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
@@ -97,13 +98,14 @@ void YtaRobot::AutonomousRoutine3()
 
 
     // Extended auto to try and clear the midline to disrupt the other alliance's auto.
+    // Remember with the extended auto that robot zero degrees still points from the starting position at the speaker.
 
 
     // Back up again to try and clear out the center notes
-    autoLeaveByAmpDirection = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotDirection::ROBOT_LEFT : RobotDirection::ROBOT_RIGHT;
-    autoLeaveByAmpRotate = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotate::ROBOT_CLOCKWISE : RobotRotate::ROBOT_COUNTER_CLOCKWISE;
-    autoLeaveDirection = static_cast<RobotDirection>(RobotDirection::ROBOT_FORWARD | autoLeaveByAmpDirection);
-    AutonomousSwerveDriveSequence(autoLeaveDirection, autoLeaveByAmpRotate, 0.12, 0.24, 0.03, 3.75_s, true);
+    RobotStrafe autoMoveToMidlineStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_LEFT : RobotStrafe::ROBOT_STRAFE_RIGHT;
+    RobotRotation autoMoveToMidlineRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE;
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, autoMoveToMidlineStrafe, autoMoveToMidlineRotation);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.12, 0.24, 0.03, 3.75_s, true);
     AutonomousDelay(0.25_s);
 
     // The robot is roughly on the midline now, facing the amp wall.
@@ -111,12 +113,14 @@ void YtaRobot::AutonomousRoutine3()
     m_pPigeon->SetYaw(0.0_deg);
 
     // Now move along the midline while rotating to disrupt the notes
-    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, autoLeaveByAmpRotate, 0.2, 0.0, 0.1, 1.5_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, autoMoveToMidlineRotation);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.2, 0.0, 0.1, 1.5_s, true);
     AutonomousDelay(0.25_s);
 
     // Come back onto the alliance side of the field to avoid getting penalized
-    autoLeaveByAmpDirection = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotDirection::ROBOT_RIGHT : RobotDirection::ROBOT_LEFT;
-    AutonomousSwerveDriveSequence(autoLeaveByAmpDirection, RobotRotate::ROBOT_NO_ROTATE, 0.0, 0.2, 0.0, 1.5_s, true);
+    RobotStrafe autoMoveBackToAllianceStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_RIGHT : RobotStrafe::ROBOT_STRAFE_LEFT;
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, autoMoveBackToAllianceStrafe, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.2, 0.0, 1.5_s, true);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 3 done.");
