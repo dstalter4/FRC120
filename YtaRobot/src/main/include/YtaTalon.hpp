@@ -82,6 +82,12 @@ namespace Talon
             units::angle::turn_t turns(degrees);
             (void)m_pTalonFx->SetControl(m_PositionVoltage.WithPosition(turns));
         }
+
+        // Set a tone to play on the motor
+        void SetTone(MusicTone musicTone)
+        {
+            (void)m_pTalonFx->SetControl(musicTone);
+        }
     };
 
     // A structure that doesn't create real TalonFX objects.

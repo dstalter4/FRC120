@@ -341,6 +341,7 @@ void YtaRobot::TeleopPeriodic()
 
     //LedSequence();
     BlinkMorseCodePattern();
+    //MusicSequence();
 
     UpdateSmartDashboard();
 }
@@ -1194,6 +1195,21 @@ void YtaRobot::BlinkMorseCodePattern()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::MusicSequence()
 {
+    // Note: The control mode for the motors can only be one
+    //       thing at a time.  Using a motor for acutal motion
+    //       will not work at the same time as playing tones.
+    static bool bMusicPlaying = false;
+    if (m_pDriveController->GetButtonState(PLAY_MUSIC_BUTTON))
+    {
+        bMusicPlaying = true;
+    }
+
+    // Not playing any music, just return
+    if (!bMusicPlaying)
+    {
+        return;
+    }
+
     // Add more of these as needed
     static const MusicTone noNote(units::frequency::hertz_t(0));
     static const MusicTone cNote(units::frequency::hertz_t(262));
@@ -1226,7 +1242,7 @@ void YtaRobot::MusicSequence()
     // You can add or remove or change as many you want.
     // If you need more tones (frequencies in hertz), add them up above.
     // If you want a pause, use noNote and a length.
-    static NoteControl marioMusic[] =
+    static NoteControl scaleNotes[] =
     {
         {noNote, 100_ms},
         {cNote, 100_ms},
@@ -1237,18 +1253,20 @@ void YtaRobot::MusicSequence()
         {aNote, 100_ms},
         {bNote, 100_ms},
         {CNote, 100_ms},
+        {noNote, 100_ms},
     };
-    static const size_t MAX_NOTE_INDEX = sizeof(marioMusic) / sizeof (NoteControl);
+    static const size_t MAX_NOTE_INDEX = sizeof(scaleNotes) / sizeof (NoteControl);
 
-    if ((pMusicTimer->Get() - lastNotePlayTime) > marioMusic[noteIndex].m_LengthSeconds)
+    if ((pMusicTimer->Get() - lastNotePlayTime) > scaleNotes[noteIndex].m_LengthSeconds)
     {
         noteIndex++;
         if (noteIndex >= MAX_NOTE_INDEX)
         {
             noteIndex = 0U;
+            bMusicPlaying = false;
         }
         // Pick a motor to play a sound
-        //m_pMusicMotor->SetControl(marioMusic[noteIndex].m_Tone);
+        //m_pMusicMotor->SetControl(scaleNotes[noteIndex].m_Tone);
         lastNotePlayTime = pMusicTimer->Get();
     }
 }
