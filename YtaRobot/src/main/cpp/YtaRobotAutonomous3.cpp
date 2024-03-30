@@ -93,6 +93,30 @@ void YtaRobot::AutonomousRoutine3()
     // Set the pigeon angle relative to final robot position with zero down field
     units::angle::degree_t gyroYaw = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? -23.0_deg : 23.0_deg;
     m_pPigeon->SetYaw(gyroYaw);
+    return;
+
+
+    // Extended auto to try and clear the midline to disrupt the other alliance's auto.
+
+
+    // Back up again to try and clear out the center notes
+    autoLeaveByAmpDirection = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotDirection::ROBOT_LEFT : RobotDirection::ROBOT_RIGHT;
+    autoLeaveByAmpRotate = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotate::ROBOT_CLOCKWISE : RobotRotate::ROBOT_COUNTER_CLOCKWISE;
+    autoLeaveDirection = static_cast<RobotDirection>(RobotDirection::ROBOT_FORWARD | autoLeaveByAmpDirection);
+    AutonomousSwerveDriveSequence(autoLeaveDirection, autoLeaveByAmpRotate, 0.12, 0.24, 0.03, 3.75_s, true);
+    AutonomousDelay(0.25_s);
+
+    // The robot is roughly on the midline now, facing the amp wall.
+    // Zero the gyro to try and keep the next motion simpler
+    m_pPigeon->SetYaw(0.0_deg);
+
+    // Now move along the midline while rotating to disrupt the notes
+    AutonomousSwerveDriveSequence(RobotDirection::ROBOT_REVERSE, autoLeaveByAmpRotate, 0.2, 0.0, 0.1, 1.5_s, true);
+    AutonomousDelay(0.25_s);
+
+    // Come back onto the alliance side of the field to avoid getting penalized
+    autoLeaveByAmpDirection = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotDirection::ROBOT_RIGHT : RobotDirection::ROBOT_LEFT;
+    AutonomousSwerveDriveSequence(autoLeaveByAmpDirection, RobotRotate::ROBOT_NO_ROTATE, 0.0, 0.2, 0.0, 1.5_s, true);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 3 done.");
