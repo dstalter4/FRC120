@@ -320,7 +320,7 @@ private:
     // (none)
     
     // Encoders
-    DutyCycleEncoder *              m_pPivotThroughBoreEncoder;             // REV through bore encoder used on the mechanism pivot axle
+    // (none)
     
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
@@ -428,7 +428,7 @@ private:
     
     // Digital I/O Signals
     static const int                BEAM_SENSOR_DIO_CHANNEL                 = 0;
-    static const int                PIVOT_THROUGH_BORE_ENCODER_CHANNEL      = 6;
+    static const int                SENSOR_TEST_CODE_DIO_CHANNEL            = 6;
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
     
     // Analog I/O Signals

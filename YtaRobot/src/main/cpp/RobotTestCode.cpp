@@ -56,6 +56,7 @@ public:
 
     static void TimeTest();
     static void ButtonChangeTest();
+    static void SensorTest();
     static void AccelerometerTest();
     static void CandleLedsTest();
     static void RelayLedsTest();
@@ -125,6 +126,7 @@ void YtaRobot::TestPeriodic()
     //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
+    //YtaRobotTest::SensorTest();
     //YtaRobotTest::AccelerometerTest();
     //YtaRobotTest::CandleLedsTest();
     //YtaRobotTest::RelayLedsTest();
@@ -537,6 +539,20 @@ void YtaRobotTest::ButtonChangeTest()
     {
         RobotUtils::DisplayMessage("Trigger change detected!");
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::SensorTest
+///
+/// Test code to verify a sensor behavior.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::SensorTest()
+{
+    static DutyCycleEncoder * pRevThroughBoreEncoder = new DutyCycleEncoder(YtaRobot::SENSOR_TEST_CODE_DIO_CHANNEL);
+    (void)pRevThroughBoreEncoder->Get();
 }
 
 

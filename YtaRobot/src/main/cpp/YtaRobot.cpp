@@ -52,7 +52,6 @@ YtaRobot::YtaRobot() :
     m_pNoteBeamSensor                   (new DigitalInput(BEAM_SENSOR_DIO_CHANNEL)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
-    m_pPivotThroughBoreEncoder          (new DutyCycleEncoder(PIVOT_THROUGH_BORE_ENCODER_CHANNEL)),
     m_pMatchModeTimer                   (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
@@ -416,7 +415,6 @@ void YtaRobot::IntakeSequence()
 void YtaRobot::PivotSequence()
 {
     static TalonFX * pPivotLeaderTalon = m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID);
-    (void)m_pPivotThroughBoreEncoder->Get();
 
     // If the tare button is being held
     if (m_pAuxController->GetButtonState(AUX_TARE_PIVOT_ANGLE))
