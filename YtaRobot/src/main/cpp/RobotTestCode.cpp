@@ -117,13 +117,13 @@ void YtaRobot::TestPeriodic()
     CheckAndUpdateRobotMode(ROBOT_MODE_TEST);
 
     // Enable or disable routines for testing
-    YtaRobotTest::QuickTestCode();
+    //YtaRobotTest::QuickTestCode();
     //YtaRobotTest::CtreSpeedControllerTest();
     //YtaRobotTest::RevSpeedControllerTest();
     //YtaRobotTest::TankDrive();
     //YtaRobotTest::SwerveDriveTest();
     //YtaRobotTest::PneumaticsTest();
-    //YtaRobotTest::SuperstructureTest();
+    YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
     //YtaRobotTest::SensorTest();
@@ -237,49 +237,46 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SuperstructureTest()
 {
-    static TalonFX * pTalonFx5 = new TalonFX(5);
-    static TalonFX * pTalonFx6 = new TalonFX(6);
-    static TalonFX * pTalonFx7 = new TalonFX(7);
-    static TalonFX * pTalonFx8 = new TalonFX(8);
+    // @note: 2024 - When delivering to main, keep IDs 9-12.
+    // 9/10 = shooter, 11 = intake, 12 = feeder
     static TalonFX * pTalonFx9 = new TalonFX(9);
     static TalonFX * pTalonFx10 = new TalonFX(10);
-    
-    while (m_pJoystick->GetRawButton(1))
+    static TalonFX * pTalonFx11 = new TalonFX(11);
+    static TalonFX * pTalonFx12 = new TalonFX(12);
+    static DutyCycleOut dutyCycleOut9(0.0);
+    static DutyCycleOut dutyCycleOut10(0.0);
+    static DutyCycleOut dutyCycleOut11(0.0);
+    static DutyCycleOut dutyCycleOut12(0.0);
+
+    dutyCycleOut9.Output = 0.0;
+    dutyCycleOut10.Output = 0.0;
+    dutyCycleOut11.Output = 0.0;
+    dutyCycleOut12.Output = 0.0;
+
+    if (m_pJoystick->GetRawButton(1))
     {
-        pTalonFx5->Set(0.3);
-        pTalonFx6->Set(0.3);
+        dutyCycleOut11.Output = -1.0;
     }
-    pTalonFx5->Set(0.0);
-    pTalonFx6->Set(0.0);
-    while (m_pJoystick->GetRawButton(2))
+    if (m_pJoystick->GetRawButton(2))
     {
-        pTalonFx7->Set(0.3);
-        pTalonFx8->Set(0.3);
+        dutyCycleOut12.Output = 0.5;
     }
-    pTalonFx7->Set(0.0);
-    pTalonFx8->Set(0.0);
-    while (m_pJoystick->GetRawButton(3))
+    if (m_pJoystick->GetRawButton(3))
     {
-        pTalonFx9->Set(0.3);
-        pTalonFx10->Set(0.3);
+        // ccw spin
+        dutyCycleOut9.Output = -0.7;
+        dutyCycleOut10.Output = 0.5;
     }
-    pTalonFx9->Set(0.0);
-    pTalonFx10->Set(0.0);
-    while (m_pJoystick->GetRawButton(4))
+    if (m_pJoystick->GetRawButton(4))
     {
-        pTalonFx5->Set(0.3);
-        pTalonFx5->Set(0.3);
-        pTalonFx7->Set(0.5);
-        pTalonFx8->Set(0.5);
-        pTalonFx9->Set(1.0);
-        pTalonFx10->Set(1.0);
+        // cw spin
+        dutyCycleOut9.Output = -0.5;
+        dutyCycleOut10.Output = 0.7;
     }
-    pTalonFx5->Set(0.0);
-    pTalonFx6->Set(0.0);
-    pTalonFx7->Set(0.0);
-    pTalonFx8->Set(0.0);
-    pTalonFx9->Set(0.0);
-    pTalonFx10->Set(0.0);
+    pTalonFx9->SetControl(dutyCycleOut9);
+    pTalonFx10->SetControl(dutyCycleOut10);
+    pTalonFx11->SetControl(dutyCycleOut11);
+    pTalonFx12->SetControl(dutyCycleOut12);
 }
 
 
@@ -296,6 +293,9 @@ void YtaRobotTest::CtreSpeedControllerTest()
     TalonFX * pLeft2 = nullptr;
     TalonFX * pRight1 = nullptr;
     TalonFX * pRight2 = nullptr;
+    // Alternative control objects for testing with Phoenix 6
+    //static DutyCycleOut dutyCycleOut(0.0);
+    //static PositionVoltage positionVoltage(0.0_tr);
     static bool bCreatedObjs = false;
 
     // This approach is used instead of static objects in case calling
@@ -310,26 +310,36 @@ void YtaRobotTest::CtreSpeedControllerTest()
         pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
         bCreatedObjs = true;
     }
+ 
+    // Starting in 2024, wpilib seemed to update how DriverStation::RefreshData() is
+    // called (see IterativeRobotBase::LoopFunc()).  In order to use loops below
+    // (instead of conditional statements), manual calls to RefreshData() are required.
+    // Otherwise the loop never relinquishes thread control and the code never makes it
+    // back to LoopFunc().  This admittedly is bad practice, but it's test code.
 
     while (m_pJoystick->GetRawButton(1))
     {
         pLeft1->Set(1.0);
         pLeft2->Set(1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(2))
     {
         pLeft1->Set(-1.0);
         pLeft2->Set(-1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(3))
     {
         pRight1->Set(1.0);
         pRight2->Set(1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(4))
     {
         pRight1->Set(-1.0);
         pRight2->Set(-1.0);
+        DriverStation::RefreshData();
     }
     
     pLeft1->Set(0.0);
