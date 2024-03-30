@@ -275,6 +275,7 @@ private:
     // (none)
 
     // Digital I/O
+    DigitalInput *                  m_pNoteBeamSensor;                      // AndyMark am-4255 beam sensor for monitoring ring position
     DigitalOutput *                 m_pDebugOutput;                         // Debug assist output
     
     // Analog I/O
@@ -394,7 +395,8 @@ private:
     // (none)
     
     // Digital I/O Signals
-    static const int                PIVOT_THROUGH_BORE_ENCODER_CHANNEL      = 0;
+    static const int                BEAM_SENSOR_DIO_CHANNEL                 = 0;
+    static const int                PIVOT_THROUGH_BORE_ENCODER_CHANNEL      = 6;
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
     
     // Analog I/O Signals
