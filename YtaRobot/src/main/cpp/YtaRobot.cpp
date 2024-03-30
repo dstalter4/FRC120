@@ -1349,9 +1349,10 @@ void YtaRobot::SwerveDriveSequence()
         bFieldRelative = !bFieldRelative;
     }
 
-    if (m_pDriveController->DetectButtonChange(ZERO_GYRO_YAW_BUTTON))
+    if (m_pDriveController->DetectButtonChange(REZERO_SWERVE_BUTTON))
     {
         m_pSwerveDrive->ZeroGyroYaw();
+        m_pSwerveDrive->HomeModules();
     }
 
     // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
