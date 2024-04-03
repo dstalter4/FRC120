@@ -46,6 +46,7 @@ YtaRobot::YtaRobot() :
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID)),
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, false)),
     m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
+    m_pAmpNoteControlMotor              (new TalonFxMotorController(AMP_NOTE_CONTROL_MOTOR_CAN_ID)),
     m_pLiftMotors                       (new Yta::Talon::EmptyTalonFx("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
@@ -66,10 +67,12 @@ YtaRobot::YtaRobot() :
     m_bPass                             (false),
     m_bIntakeInProgress                 (false),
     m_bPivotTareInProgress              (false),
+    m_bHoldNote                         (false),
     m_PivotTargetDegrees                (0.0_deg),
     m_SpeakerTargetDegrees              (PIVOT_ANGLE_TOUCHING_SPEAKER),
     m_AmpTargetDegrees                  (PIVOT_ANGLE_TOUCHING_AMP),
     m_AmpTargetSpeed                    (SHOOTER_MOTOR_AMP_SPEED),
+    m_AmpIdleSpeed                      (0.0),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -226,6 +229,7 @@ void YtaRobot::ConfigureMotorControllers()
 
     m_pIntakeMotor->m_pTalonFx->SetNeutralMode(NeutralModeValue::Coast);
     m_pFeederMotor->m_pTalonFx->SetNeutralMode(NeutralModeValue::Coast);
+    m_pAmpNoteControlMotor->m_pTalonFx->SetNeutralMode(NeutralModeValue::Brake);
 }
 
 
@@ -385,12 +389,15 @@ void YtaRobot::IntakeSequence()
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if (m_pAuxController->GetButtonState(AUX_INTAKE_AT_SOURCE_BUTTON))
+    else if (m_pAuxController->GetButtonState(AUX_INTAKE_AT_SOURCE_BUTTON) && !m_bShootSpeaker)
     {
         // Same angle as when touching the amp
-        m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
-        m_pShooterMotors->Set(SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED);
-        m_PivotTargetDegrees = m_AmpTargetDegrees;
+        //m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
+        //m_pShooterMotors->Set(SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED);
+        m_bHoldNote = true;
+        m_AmpIdleSpeed = SHOOTER_MOTOR_AMP_HOLD_NOTE;
+        m_pAmpNoteControlMotor->SetDutyCycle(SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED);
+        m_PivotTargetDegrees = PIVOT_ANGLE_TOUCHING_SOURCE;
         m_bIntakeInProgress = true;
     }
     else
@@ -488,12 +495,140 @@ void YtaRobot::ShootSequence()
     if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON))
     {
         m_bShootSpeaker = !m_bShootSpeaker;
+        if (m_bShootSpeaker)
+        {
+            m_bHoldNote = false;
+            m_AmpIdleSpeed = 0.0;
+            m_pAmpNoteControlMotor->SetDutyCycle(m_AmpIdleSpeed);
+        }
     }
-    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_SHOOT_CLOSE) && m_bShootSpeaker)
+    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_FUNCTION_BUTTON))
     {
-        m_bShootSpeakerClose = !m_bShootSpeakerClose;
+        if (m_bShootSpeaker)
+        {
+            m_bShootSpeakerClose = !m_bShootSpeakerClose;
+        }
     }
 
+    SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
+    SmartDashboard::PutBoolean("Speaker close", m_bShootSpeakerClose);
+    SmartDashboard::PutBoolean("Hold note", m_bHoldNote);
+
+    if (m_bShootSpeaker)
+    {
+        ShootSpeaker();
+    }
+    else
+    {
+        ShootAmp();
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ShootAmp
+///
+/// Main workflow for shooting at the amp.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ShootAmp()
+{
+    enum ShootState
+    {
+        NOT_SHOOTING,
+        WAIT_FOR_PIVOT,
+        WAIT_FOR_TRIGGER_RELEASE,
+        SHOT_START,
+        SHOOTING
+    };
+    static ShootState shootState = NOT_SHOOTING;
+    static Timer * pShootTimer = new Timer();
+    static units::angle::degree_t pivotAngleAtShot = 0.0_deg;
+
+    if (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    {
+        m_bShotInProgress = true;
+        switch (shootState)
+        {
+            case NOT_SHOOTING:
+            {
+                pShootTimer->Reset();
+                pShootTimer->Start();
+                m_bShotInProgress = true;
+                shootState = WAIT_FOR_PIVOT;
+                pivotAngleAtShot = m_AmpTargetDegrees;
+                break;
+            }
+            case WAIT_FOR_PIVOT:
+            {
+                // A brief delay for the mechanism to move into the
+                // appropriate shooting position.  Motors still off.
+                const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = 1.0_s;
+                if (pShootTimer->Get() > WAIT_FOR_PIVOT_MECHANISM_TIME_S)
+                {
+                    pShootTimer->Reset();
+                    shootState = WAIT_FOR_TRIGGER_RELEASE;
+                }
+                break;
+            }
+            case WAIT_FOR_TRIGGER_RELEASE:
+            {
+                if (m_pAuxController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
+                {
+                    m_AmpTargetDegrees += m_AmpTargetDegrees + PIVOT_ANGLE_AMP_SHOT_STEP;
+                    pShootTimer->Reset();
+                    shootState = SHOT_START;
+                }
+                break;
+            }
+            case SHOT_START:
+            {
+                const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = 0.1_s;
+                if (pShootTimer->Get() > WAIT_FOR_PIVOT_MECHANISM_TIME_S)
+                {
+                    pShootTimer->Reset();
+                    shootState = SHOOTING;
+                }
+                break;
+            }
+            case SHOOTING:
+            {
+                // Mechanism in position, shoot
+                m_pAmpNoteControlMotor->SetDutyCycle(m_AmpTargetSpeed);
+                m_AmpIdleSpeed = 0.0;
+                m_bHoldNote = false;
+                m_AmpTargetDegrees = pivotAngleAtShot;
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        pShootTimer->Stop();
+        if (!m_bIntakeInProgress)
+        {
+            m_pAmpNoteControlMotor->SetDutyCycle(m_AmpIdleSpeed);
+        }
+        m_bShotInProgress = false;
+        shootState = NOT_SHOOTING;
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ShootSpeaker
+///
+/// Main workflow for shooting at the speaker.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ShootSpeaker()
+{
     if (m_pAuxController->GetButtonState(AUX_PASS_BUTTON))
     {
         m_bPass = true;
@@ -503,15 +638,13 @@ void YtaRobot::ShootSequence()
         m_bPass = false;
     }
 
-    SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
-    SmartDashboard::PutBoolean("Speaker close", m_bShootSpeakerClose);
-
     enum ShootState
     {
         NOT_SHOOTING,
         WAIT_FOR_PIVOT,
         BACK_FEED,
         RAMPING_UP,
+        WAIT_FOR_TRIGGER_RELEASE,
         SHOOTING
     };
     static ShootState shootState = NOT_SHOOTING;
@@ -588,6 +721,17 @@ void YtaRobot::ShootSequence()
                 if (pShootTimer->Get() > RAMP_UP_TIME_S)
                 {
                     pShootTimer->Stop();
+                    shootState = WAIT_FOR_TRIGGER_RELEASE;
+                }
+                break;
+            }
+            case WAIT_FOR_TRIGGER_RELEASE:
+            {
+                feederSpeed = 0.0;
+                shootSpeed = TARGET_SHOOTER_SPEED;
+                shootSpeedOffset = TARGET_SHOOTER_OFFSET_SPEED;
+                if (m_pAuxController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
+                {
                     shootState = SHOOTING;
                 }
                 break;
@@ -780,16 +924,14 @@ void YtaRobot::CheckAndUpdateShootValues()
         {
             case Yta::Controller::PovDirections::POV_UP:
             {
-                // Motor output is negative, so decrease for faster speed
-                m_AmpTargetSpeed -= SHOOTER_STEP_SPEED;
-                m_AmpTargetSpeed = (m_AmpTargetSpeed < SHOOTER_AMP_SPEED_MIN) ? SHOOTER_AMP_SPEED_MIN : m_AmpTargetSpeed;
+                m_AmpTargetSpeed += SHOOTER_STEP_SPEED;
+                m_AmpTargetSpeed = (m_AmpTargetSpeed > SHOOTER_AMP_SPEED_MAX) ? SHOOTER_AMP_SPEED_MAX : m_AmpTargetSpeed;
                 break;
             }
             case Yta::Controller::PovDirections::POV_DOWN:
             {
-                // Motor output is negative, so increase for slower speed
-                m_AmpTargetSpeed += SHOOTER_STEP_SPEED;
-                m_AmpTargetSpeed = (m_AmpTargetSpeed > SHOOTER_AMP_SPEED_MAX) ? SHOOTER_AMP_SPEED_MAX : m_AmpTargetSpeed;
+                m_AmpTargetSpeed -= SHOOTER_STEP_SPEED;
+                m_AmpTargetSpeed = (m_AmpTargetSpeed < SHOOTER_AMP_SPEED_MIN) ? SHOOTER_AMP_SPEED_MIN : m_AmpTargetSpeed;
                 break;
             }
             case Yta::Controller::PovDirections::POV_RIGHT:
