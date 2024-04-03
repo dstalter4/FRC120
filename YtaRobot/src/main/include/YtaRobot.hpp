@@ -470,6 +470,7 @@ private:
     const std::string               AUTO_ROUTINE_1_STRING                   = "Speaker center";
     const std::string               AUTO_ROUTINE_2_STRING                   = "Speaker source";
     const std::string               AUTO_ROUTINE_3_STRING                   = "Speaker amp";
+    const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
