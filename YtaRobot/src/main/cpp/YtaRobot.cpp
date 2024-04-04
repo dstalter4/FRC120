@@ -727,7 +727,14 @@ void YtaRobot::ShootSpeaker()
                 if (pShootTimer->Get() > RAMP_UP_TIME_S)
                 {
                     pShootTimer->Stop();
-                    shootState = WAIT_FOR_TRIGGER_RELEASE;
+                    if (m_bPass)
+                    {
+                        shootState = SHOOTING;
+                    }
+                    else
+                    {
+                        shootState = WAIT_FOR_TRIGGER_RELEASE;
+                    }
                 }
                 break;
             }
