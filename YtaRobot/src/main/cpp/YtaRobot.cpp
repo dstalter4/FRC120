@@ -1324,13 +1324,21 @@ void YtaRobot::BlinkMorseCodePattern()
     // Update the state of the LEDs
     if (bLedsOn)
     {
-        if (m_AllianceColor.value() == DriverStation::Alliance::kRed)
+        if (m_bShootSpeaker)
         {
-            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            if (m_AllianceColor.value() == DriverStation::Alliance::kRed)
+            {
+                m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            }
+            else
+            {
+                m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            }
         }
         else
         {
-            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            // Indicate yellow to intake for the amp
+            m_pCandle->SetLEDs(255, 240, 0, 0, 0, NUMBER_OF_LEDS);
         }
     }
     else
