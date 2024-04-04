@@ -376,7 +376,7 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
-    if (std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && m_bShootSpeaker)
     {
         m_pIntakeMotor->SetDutyCycle(INTAKE_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
@@ -390,7 +390,7 @@ void YtaRobot::IntakeSequence()
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if (m_pAuxController->GetButtonState(AUX_INTAKE_AT_SOURCE_BUTTON) && !m_bShootSpeaker)
+    else if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && !m_bShootSpeaker)
     {
         // Same angle as when touching the amp
         //m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
@@ -400,6 +400,11 @@ void YtaRobot::IntakeSequence()
         m_pAmpNoteControlMotor->SetDutyCycle(SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED);
         m_PivotTargetDegrees = PIVOT_ANGLE_TOUCHING_SOURCE;
         m_bIntakeInProgress = true;
+    }
+    else if (m_pAuxController->GetButtonState(AUX_CANCEL_NOTE_HOLD_BUTTON))
+    {
+        m_bHoldNote = false;
+        m_AmpIdleSpeed = 0.0;
     }
     else
     {
