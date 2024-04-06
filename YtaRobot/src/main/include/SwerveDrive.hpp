@@ -66,6 +66,15 @@ public:
         }
     }
 
+    // Lock the wheels in an X pattern to prevent movement
+    inline void LockWheels()
+    {
+        for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+        {
+            m_SwerveModules[i].LockWheel();
+        }
+    }
+
 private:
     Pigeon2 * m_pPigeon;
     SwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];

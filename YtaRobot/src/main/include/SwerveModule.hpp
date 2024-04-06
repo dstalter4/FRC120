@@ -72,6 +72,9 @@ private:
         m_LastAngle = 0.0_deg;
     }
 
+    // Point the module wheel in the correct direciton to form an X to prevent movement
+    void LockWheel();
+
     // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
 

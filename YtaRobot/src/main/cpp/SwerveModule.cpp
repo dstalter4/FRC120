@@ -311,6 +311,48 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method SwerveModule::LockWheel
+///
+/// Sets the wheel angle of a swerve module to the correct
+/// direction to form an X to prevent movement.
+///
+////////////////////////////////////////////////////////////////
+void SwerveModule::LockWheel()
+{
+    units::angle::degree_t targetAngleDegrees = 0.0_deg;
+    switch (m_MotorGroupPosition)
+    {
+        case SwerveModule::FRONT_LEFT:
+        {
+            targetAngleDegrees = 45.0_deg;
+            break;
+        }
+        case SwerveModule::FRONT_RIGHT:
+        {
+            targetAngleDegrees = -45.0_deg;
+            break;
+        }
+        case SwerveModule::BACK_LEFT:
+        {
+            targetAngleDegrees = -45.0_deg;
+            break;
+        }
+        case SwerveModule::BACK_RIGHT:
+        {
+            targetAngleDegrees = 45.0_deg;
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(targetAngleDegrees));
+    m_LastAngle = targetAngleDegrees;
+}
+
+
+////////////////////////////////////////////////////////////////
 /// @method SwerveModule::UpdateSmartDashboard
 ///
 /// Support routine to put useful information on the dashboard.
