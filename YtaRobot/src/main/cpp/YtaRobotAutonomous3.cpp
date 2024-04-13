@@ -40,7 +40,7 @@ void YtaRobot::AutonomousRoutine3()
     m_pShooterMotors->Set(shooterSpeed, shooterOffsetSpeed);
 
     // Pivot the mechanism to the desired angle
-    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_TOUCHING_SPEAKER + 2.5_deg));
+    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_TOUCHING_SPEAKER));
 
     // Wait a bit for everything to be ready
     AutonomousDelay(1.5_s);
@@ -75,7 +75,7 @@ void YtaRobot::AutonomousRoutine3()
     m_pShooterMotors->Set(shooterSpeed, shooterOffsetSpeed);
 
     // Pivot the mechanism to the desired angle
-    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_FROM_PODIUM - 3.5_deg));
+    (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_FROM_PODIUM - 9.0_deg));
 
     // Adjust robot angle toward speaker
     RobotRotation towardSpeakerRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE;
@@ -84,7 +84,7 @@ void YtaRobot::AutonomousRoutine3()
 
     // Feeder motor to take the shot
     m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
-    AutonomousDelay(1.5_s);
+    AutonomousDelay(1.0_s);
 
     // Shooter motor off, feeder off, pivot down
     m_pShooterMotors->Set(0.0);
@@ -92,9 +92,9 @@ void YtaRobot::AutonomousRoutine3()
     (void)pPivotLeaderTalon->SetControl(pivotPositionVoltage.WithPosition(PIVOT_ANGLE_RUNTIME_BASE));
 
     // Set the pigeon angle relative to final robot position with zero down field
-    units::angle::degree_t gyroYaw = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? -23.0_deg : 23.0_deg;
-    m_pPigeon->SetYaw(gyroYaw);
-    return;
+    //units::angle::degree_t gyroYaw = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? -23.0_deg : 23.0_deg;
+    //m_pPigeon->SetYaw(gyroYaw);
+    //return;
 
 
     // Extended auto to try and clear the midline to disrupt the other alliance's auto.
@@ -105,8 +105,8 @@ void YtaRobot::AutonomousRoutine3()
     RobotStrafe autoMoveToMidlineStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_LEFT : RobotStrafe::ROBOT_STRAFE_RIGHT;
     RobotRotation autoMoveToMidlineRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE;
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, autoMoveToMidlineStrafe, autoMoveToMidlineRotation);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.12, 0.24, 0.03, 3.75_s, true);
-    AutonomousDelay(0.25_s);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.25, 0.50, 0.08, 1.75_s, true);
+    AutonomousDelay(0.1_s);
 
     // The robot is roughly on the midline now, facing the amp wall.
     // Zero the gyro to try and keep the next motion simpler
@@ -114,13 +114,13 @@ void YtaRobot::AutonomousRoutine3()
 
     // Now move along the midline while rotating to disrupt the notes
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, autoMoveToMidlineRotation);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.2, 0.0, 0.1, 1.5_s, true);
-    AutonomousDelay(0.25_s);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.4, 0.0, 0.2, 3.0_s, true);
+    AutonomousDelay(0.1_s);
 
     // Come back onto the alliance side of the field to avoid getting penalized
     RobotStrafe autoMoveBackToAllianceStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_RIGHT : RobotStrafe::ROBOT_STRAFE_LEFT;
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, autoMoveBackToAllianceStrafe, RobotRotation::ROBOT_NO_ROTATION);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.2, 0.0, 1.5_s, true);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.3, 0.0, 0.75_s, true);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 3 done.");
