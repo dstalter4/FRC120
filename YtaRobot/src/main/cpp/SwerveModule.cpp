@@ -21,6 +21,7 @@
 #include "SwerveConfig.hpp"                         // for swerve configuration and constants
 #include "SwerveConversions.hpp"                    // for conversion functions
 #include "SwerveModule.hpp"                         // for class declaration
+#include "YtaTalon.hpp"                             // for IsUpdateRequired()
 
 using namespace frc;
 
@@ -196,15 +197,22 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     // Update the drive motor controller
     if (bIsOpenLoop)
     {
-        m_DriveDutyCycleOut.Output = desiredState.speed / SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
-        (void)m_pDriveTalon->SetControl(m_DriveDutyCycleOut);
+        double newOutput = desiredState.speed / SwerveConfig::MAX_DRIVE_VELOCITY_MPS;
+        if (Yta::Talon::IsUpdateRequired(double(m_DriveDutyCycleOut.Output), newOutput, Yta::Talon::DUTY_CYCLE_REQUIRED_DELTA))
+        {
+            m_DriveDutyCycleOut.Output = newOutput;
+            (void)m_pDriveTalon->SetControl(m_DriveDutyCycleOut);
+        }
     }
     else
     {
         units::angular_velocity::turns_per_second_t driveTalonDesiredVelocityTps = units::angular_velocity::turns_per_second_t(SwerveConversions::MpsToRps(desiredState.speed.value(), SwerveConfig::WHEEL_CIRCUMFERENCE));
-        m_DriveVelocityVoltage.Velocity = driveTalonDesiredVelocityTps;
-        m_DriveVelocityVoltage.FeedForward = m_pFeedForward->Calculate(desiredState.speed);
-        (void)m_pDriveTalon->SetControl(m_DriveVelocityVoltage);
+        if (Yta::Talon::IsUpdateRequired(m_DriveVelocityVoltage.Velocity, driveTalonDesiredVelocityTps, Yta::Talon::VELOCITY_VOLTAGE_REQUIRED_DELTA))
+        {
+            m_DriveVelocityVoltage.Velocity = driveTalonDesiredVelocityTps;
+            m_DriveVelocityVoltage.FeedForward = m_pFeedForward->Calculate(desiredState.speed);
+            (void)m_pDriveTalon->SetControl(m_DriveVelocityVoltage);
+        }
     }
 
     // Update the angle motor controller
@@ -221,11 +229,14 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
     }
     
     units::angle::turn_t targetAngle = angle.Degrees();
-    // @todo_phoenix6: This -1 multiplier is critical.
-    (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(-targetAngle));
+    if (Yta::Talon::IsUpdateRequired(targetAngle, units::angle::turn_t(m_LastAngle.Degrees()), Yta::Talon::POSITION_VOLTAGE_REQUIRED_DELTA))
+    {
+        // @todo_phoenix6: This -1 multiplier is critical.
+        (void)m_pAngleTalon->SetControl(m_AnglePositionVoltage.WithPosition(-targetAngle));
 
-    // Save off the updated last angle
-    m_LastAngle = angle;
+        // Save off the updated last angle
+        m_LastAngle = angle;
+    }
 
 /*
     units::angle::degree_t d = m_pAngleTalon->GetPosition().GetValue();

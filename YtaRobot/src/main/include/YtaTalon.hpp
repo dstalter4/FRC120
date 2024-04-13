@@ -52,6 +52,24 @@ namespace Talon
         CUSTOM                  // Motor needs to be set later to an option above
     };
 
+    constexpr const double DUTY_CYCLE_REQUIRED_DELTA = 0.01;
+    constexpr const units::angle::turn_t POSITION_VOLTAGE_REQUIRED_DELTA = 0.01_tr;
+    constexpr const units::angular_velocity::turns_per_second_t VELOCITY_VOLTAGE_REQUIRED_DELTA = 0.01_tps;
+
+    // Template funciton to compute if an update to the motor output is required
+    template <typename SetValueType>
+    bool IsUpdateRequired(const SetValueType setValue, const SetValueType lastValue, const SetValueType deltaValue)
+    {
+        bool bUpdateRequired = false;
+        SetValueType minThreshold = lastValue - deltaValue;
+        SetValueType maxThreshold = lastValue + deltaValue;
+        if ((setValue < minThreshold) || (setValue > maxThreshold))
+        {
+            bUpdateRequired = true;
+        }
+        return bUpdateRequired;
+    }
+
     // Represents a combination of objects to use with a TalonFX motor controller
     struct TalonFxMotorController
     {
@@ -61,18 +79,26 @@ namespace Talon
         TalonFX * m_pTalonFx;
         DutyCycleOut m_DutyCycleOut;
         PositionVoltage m_PositionVoltage;
+        double m_LastOutput;
+        units::angle::turn_t m_LastTurn;
 
         // Constructor
         TalonFxMotorController(int canId) :
             m_pTalonFx(new TalonFX(canId)),
             m_DutyCycleOut(0.0),
-            m_PositionVoltage(0.0_tr)
+            m_PositionVoltage(0.0_tr),
+            m_LastOutput(0.0),
+            m_LastTurn(0.0_tr)
         {}
 
         // Set the output using duty cycle
         void SetDutyCycle(double dutyCycle)
         {
-            (void)m_pTalonFx->SetControl(m_DutyCycleOut.WithOutput(dutyCycle));
+            if (IsUpdateRequired(dutyCycle, m_LastOutput, DUTY_CYCLE_REQUIRED_DELTA))
+            {
+                (void)m_pTalonFx->SetControl(m_DutyCycleOut.WithOutput(dutyCycle));
+                m_LastOutput = dutyCycle;
+            }
         }
 
         // Set the output to hold a specified position
@@ -80,7 +106,11 @@ namespace Talon
         {
             units::angle::degree_t degrees(angle);
             units::angle::turn_t turns(degrees);
-            (void)m_pTalonFx->SetControl(m_PositionVoltage.WithPosition(turns));
+            if (IsUpdateRequired(turns, m_LastTurn, POSITION_VOLTAGE_REQUIRED_DELTA))
+            {
+                (void)m_pTalonFx->SetControl(m_PositionVoltage.WithPosition(turns));
+                m_LastTurn = turns;
+            }
         }
 
         // Set a tone to play on the motor
@@ -192,6 +222,8 @@ private:
         TalonType * m_pTalon;
         DutyCycleOut m_DutyCycleOut;
         PositionVoltage m_PositionVoltage;
+        double m_LastOutput;
+        units::angle::turn_t m_LastTurn;
         const char * m_pName;
         MotorGroupControlMode m_ControlMode;
         unsigned m_CanId;
@@ -205,6 +237,8 @@ private:
             m_pTalon(new TalonType(static_cast<int>(canId))),
             m_DutyCycleOut(0.0),
             m_PositionVoltage(0.0_tr),
+            m_LastOutput(0.0),
+            m_LastTurn(0.0_tr),
             m_pName(pName),
             m_ControlMode(controlMode),
             m_CanId(canId),
@@ -555,7 +589,11 @@ void TalonMotorGroup<TalonType>::Set(double value, double offset)
         if (bCallSet)
         {
             // Set the value in the Talon
-            (void)m_pMotorsInfo[i]->m_pTalon->SetControl(m_pMotorsInfo[i]->m_DutyCycleOut.WithOutput(valueToSet));
+            if (Yta::Talon::IsUpdateRequired(valueToSet, m_pMotorsInfo[i]->m_LastOutput, Yta::Talon::DUTY_CYCLE_REQUIRED_DELTA))
+            {
+                (void)m_pMotorsInfo[i]->m_pTalon->SetControl(m_pMotorsInfo[i]->m_DutyCycleOut.WithOutput(valueToSet));
+                m_pMotorsInfo[i]->m_LastOutput = valueToSet;
+            }
         }
     }
 }
@@ -584,7 +622,11 @@ void TalonMotorGroup<TalonType>::SetAngle(double angle)
     // Set the control output
     units::angle::degree_t degrees(angle);
     units::angle::turn_t turns(degrees);
-    (void)m_pMotorsInfo[0]->m_pTalon->SetControl(m_pMotorsInfo[0]->m_PositionVoltage.WithPosition(turns));
+    if (Yta::Talon::IsUpdateRequired(turns, m_pMotorsInfo[0]->m_LastTurn, Yta::Talon::POSITION_VOLTAGE_REQUIRED_DELTA))
+    {
+        (void)m_pMotorsInfo[0]->m_pTalon->SetControl(m_pMotorsInfo[0]->m_PositionVoltage.WithPosition(turns));
+        m_pMotorsInfo[0]->m_LastTurn = turns;
+    }
 }
 
 
