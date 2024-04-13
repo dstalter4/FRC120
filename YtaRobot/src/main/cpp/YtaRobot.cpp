@@ -62,7 +62,7 @@ YtaRobot::YtaRobot() :
     m_bDriveSwap                        (false),
     m_bCameraAlignInProgress            (false),
     m_bShootSpeaker                     (true),
-    m_bShootSpeakerClose                (true),
+    m_bShootPodium                      (false),
     m_bShotInProgress                   (false),
     m_bPass                             (false),
     m_bIntakeInProgress                 (false),
@@ -472,14 +472,7 @@ void YtaRobot::PivotSequence()
         }
         else if (m_bShootSpeaker)
         {
-            if (m_bShootSpeakerClose)
-            {
-                m_PivotTargetDegrees = m_SpeakerTargetDegrees;
-            }
-            else
-            {
-                m_PivotTargetDegrees = m_PodiumTargetDegrees;
-            }
+            m_PivotTargetDegrees = m_bShootPodium ? m_PodiumTargetDegrees : m_SpeakerTargetDegrees;
         }
         else
         {
@@ -509,16 +502,16 @@ void YtaRobot::ShootSequence()
             m_pAmpNoteControlMotor->SetDutyCycle(m_AmpIdleSpeed);
         }
     }
-    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_FUNCTION_BUTTON))
+    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_PODIUM_BUTTON))
     {
         if (m_bShootSpeaker)
         {
-            m_bShootSpeakerClose = !m_bShootSpeakerClose;
+            m_bShootPodium = !m_bShootPodium;
         }
     }
 
     SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
-    SmartDashboard::PutBoolean("Speaker close", m_bShootSpeakerClose);
+    SmartDashboard::PutBoolean("Shoot from podium", m_bShootPodium);
     SmartDashboard::PutBoolean("Pass note", m_bPass);
     SmartDashboard::PutBoolean("Hold note", m_bHoldNote);
 
@@ -655,7 +648,7 @@ void YtaRobot::ShootSpeaker()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bShootSpeakerClose) ? SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED : SHOOTER_MOTOR_SPEAKER_FAR_CW_SPEED;
+    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bShootPodium) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED : SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED;
     const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
@@ -948,7 +941,7 @@ void YtaRobot::CheckAndUpdateShootValues()
             {
                 if (m_bShootSpeaker)
                 {
-                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootSpeakerClose ? m_SpeakerTargetDegrees : m_PodiumTargetDegrees;
+                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootPodium ? m_PodiumTargetDegrees : m_SpeakerTargetDegrees;
                     rTargetDegreesToAdjust += SHOOTER_STEP_ANGLE;
                     rTargetDegreesToAdjust = (rTargetDegreesToAdjust > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : rTargetDegreesToAdjust;
                 }
@@ -964,7 +957,7 @@ void YtaRobot::CheckAndUpdateShootValues()
             {
                 if (m_bShootSpeaker)
                 {
-                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootSpeakerClose ? m_SpeakerTargetDegrees : m_PodiumTargetDegrees;
+                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootPodium ? m_PodiumTargetDegrees : m_SpeakerTargetDegrees;
                     rTargetDegreesToAdjust -= SHOOTER_STEP_ANGLE;
                     rTargetDegreesToAdjust = (rTargetDegreesToAdjust < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : rTargetDegreesToAdjust;
                 }

@@ -348,7 +348,7 @@ private:
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progress
     bool                            m_bShootSpeaker;                        // Differentiates between shooting at the speaker or the amp
-    bool                            m_bShootSpeakerClose;                   // Indicates if shooting the speaker from close up or further away
+    bool                            m_bShootPodium;                         // Indicates if shooting the speaker from the podium
     bool                            m_bShotInProgress;                      // Indicates whether a shot is in progress or not
     bool                            m_bPass;                                // Indicates whether or not a note is being passed
     bool                            m_bIntakeInProgress;                    // Indicates whether a note is being picked up
@@ -404,7 +404,7 @@ private:
     static const int                AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON     = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_PASS_BUTTON                         = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                AUX_CANCEL_NOTE_HOLD_BUTTON             = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                AUX_TOGGLE_SPEAKER_AMP_FUNCTION_BUTTON  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
+    static const int                AUX_TOGGLE_SPEAKER_PODIUM_BUTTON        = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                AUX_TARE_PIVOT_ANGLE                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                AUX_MANUAL_PIVOT_AXIS                   = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
 
@@ -454,10 +454,10 @@ private:
     static constexpr double         INTAKE_MOTOR_SPEED                      = -1.0;
     static constexpr double         FEEDER_MOTOR_SPEED                      =  0.5;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED    = -0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_CW_SPEED      = -0.7;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED   = -0.7;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED   =  0.2;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CCW_SPEED   = -0.3;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_FAR_CCW_SPEED     = -0.5;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CCW_SPEED  = -0.5;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED  = -0.2;
     static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 =  0.70;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      = -0.50;

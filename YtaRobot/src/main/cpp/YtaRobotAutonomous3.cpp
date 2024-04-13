@@ -70,7 +70,7 @@ void YtaRobot::AutonomousRoutine3()
     // Start the far shot
 
     // First start ramping up the shooter motors
-    shooterSpeed = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? SHOOTER_MOTOR_SPEAKER_FAR_CCW_SPEED : SHOOTER_MOTOR_SPEAKER_FAR_CW_SPEED;
+    shooterSpeed = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CCW_SPEED : SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED;
     shooterOffsetSpeed = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED : SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED;
     m_pShooterMotors->Set(shooterSpeed, shooterOffsetSpeed);
 
