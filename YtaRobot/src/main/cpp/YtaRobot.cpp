@@ -44,7 +44,7 @@ YtaRobot::YtaRobot() :
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pIntakeMotor                      (new TalonFxMotorController(INTAKE_MOTOR_CAN_ID)),
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Coast, false)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
     m_pPivotMotors                      (new TalonMotorGroup<TalonFX>("Pivot", TWO_MOTORS, PIVOT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
     m_pAmpNoteControlMotor              (new TalonFxMotorController(AMP_NOTE_CONTROL_MOTOR_CAN_ID)),
     m_pLiftMotors                       (new Yta::Talon::EmptyTalonFx("Lift", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::INVERSE_OFFSET, NeutralModeValue::Brake, false)),
@@ -518,6 +518,7 @@ void YtaRobot::ShootSequence()
 
     SmartDashboard::PutBoolean("Shoot speaker", m_bShootSpeaker);
     SmartDashboard::PutBoolean("Speaker close", m_bShootSpeakerClose);
+    SmartDashboard::PutBoolean("Pass note", m_bPass);
     SmartDashboard::PutBoolean("Hold note", m_bHoldNote);
 
     if (m_bShootSpeaker)
@@ -635,13 +636,9 @@ void YtaRobot::ShootAmp()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootSpeaker()
 {
-    if (m_pAuxController->GetButtonState(AUX_PASS_BUTTON))
+    if (m_pAuxController->DetectButtonChange(AUX_PASS_BUTTON))
     {
-        m_bPass = true;
-    }
-    else
-    {
-        m_bPass = false;
+        m_bPass = !m_bPass;
     }
 
     enum ShootState
@@ -661,14 +658,14 @@ void YtaRobot::ShootSpeaker()
     const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
     const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0;
     const double BACK_FEED_SPEED = 0.2;
-    const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.15_s : 0.08_s;
+    const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.04_s : 0.08_s;
     const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = (m_bShootSpeaker) ? 0.5_s : 1.0_s;
     const units::time::second_t RAMP_UP_TIME_S = 1.5_s;
 
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
     double shootSpeedOffset = 0.0;
-    if (m_bPass || (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
+    if ((std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
     {
         switch (shootState)
         {
@@ -727,14 +724,7 @@ void YtaRobot::ShootSpeaker()
                 if (pShootTimer->Get() > RAMP_UP_TIME_S)
                 {
                     pShootTimer->Stop();
-                    if (m_bPass)
-                    {
-                        shootState = SHOOTING;
-                    }
-                    else
-                    {
-                        shootState = WAIT_FOR_TRIGGER_RELEASE;
-                    }
+                    shootState = WAIT_FOR_TRIGGER_RELEASE;
                 }
                 break;
             }
@@ -935,19 +925,25 @@ void YtaRobot::CheckAndUpdateShootValues()
         // @todo: Limit these to min/max values
         switch (currentAuxPovDirection)
         {
-            case Yta::Controller::PovDirections::POV_UP:
-            {
-                m_AmpTargetSpeed += SHOOTER_STEP_SPEED;
-                m_AmpTargetSpeed = (m_AmpTargetSpeed > SHOOTER_AMP_SPEED_MAX) ? SHOOTER_AMP_SPEED_MAX : m_AmpTargetSpeed;
-                break;
-            }
-            case Yta::Controller::PovDirections::POV_DOWN:
-            {
-                m_AmpTargetSpeed -= SHOOTER_STEP_SPEED;
-                m_AmpTargetSpeed = (m_AmpTargetSpeed < SHOOTER_AMP_SPEED_MIN) ? SHOOTER_AMP_SPEED_MIN : m_AmpTargetSpeed;
-                break;
-            }
             case Yta::Controller::PovDirections::POV_RIGHT:
+            {
+                if (!m_bShootSpeaker)
+                {
+                    m_AmpTargetSpeed += SHOOTER_STEP_SPEED;
+                    m_AmpTargetSpeed = (m_AmpTargetSpeed > SHOOTER_AMP_SPEED_MAX) ? SHOOTER_AMP_SPEED_MAX : m_AmpTargetSpeed;
+                }
+                break;
+            }
+            case Yta::Controller::PovDirections::POV_LEFT:
+            {
+                if (!m_bShootSpeaker)
+                {
+                    m_AmpTargetSpeed -= SHOOTER_STEP_SPEED;
+                    m_AmpTargetSpeed = (m_AmpTargetSpeed < SHOOTER_AMP_SPEED_MIN) ? SHOOTER_AMP_SPEED_MIN : m_AmpTargetSpeed;
+                }
+                break;
+            }
+            case Yta::Controller::PovDirections::POV_UP:
             {
                 if (m_bShootSpeaker)
                 {
@@ -962,7 +958,7 @@ void YtaRobot::CheckAndUpdateShootValues()
                 }
                 break;
             }
-            case Yta::Controller::PovDirections::POV_LEFT:
+            case Yta::Controller::PovDirections::POV_DOWN:
             {
                 if (m_bShootSpeaker)
                 {
