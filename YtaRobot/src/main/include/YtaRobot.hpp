@@ -356,6 +356,7 @@ private:
     bool                            m_bHoldNote;                            // Indicates whether or not the amp shoot moter should idle hold a note
     units::angle::degree_t          m_PivotTargetDegrees;                   // Tracks the desired angle position of the superstructure mechanism
     units::angle::degree_t          m_SpeakerTargetDegrees;                 // The current target angle for the pivot mechanism when shooting at the speaker
+    units::angle::degree_t          m_PodiumTargetDegrees;                  // The current target angle for the pivot mechanism when shooting at the speaker from the podium
     units::angle::degree_t          m_AmpTargetDegrees;                     // The current target angle for the pivot mechanism when shooting at the amp
     double                          m_AmpTargetSpeed;                       // The current target speed for the shooter motors when shooting at the amp
     double                          m_AmpIdleSpeed;                         // The current target speed for the amp motor when idle

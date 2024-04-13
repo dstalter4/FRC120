@@ -70,6 +70,7 @@ YtaRobot::YtaRobot() :
     m_bHoldNote                         (false),
     m_PivotTargetDegrees                (0.0_deg),
     m_SpeakerTargetDegrees              (PIVOT_ANGLE_TOUCHING_SPEAKER),
+    m_PodiumTargetDegrees               (PIVOT_ANGLE_FROM_PODIUM),
     m_AmpTargetDegrees                  (PIVOT_ANGLE_TOUCHING_AMP),
     m_AmpTargetSpeed                    (SHOOTER_MOTOR_AMP_SPEED),
     m_AmpIdleSpeed                      (0.0),
@@ -477,7 +478,7 @@ void YtaRobot::PivotSequence()
             }
             else
             {
-                m_PivotTargetDegrees = PIVOT_ANGLE_FROM_PODIUM;
+                m_PivotTargetDegrees = m_PodiumTargetDegrees;
             }
         }
         else
@@ -947,8 +948,9 @@ void YtaRobot::CheckAndUpdateShootValues()
             {
                 if (m_bShootSpeaker)
                 {
-                    m_SpeakerTargetDegrees += SHOOTER_STEP_ANGLE;
-                    m_SpeakerTargetDegrees = (m_SpeakerTargetDegrees > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : m_SpeakerTargetDegrees;
+                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootSpeakerClose ? m_SpeakerTargetDegrees : m_PodiumTargetDegrees;
+                    rTargetDegreesToAdjust += SHOOTER_STEP_ANGLE;
+                    rTargetDegreesToAdjust = (rTargetDegreesToAdjust > PIVOT_ANGLE_MAX) ? PIVOT_ANGLE_MAX : rTargetDegreesToAdjust;
                 }
                 else
                 {
@@ -962,8 +964,9 @@ void YtaRobot::CheckAndUpdateShootValues()
             {
                 if (m_bShootSpeaker)
                 {
-                    m_SpeakerTargetDegrees -= SHOOTER_STEP_ANGLE;
-                    m_SpeakerTargetDegrees = (m_SpeakerTargetDegrees < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : m_SpeakerTargetDegrees;
+                    units::angle::degree_t & rTargetDegreesToAdjust = m_bShootSpeakerClose ? m_SpeakerTargetDegrees : m_PodiumTargetDegrees;
+                    rTargetDegreesToAdjust -= SHOOTER_STEP_ANGLE;
+                    rTargetDegreesToAdjust = (rTargetDegreesToAdjust < PIVOT_ANGLE_MIN) ? PIVOT_ANGLE_MIN : rTargetDegreesToAdjust;
                 }
                 else
                 {
@@ -982,6 +985,7 @@ void YtaRobot::CheckAndUpdateShootValues()
         lastAuxPovDirection = currentAuxPovDirection;
     }
     SmartDashboard::PutNumber("Speaker angle", m_SpeakerTargetDegrees.value());
+    SmartDashboard::PutNumber("Podium angle", m_PodiumTargetDegrees.value());
     SmartDashboard::PutNumber("Amp speed", m_AmpTargetSpeed);
     SmartDashboard::PutNumber("Amp angle", m_AmpTargetDegrees.value());
 }
