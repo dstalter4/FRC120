@@ -53,6 +53,7 @@ YtaRobot::YtaRobot() :
     m_pNoteBeamSensor                   (new DigitalInput(BEAM_SENSOR_DIO_CHANNEL)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
+    m_pLiftSolenoid                     (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, LIFT_SOLENOID_FORWARD_CHANNEL, LIFT_SOLENOID_REVERSE_CHANNEL)),
     m_pMatchModeTimer                   (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
@@ -253,6 +254,8 @@ void YtaRobot::InitialStateSetup()
     (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
     (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID + 1)->GetConfigurator().SetPosition(0.0_tr);
 
+    m_pLiftSolenoid->Set(DoubleSolenoid::Value::kReverse);
+
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
     m_pMatchModeTimer->Stop();
@@ -341,7 +344,7 @@ void YtaRobot::TeleopPeriodic()
     CheckAndResetEncoderCounts();
     CheckAndUpdateShootValues();
 
-    //PneumaticSequence();
+    PneumaticSequence();
     
     CameraSequence();
 
@@ -1438,6 +1441,20 @@ void YtaRobot::MusicSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::PneumaticSequence()
 {
+    static bool bLiftExtended = false;
+    if (m_pDriveController->DetectButtonChange(DRIVE_TOGGLE_LIFT_BUTTON))
+    {
+        bLiftExtended = !bLiftExtended;
+        if (bLiftExtended)
+        {
+            m_pLiftSolenoid->Set(DoubleSolenoid::Value::kForward);
+        }
+        else
+        {
+            m_pLiftSolenoid->Set(DoubleSolenoid::Value::kReverse);
+        }
+    }
+
     // @todo: Monitor other compressor API data?
     SmartDashboard::PutBoolean("Compressor status", m_pCompressor->IsEnabled());
 }
