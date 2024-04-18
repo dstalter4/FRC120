@@ -435,7 +435,7 @@ void YtaRobot::PivotSequence()
     static TalonFX * pPivotLeaderTalon = m_pPivotMotors->GetMotorObject(PIVOT_MOTORS_CAN_START_ID);
 
     // If the tare button is being held
-    if (m_pAuxController->GetButtonState(AUX_TARE_PIVOT_ANGLE))
+    if (m_pAuxController->GetButtonState(AUX_TARE_PIVOT_ANGLE_BUTTON))
     {
         // Allow manual movement
         double manualPivotInput = m_pAuxController->GetAxisValue(AUX_MANUAL_PIVOT_AXIS);
@@ -448,7 +448,7 @@ void YtaRobot::PivotSequence()
         m_bPivotTareInProgress = true;
     }
     // When the tare button is released, set the new zero
-    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
+    if (m_pAuxController->DetectButtonChange(AUX_TARE_PIVOT_ANGLE_BUTTON, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
     {
         (void)pPivotLeaderTalon->GetConfigurator().SetPosition(0.0_tr);
         m_bPivotTareInProgress = false;
@@ -1552,11 +1552,26 @@ void YtaRobot::SwerveDriveSequence()
         m_pSwerveDrive->LockWheels();
     }
 
+    constexpr const double SWERVE_LIMITING_FACTOR = 0.50;
+    static bool bSwerveOutputLimited = false;
+    if (m_pAuxController->DetectButtonChange(AUX_LIMIT_SWERVE_OUTPUT_BUTTON))
+    {
+        bSwerveOutputLimited = !bSwerveOutputLimited;
+    }
+    SmartDashboard::PutBoolean("Swerve limited", bSwerveOutputLimited);
+
     // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+
+    if (bSwerveOutputLimited)
+    {
+        translationAxis *= SWERVE_LIMITING_FACTOR;
+        strafeAxis *= SWERVE_LIMITING_FACTOR;
+        rotationAxis *= SWERVE_LIMITING_FACTOR;
+    }
 
     // Override normal control if a fine positioning request is made
     switch (m_pDriveController->GetPovAsDirection())
