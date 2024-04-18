@@ -471,7 +471,8 @@ void YtaRobot::PivotSequence()
         // If an intake is not in progress, move to the target position for amp or speaker
         if (m_bPass)
         {
-            m_PivotTargetDegrees = PIVOT_ANGLE_RUNTIME_BASE;
+            // Low pass uses PIVOT_ANGLE_RUNTIME_BASE here
+            m_PivotTargetDegrees = m_SpeakerTargetDegrees;
         }
         else if (m_bShootSpeaker)
         {
@@ -651,9 +652,9 @@ void YtaRobot::ShootSpeaker()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bShootPodium) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED : SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED;
+    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_SPEED : ((m_bShootPodium) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED : SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED);
     const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
-    const double TARGET_SHOOTER_OFFSET_SPEED = (m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0;
+    const double TARGET_SHOOTER_OFFSET_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_OFFSET_SPEED : ((m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0);
     const double BACK_FEED_SPEED = 0.2;
     const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.04_s : 0.08_s;
     const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = (m_bShootSpeaker) ? 0.5_s : 1.0_s;

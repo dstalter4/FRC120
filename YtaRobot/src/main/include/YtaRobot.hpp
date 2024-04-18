@@ -460,6 +460,8 @@ private:
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CCW_SPEED   = -0.3;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CCW_SPEED  = -0.5;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED  = -0.2;
+    static constexpr double         SHOOTER_MOTOR_PASS_CW_SPEED             = -0.45;
+    static constexpr double         SHOOTER_MOTOR_PASS_CW_OFFSET_SPEED      =  0.15;
     static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 =  0.70;
     static constexpr double         SHOOTER_MOTOR_LOAD_AT_SOURCE_SPEED      = -0.50;
     static constexpr double         SHOOTER_MOTOR_AMP_HOLD_NOTE             = -0.10;
