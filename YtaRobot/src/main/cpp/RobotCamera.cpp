@@ -409,6 +409,9 @@ void RobotCamera::VisionThread()
 {
     // Indicate the thread has been started
     RobotUtils::DisplayMessage("Vision thread detached.");
+    cs::UsbCamera camera = CameraServer::StartAutomaticCapture();
+    camera.SetResolution(640, 480);
+    camera.SetFPS(30);
     while (true)
     {
         // Be sure to relinquish the CPU when done
@@ -429,6 +432,7 @@ void RobotCamera::VisionThread()
     }
     */
     
+    /*
     // Sample WPI code
     cs::UsbCamera camera = CameraServer::StartAutomaticCapture();
     camera.SetResolution(160, 120);
@@ -437,12 +441,17 @@ void RobotCamera::VisionThread()
     cs::CvSource outputStreamStd = CameraServer::PutVideo("Camera Output", 160, 120);    // "Gray"
     //cv::Mat source;
     //cv::Mat output;
-    cv::Mat frame;
+    //cv::Mat frame;
     while(true) {
         //cvSink.GrabFrame(frame);//source);
         //cvtColor(source, output, cv::COLOR_BGR2GRAY);
         //outputStreamStd.PutFrame(frame);//output);
     }
+    */
+
+   // The robot program should never reach this point.
+   // Code below here is old and untested in recent years.
+   ASSERT(false);
     
     // Clear the memory used for the camera storage
     std::memset(reinterpret_cast<void*>(&m_UsbCameras), 0U, sizeof(UsbCameraStorage));

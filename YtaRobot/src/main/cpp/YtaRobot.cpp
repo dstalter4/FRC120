@@ -56,7 +56,7 @@ YtaRobot::YtaRobot() :
     m_pLiftSolenoid                     (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, LIFT_SOLENOID_FORWARD_CHANNEL, LIFT_SOLENOID_REVERSE_CHANNEL)),
     m_pMatchModeTimer                   (new Timer()),
     m_pSafetyTimer                      (new Timer()),
-    m_CameraThread                      (RobotCamera::LimelightThread),
+    m_CameraThread                      (RobotCamera::VisionThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
@@ -103,8 +103,8 @@ YtaRobot::YtaRobot() :
     m_pCandle->Animate(m_RainbowAnimation);
 
     // Spawn the vision thread
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
+    //RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    //RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     m_CameraThread.detach();
 }
 
@@ -301,8 +301,8 @@ void YtaRobot::TeleopInit()
 
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
+    //RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    //RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
@@ -346,7 +346,7 @@ void YtaRobot::TeleopPeriodic()
 
     PneumaticSequence();
     
-    CameraSequence();
+    //CameraSequence();
 
     //LedSequence();
     BlinkMorseCodePattern();
@@ -1473,15 +1473,15 @@ void YtaRobot::CameraSequence()
     if (m_pDriveController->GetButtonState(DRIVE_ALIGN_WITH_CAMERA_BUTTON))
     {
         m_bCameraAlignInProgress = true;
-        RobotCamera::SetLimelightPipeline(1);
-        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
+        //RobotCamera::SetLimelightPipeline(1);
+        //RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
         RobotCamera::AutonomousCamera::AlignToTargetSwerve();
     }
     else
     {
         m_bCameraAlignInProgress = false;
-        RobotCamera::SetLimelightPipeline(0);
-        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+        //RobotCamera::SetLimelightPipeline(0);
+        //RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     }
     return;
 
@@ -2023,9 +2023,8 @@ void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
 
-    // @todo: Shut off the limelight LEDs?
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
+    //RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    //RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Turn the rainbow animation back on    
     m_pCandle->Animate(m_RainbowAnimation);
