@@ -806,7 +806,7 @@ void YtaRobot::LiftSequence()
     switch (drivePovDirection)
     {
         // Going up to grab the chain
-        case Yta::Controller::PovDirections::POV_UP:
+        case DRIVE_LIFT_UP_POV:
         {
             if (highestTurns < LIFT_MAX_TURNS)
             {
@@ -816,7 +816,7 @@ void YtaRobot::LiftSequence()
             break;
         }
         // Pulling down to raise the robot
-        case Yta::Controller::PovDirections::POV_DOWN:
+        case DRIVE_LIFT_DOWN_POV:
         {
             if (lowestTurns > LIFT_MIN_TURNS)
             {
@@ -923,7 +923,7 @@ void YtaRobot::CheckAndUpdateShootValues()
         // @todo: Limit these to min/max values
         switch (currentAuxPovDirection)
         {
-            case Yta::Controller::PovDirections::POV_RIGHT:
+            case AUX_ADJUST_SHOOT_SPEED_UP_POV:
             {
                 if (!m_bShootSpeaker)
                 {
@@ -932,7 +932,7 @@ void YtaRobot::CheckAndUpdateShootValues()
                 }
                 break;
             }
-            case Yta::Controller::PovDirections::POV_LEFT:
+            case AUX_ADJUST_SHOOT_SPEED_DOWN_POV:
             {
                 if (!m_bShootSpeaker)
                 {
@@ -941,7 +941,7 @@ void YtaRobot::CheckAndUpdateShootValues()
                 }
                 break;
             }
-            case Yta::Controller::PovDirections::POV_UP:
+            case AUX_ADJUST_PIVOT_ANGLE_UP_POV:
             {
                 if (m_bShootSpeaker)
                 {
@@ -957,7 +957,7 @@ void YtaRobot::CheckAndUpdateShootValues()
                 }
                 break;
             }
-            case Yta::Controller::PovDirections::POV_DOWN:
+            case AUX_ADJUST_PIVOT_ANGLE_DOWN_POV:
             {
                 if (m_bShootSpeaker)
                 {
@@ -1576,28 +1576,28 @@ void YtaRobot::SwerveDriveSequence()
     // Override normal control if a fine positioning request is made
     switch (m_pDriveController->GetPovAsDirection())
     {
-        case Yta::Controller::PovDirections::POV_UP:
+        case DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV:
         {
             translationAxis = SWERVE_DRIVE_SLOW_SPEED;
             strafeAxis = 0.0;
             rotationAxis = 0.0;
             break;
         }
-        case Yta::Controller::PovDirections::POV_DOWN:
+        case DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV:
         {
             translationAxis = -SWERVE_DRIVE_SLOW_SPEED;
             strafeAxis = 0.0;
             rotationAxis = 0.0;
             break;
         }
-        case Yta::Controller::PovDirections::POV_LEFT:
+        case DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV:
         {
             translationAxis = 0.0;
             strafeAxis = 0.0;
             rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
             break;
         }
-        case Yta::Controller::PovDirections::POV_RIGHT:
+        case DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV:
         {
             translationAxis = 0.0;
             strafeAxis = 0.0;
@@ -1757,22 +1757,22 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
+    if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_FORWARD_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_REVERSE_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_LEFT_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_RIGHT_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;

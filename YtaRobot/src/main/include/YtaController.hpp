@@ -50,13 +50,17 @@ namespace Controller
     
     // These values are deliberately selected to simplify the
     // logic and math in routines dependent on them.
-    enum PovDirections
+    enum PovDirections : int32_t
     {
-        POV_UP          = 0,
-        POV_RIGHT       = 1,
-        POV_DOWN        = 2,
-        POV_LEFT        = 3,
-        POV_NOT_PRESSED = 0xF
+        POV_UP              = 0x0,
+        POV_RIGHT           = 0x1,
+        POV_DOWN            = 0x2,
+        POV_LEFT            = 0x3,
+        POV_NOT_PRESSED     = 0xF,
+        POV_INVALID_UP      = 0xF0,
+        POV_INVALID_RIGHT   = 0xF1,
+        POV_INVALID_DOWN    = 0xF2,
+        POV_INVALID_LEFT    = 0xF3
     };
 
     // Used to detect button state changes (such as released to

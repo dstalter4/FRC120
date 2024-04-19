@@ -393,11 +393,18 @@ private:
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    
+
+    static const Yta::Controller::PovDirections  DRIVE_LIFT_UP_POV                          = Yta::Controller::PovDirections::POV_INVALID_UP;
+    static const Yta::Controller::PovDirections  DRIVE_LIFT_DOWN_POV                        = Yta::Controller::PovDirections::POV_INVALID_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_FORWARD_POV            = Yta::Controller::PovDirections::POV_INVALID_UP;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_REVERSE_POV            = Yta::Controller::PovDirections::POV_INVALID_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_LEFT_POV               = Yta::Controller::PovDirections::POV_INVALID_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_RIGHT_POV              = Yta::Controller::PovDirections::POV_INVALID_RIGHT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV  = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV   = Yta::Controller::PovDirections::POV_RIGHT;
+
     // Aux inputs
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
@@ -411,6 +418,11 @@ private:
     static const int                AUX_TARE_PIVOT_ANGLE_BUTTON             = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                AUX_LIMIT_SWERVE_OUTPUT_BUTTON          = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                AUX_MANUAL_PIVOT_AXIS                   = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_Y_AXIS;
+
+    static const Yta::Controller::PovDirections  AUX_ADJUST_PIVOT_ANGLE_UP_POV      = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  AUX_ADJUST_PIVOT_ANGLE_DOWN_POV    = Yta::Controller::PovDirections::POV_DOWN;
+    static const Yta::Controller::PovDirections  AUX_ADJUST_SHOOT_SPEED_DOWN_POV    = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  AUX_ADJUST_SHOOT_SPEED_UP_POV      = Yta::Controller::PovDirections::POV_RIGHT;
 
     // CAN Signals
     // Note: The use of high CAN values if swerve drive is in use is
