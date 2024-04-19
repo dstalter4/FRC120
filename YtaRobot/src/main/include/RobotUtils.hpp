@@ -5,13 +5,14 @@
 /// @details
 /// Contains declarations of utility macros/routines for the robot code.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTUTILS_HPP
 #define ROBOTUTILS_HPP
 
 // SYSTEM INCLUDES
+#include <cassert>                              // for assert()
 #include <cstdarg>                              // for va_*
 #include <cstdio>                               // for printf
 #include <iostream>                             // for cout
@@ -35,6 +36,17 @@
         }                                                   \
     }                                                       \
     while (false);
+
+extern void ConstantExpressionAssert();
+#define ASSERT_CONSTEXPR(condition)                         \
+do                                                          \
+{                                                           \
+    if (!(condition))                                       \
+    {                                                       \
+        ConstantExpressionAssert();                         \
+    }                                                       \
+}                                                           \
+while (false);
 
 #define STRINGIFY(s) #s
 
