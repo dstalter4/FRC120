@@ -35,6 +35,7 @@ YtaRobot * YtaRobot::m_pThis;
 ////////////////////////////////////////////////////////////////
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
+    m_AutoDelayValueSeconds             (),
     m_AutoSwerveDirections              (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
@@ -90,6 +91,11 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser.AddOption(AUTO_NO_ROUTINE_STRING, AUTO_NO_ROUTINE_STRING);
     m_AutonomousChooser.AddOption(AUTO_TEST_ROUTINE_STRING, AUTO_TEST_ROUTINE_STRING);
     SmartDashboard::PutData("Autonomous Modes", &m_AutonomousChooser);
+    m_AutoDelayValueSeconds.SetDefaultOption("0 seconds", 0U);
+    m_AutoDelayValueSeconds.AddOption("2 seconds", 2U);
+    m_AutoDelayValueSeconds.AddOption("3 seconds", 3U);
+    m_AutoDelayValueSeconds.AddOption("5 seconds", 5U);
+    SmartDashboard::PutData("Autonomous delay (seconds)", &m_AutoDelayValueSeconds);
     
     RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);

@@ -78,6 +78,9 @@ void YtaRobot::AutonomousPeriodic()
     
     // Change values in the header to control having an
     // autonomous routine and which is selected
+
+    std::uint32_t autoDelayS = m_AutoDelayValueSeconds.GetSelected();
+    Wait(units::time::second_t(autoDelayS));
     
     // Get the selected autonomous routine from the smart dashboard
     std::string selectedAutoRoutineString = m_AutonomousChooser.GetSelected();

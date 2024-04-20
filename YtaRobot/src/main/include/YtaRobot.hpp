@@ -281,6 +281,7 @@ private:
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
+    SendableChooser<std::uint32_t>  m_AutoDelayValueSeconds;                // Allows the drive team to select how long to delay before running auto
     RobotSwerveDirections           m_AutoSwerveDirections;                 // Used by autonomous routines to control swerve drive movements
     
     // User Controls
