@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
+#include <cctype>                       // for alphanumeric character checking
 #include <cstddef>                      // for nullptr
 #include <cstring>                      // for memset
 
@@ -1232,37 +1233,97 @@ void YtaRobot::BlinkMorseCodePattern()
     constexpr const MorseCodeSignal MORSE_9[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
     constexpr const MorseCodeSignal MORSE_WORD_BREAK[] = {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
     constexpr const MorseCodeSignal MORSE_MESSAGE_END[] = {END_MARKER};
-    const MorseCodeSignal * ALPHANUMERIC_MESSAGE[] = {MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G, MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M,
-                                                      MORSE_N, MORSE_O, MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W, MORSE_X, MORSE_Y, MORSE_Z,
-                                                      MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7, MORSE_8, MORSE_9, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
-    
+    const MorseCodeSignal * MORSE_SIGNALS[] = {MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G, MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M,
+                                               MORSE_N, MORSE_O, MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W, MORSE_X, MORSE_Y, MORSE_Z,
+                                               MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7, MORSE_8, MORSE_9, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+    constexpr const uint32_t DIGIT_SIGNAL_INDEX = 26U;
+    constexpr const uint32_t WORD_BREAK_SIGNAL_INDEX = 36U;
+    constexpr const uint32_t MESSAGE_END_SIGNAL_INDEX = 37U;
 
-    // @todo: Write constexpr function to convert string to enum?
-    static const MorseCodeSignal * MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+    // Old approach commented out (uses a constant variable length array of pointers instead of fixed length array/string conversion).
+    //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+    static const size_t MORSE_MSG_MAX_LENGTH = 128U;
+    static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
+    static const char MORSE_STRING[] = "SOS";
+    static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
+    static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
+
+    static Timer * pMorseTimer = new Timer();
+    static bool bInit = false;
+
+    // Perform one time initialization logic
+    if (!bInit)
+    {
+        // Build the morse message by converting it from the human readable string
+        size_t messageOutputPosition = 0U;
+        for (size_t i = 0U; i < MORSE_STRING_SIZE; i++)
+        {
+            // ASCII: 0 = 48, A = 65, a = 97
+            // MORSE_SIGNALS: 0-25 = A-Z, 26-35 = 0-9, 36-37 = end markers
+
+            // Convert the character to its integer representation
+            uint8_t charVal = static_cast<uint8_t>(MORSE_STRING[i]);
+
+            // Default the morse signal index to message end
+            size_t morseSignalIndex = (sizeof(MORSE_SIGNALS) / sizeof(MORSE_SIGNALS[0])) - 1U;
+
+            // Check the character type and compute the appropriate signal index
+            if (0 != std::isupper(charVal))
+            {
+                // Uppercase/lowercase letters have the same Morse signal.
+                // Uppercase starts at ASCII 65, and index MORSE_SIGNALS at 0.
+                morseSignalIndex = charVal - static_cast<uint8_t>('A');
+            }
+            else if (0 != std::islower(charVal))
+            {
+                // Uppercase/lowercase letters have the same Morse signal.
+                // Lowercase starts at ASCII 97, and index MORSE_SIGNALS at 0.
+                morseSignalIndex = charVal - static_cast<uint8_t>('a');
+            }
+            else if (0 != std::isdigit(charVal))
+            {
+                // Digits start at ASCII 48, and index MORSE_SIGNALS at 26
+                morseSignalIndex = charVal - static_cast<uint8_t>('0') + DIGIT_SIGNAL_INDEX;
+            }
+            else if (charVal == static_cast<uint8_t>(' '))
+            {
+                // Spaces are word breaks
+                morseSignalIndex = WORD_BREAK_SIGNAL_INDEX;
+            }
+            else if (charVal == static_cast<uint8_t>('\0'))
+            {
+                // Null terminator is the end of message marker
+                morseSignalIndex = MESSAGE_END_SIGNAL_INDEX;
+            }
+            else
+            {
+                // All other characters are invalid.  Ignore and move to the next one.
+                continue;
+            }
+
+            MORSE_MESSAGE[messageOutputPosition++] = MORSE_SIGNALS[morseSignalIndex];
+        }
+
+        // Start with the LEDs off
+        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+
+        // Start the timer
+        pMorseTimer->Reset();
+        pMorseTimer->Start();
+
+        bInit = true;
+    }
 
     // Deliberately start this index as all Fs so the initial state change rolls over.
-    // The use of (true) with the ternary operator is to silence unused variable warnings.
     static uint32_t currentCharacterSignalIndex = 0xFFFFFFFFU;
     static uint32_t currentCharacterIndex = 0U;
-    static const MorseCodeSignal * pCurrentMorseCharacter = (true) ? MORSE_MESSAGE[0] : ALPHANUMERIC_MESSAGE[0];
+    static const MorseCodeSignal * pCurrentMorseCharacter = MORSE_MESSAGE[0];
 
     // Signal display and time variables
     constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_UNIT_S = 0.25_s;
     constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DOT = SIGNAL_DISPLAY_TIME_UNIT_S;
     constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DASH = SIGNAL_DISPLAY_TIME_UNIT_S * 3.0;
     static units::time::second_t currentSignalDisplayLengthSeconds = 1.0_s;
-    static Timer * pMorseTimer = new Timer();
-    static bool bInit = false;
-
-    // Start the timer
-    if (!bInit)
-    {
-        // Start with the LEDs off
-        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
-        pMorseTimer->Reset();
-        pMorseTimer->Start();
-        bInit = true;
-    }
 
     // Check if a signal change is required
     if (pMorseTimer->Get() > currentSignalDisplayLengthSeconds)
