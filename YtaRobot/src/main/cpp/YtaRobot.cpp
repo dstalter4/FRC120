@@ -1632,7 +1632,7 @@ void YtaRobot::SwerveDriveSequence()
         m_pSwerveDrive->LockWheels();
     }
 
-    constexpr const double SWERVE_LIMITING_FACTOR = 0.50;
+    constexpr const double SWERVE_LIMITING_FACTOR = 0.40;
     static bool bSwerveOutputLimited = false;
     if (m_pAuxController->DetectButtonChange(AUX_LIMIT_SWERVE_OUTPUT_BUTTON))
     {

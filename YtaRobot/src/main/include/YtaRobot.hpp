@@ -493,7 +493,7 @@ private:
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 49.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 48.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 25.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 38.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_AMP_SHOT_STEP       =  4.0_deg;

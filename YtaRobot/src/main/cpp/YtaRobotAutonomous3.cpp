@@ -105,7 +105,7 @@ void YtaRobot::AutonomousRoutine3()
     RobotStrafe autoMoveToMidlineStrafe = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotStrafe::ROBOT_STRAFE_LEFT : RobotStrafe::ROBOT_STRAFE_RIGHT;
     RobotRotation autoMoveToMidlineRotation = (m_AllianceColor.value() == DriverStation::Alliance::kRed) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE;
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, autoMoveToMidlineStrafe, autoMoveToMidlineRotation);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.25, 0.50, 0.08, 1.75_s, true);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.25, 0.50, 0.07, 1.75_s, true);
     AutonomousDelay(0.1_s);
 
     // The robot is roughly on the midline now, facing the amp wall.
