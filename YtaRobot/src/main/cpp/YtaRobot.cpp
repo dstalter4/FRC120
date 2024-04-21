@@ -1189,7 +1189,8 @@ void YtaRobot::BlinkMorseCodePattern()
         END_MARKER,
         DOT,
         DASH,
-        EMPTY
+        EMPTY,
+        INVALID
     };
 
     // Alphanumerical characters include the letter break.
@@ -1231,20 +1232,57 @@ void YtaRobot::BlinkMorseCodePattern()
     constexpr const MorseCodeSignal MORSE_7[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
     constexpr const MorseCodeSignal MORSE_8[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
     constexpr const MorseCodeSignal MORSE_9[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
-    constexpr const MorseCodeSignal MORSE_WORD_BREAK[] = {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
-    constexpr const MorseCodeSignal MORSE_MESSAGE_END[] = {END_MARKER};
-    const MorseCodeSignal * MORSE_SIGNALS[] = {MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G, MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M,
-                                               MORSE_N, MORSE_O, MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W, MORSE_X, MORSE_Y, MORSE_Z,
-                                               MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7, MORSE_8, MORSE_9, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
-    constexpr const uint32_t DIGIT_SIGNAL_INDEX = 26U;
-    constexpr const uint32_t WORD_BREAK_SIGNAL_INDEX = 36U;
-    constexpr const uint32_t MESSAGE_END_SIGNAL_INDEX = 37U;
+    constexpr const MorseCodeSignal MORSE_PERIOD[] =            {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_COMMA[] =             {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_QUESTION_MARK[] =     {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_SINGLE_QUOTE[] =      {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_FORWARD_SLASH[] =     {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_OPEN_PARENTHESIS[] =  {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_CLOSE_PARENTHESIS[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_COLON[] =             {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_EQUAL[] =             {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_PLUS[] =              {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_HYPHEN[] =            {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_DOUBLE_QUOTE[] =      {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_AT[] =                {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_EXCLAMATION[] =       {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_AMPERSAND[] =         {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_SEMICOLON[] =         {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_UNDERSCORE[] =        {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_DOLLAR_SIGN[] =       {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_WORD_BREAK[] =        {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_MESSAGE_END[] =       {END_MARKER};
+    constexpr const MorseCodeSignal MORSE_INVALID[] =           {INVALID};
+
+    // This table is kept in the same order as the ASCII table to facilitate easy conversion/indexing
+    const MorseCodeSignal * MORSE_SIGNALS[] = {
+                                                // 0 - 31
+                                                MORSE_MESSAGE_END, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                // 32 - 63
+                                                MORSE_WORD_BREAK, MORSE_EXCLAMATION, MORSE_DOUBLE_QUOTE, MORSE_INVALID, MORSE_DOLLAR_SIGN, MORSE_INVALID, MORSE_AMPERSAND, MORSE_SINGLE_QUOTE,
+                                                MORSE_OPEN_PARENTHESIS, MORSE_CLOSE_PARENTHESIS, MORSE_INVALID, MORSE_PLUS, MORSE_COMMA, MORSE_HYPHEN, MORSE_PERIOD, MORSE_FORWARD_SLASH,
+                                                MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7,
+                                                MORSE_8, MORSE_9, MORSE_COLON, MORSE_SEMICOLON, MORSE_INVALID, MORSE_EQUAL, MORSE_INVALID, MORSE_QUESTION_MARK,
+                                                // 64 - 95
+                                                MORSE_AT, MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G,
+                                                MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M, MORSE_N, MORSE_O,
+                                                MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W,
+                                                MORSE_X, MORSE_Y, MORSE_Z, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_UNDERSCORE,
+                                                // 96-127
+                                                MORSE_INVALID, MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G,
+                                                MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M, MORSE_N, MORSE_O,
+                                                MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W,
+                                                MORSE_X, MORSE_Y, MORSE_Z, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID
+                                              };
 
     // Old approach commented out (uses a constant variable length array of pointers instead of fixed length array/string conversion).
     //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
     static const size_t MORSE_MSG_MAX_LENGTH = 128U;
     static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
-    static const char MORSE_STRING[] = "SOS";
+    static const char MORSE_STRING[] = "S.O.S.";
     static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
     static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
 
@@ -1258,50 +1296,25 @@ void YtaRobot::BlinkMorseCodePattern()
         size_t messageOutputPosition = 0U;
         for (size_t i = 0U; i < MORSE_STRING_SIZE; i++)
         {
-            // ASCII: 0 = 48, A = 65, a = 97
-            // MORSE_SIGNALS: 0-25 = A-Z, 26-35 = 0-9, 36-37 = end markers
-
             // Convert the character to its integer representation
             uint8_t charVal = static_cast<uint8_t>(MORSE_STRING[i]);
+            const uint8_t NUM_ASCII_TABLE_ENTRIES = 128U;
 
-            // Default the morse signal index to message end
-            size_t morseSignalIndex = (sizeof(MORSE_SIGNALS) / sizeof(MORSE_SIGNALS[0])) - 1U;
-
-            // Check the character type and compute the appropriate signal index
-            if (0 != std::isupper(charVal))
+            // Make sure the index is in range
+            if (charVal >= NUM_ASCII_TABLE_ENTRIES)
             {
-                // Uppercase/lowercase letters have the same Morse signal.
-                // Uppercase starts at ASCII 65, and index MORSE_SIGNALS at 0.
-                morseSignalIndex = charVal - static_cast<uint8_t>('A');
-            }
-            else if (0 != std::islower(charVal))
-            {
-                // Uppercase/lowercase letters have the same Morse signal.
-                // Lowercase starts at ASCII 97, and index MORSE_SIGNALS at 0.
-                morseSignalIndex = charVal - static_cast<uint8_t>('a');
-            }
-            else if (0 != std::isdigit(charVal))
-            {
-                // Digits start at ASCII 48, and index MORSE_SIGNALS at 26
-                morseSignalIndex = charVal - static_cast<uint8_t>('0') + DIGIT_SIGNAL_INDEX;
-            }
-            else if (charVal == static_cast<uint8_t>(' '))
-            {
-                // Spaces are word breaks
-                morseSignalIndex = WORD_BREAK_SIGNAL_INDEX;
-            }
-            else if (charVal == static_cast<uint8_t>('\0'))
-            {
-                // Null terminator is the end of message marker
-                morseSignalIndex = MESSAGE_END_SIGNAL_INDEX;
-            }
-            else
-            {
-                // All other characters are invalid.  Ignore and move to the next one.
+                // A not basic ASCII value was found at the current character position, move on
                 continue;
             }
 
-            MORSE_MESSAGE[messageOutputPosition++] = MORSE_SIGNALS[morseSignalIndex];
+            // Get the character's Morse code signal
+            const MorseCodeSignal * pThisCharacterMorseSignal = MORSE_SIGNALS[charVal];
+
+            // If the Morse character is valid, add it to the message
+            if (pThisCharacterMorseSignal[0] != INVALID)
+            {
+                MORSE_MESSAGE[messageOutputPosition++] = pThisCharacterMorseSignal;
+            }
         }
 
         // Start with the LEDs off
