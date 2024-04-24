@@ -1193,7 +1193,7 @@ void YtaRobot::BlinkMorseCodePattern()
         INVALID
     };
 
-    // Alphanumerical characters include the letter break.
+    // Characters include the terminating break.
     // The word break only contains four empty signals because
     // the characters always end with the first three empty signals.
     constexpr const MorseCodeSignal MORSE_A[] = {DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
@@ -1313,6 +1313,13 @@ void YtaRobot::BlinkMorseCodePattern()
             // If the Morse character is valid, add it to the message
             if (pThisCharacterMorseSignal[0] != INVALID)
             {
+                // The only character with end marker first is the end of message marker.
+                // End of message also needs an end of word inserted, so we have to manually
+                // handle that here.
+                if (pThisCharacterMorseSignal[0] == END_MARKER)
+                {
+                    MORSE_MESSAGE[messageOutputPosition++] = MORSE_WORD_BREAK;
+                }
                 MORSE_MESSAGE[messageOutputPosition++] = pThisCharacterMorseSignal;
             }
         }
