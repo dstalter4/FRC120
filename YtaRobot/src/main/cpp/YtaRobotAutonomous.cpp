@@ -46,10 +46,8 @@ void YtaRobot::AutonomousInit()
     // Autonomous needs full camera processing
     RobotCamera::SetFullProcessing(true);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_ON);
-    
-    // Indicate to the I2C thread to get data more often
-    RobotI2c::SetThreadUpdateRate(YtaRobotAutonomous::I2C_THREAD_UPDATE_RATE_MS);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
+    RobotCamera::SetLimelightPipeline(0);
 }
 
 
@@ -106,6 +104,12 @@ void YtaRobot::AutonomousPeriodic()
     {
         RobotUtils::DisplayMessage("Auto routine 3.");
         AutonomousRoutine3();
+    }
+    
+    // No autonomous routine
+    else if (selectedAutoRoutineString == AUTO_NO_ROUTINE_STRING)
+    {
+        RobotUtils::DisplayMessage("No autonomous routine.");
     }
 
     /* !!! ONLY ENABLE TEST AUTONOMOUS CODE WHEN TESTING

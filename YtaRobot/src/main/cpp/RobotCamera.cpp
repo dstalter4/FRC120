@@ -5,7 +5,7 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -43,6 +43,7 @@ std::vector<std::vector<cv::Point>>             RobotCamera::m_FilteredContours;
 
 std::vector<RobotCamera::VisionTargetReport>    RobotCamera::m_ContourTargetReports;
 RobotCamera::VisionTargetReport                 RobotCamera::m_VisionTargetReport;
+bool                                            RobotCamera::m_bThreadReleased;
 bool                                            RobotCamera::m_bDoFullProcessing;
 unsigned                                        RobotCamera::m_CameraHeartBeat;
 const char *                                    RobotCamera::CAMERA_OUTPUT_NAME = "Camera Output";
@@ -178,7 +179,12 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 ////////////////////////////////////////////////////////////////
 void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
 {
+    // Make sure the robot object has been created (the thread will start running very early)
     YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+    if (pRobotObj == nullptr)
+    {
+        return;
+    }
 
     // Get the x-axis target value
     double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
@@ -274,12 +280,21 @@ void RobotCamera::LimelightThread()
     RobotUtils::DisplayMessage("Limelight vision thread detached.");
     
     // Get the limelight network table
-    while (m_pLimelightNetworkTable == nullptr)
+    while (m_pLimelightNetworkTable.get() == nullptr)
     {
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
         m_pLimelightNetworkTable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
     }
 
     RobotUtils::DisplayMessage("Limelight network table found.");
+
+    // Wait for the robot program to release the thread
+    while (m_bThreadReleased == false)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
+    }
+
+    RobotUtils::DisplayMessage("Limelight thread released.");
 
     // Enable port forwarding for the limelight while tethered via USB
     const int LIMELIGHT_START_PORT = 5800;
@@ -290,6 +305,9 @@ void RobotCamera::LimelightThread()
     }
 
     // The limelight camera mode will be set by autonomous or teleop
+    // Set a limelight priority (e.g. for the April tags)
+    const uint32_t LIMELIGHT_PRIORITY = 1U;
+    m_pLimelightNetworkTable->PutNumber("priorityid", LIMELIGHT_PRIORITY);
     
     while (true)
     {
@@ -310,6 +328,11 @@ void RobotCamera::VisionThread()
 {
     // Indicate the thread has been started
     RobotUtils::DisplayMessage("Vision thread detached.");
+
+    cs::UsbCamera camera = CameraServer::StartAutomaticCapture();
+    camera.SetResolution(UsbCameraInfo::DEFAULT_X_RESOLUTION, UsbCameraInfo::DEFAULT_Y_RESOLUTION);
+    camera.SetFPS(UsbCameraInfo::DEFAULT_FPS);
+
     while (true)
     {
         // Be sure to relinquish the CPU when done
@@ -330,6 +353,7 @@ void RobotCamera::VisionThread()
     }
     */
     
+    /*
     // Sample WPI code
     cs::UsbCamera camera = CameraServer::StartAutomaticCapture();
     camera.SetResolution(160, 120);
@@ -338,12 +362,17 @@ void RobotCamera::VisionThread()
     cs::CvSource outputStreamStd = CameraServer::PutVideo("Camera Output", 160, 120);    // "Gray"
     //cv::Mat source;
     //cv::Mat output;
-    cv::Mat frame;
+    //cv::Mat frame;
     while(true) {
         //cvSink.GrabFrame(frame);//source);
         //cvtColor(source, output, cv::COLOR_BGR2GRAY);
         //outputStreamStd.PutFrame(frame);//output);
     }
+    */
+
+   // The robot program should never reach this point.
+   // Code below here is old and untested in recent years.
+   ASSERT(false);
     
     // Clear the memory used for the camera storage
     std::memset(reinterpret_cast<void*>(&m_UsbCameras), 0U, sizeof(UsbCameraStorage));

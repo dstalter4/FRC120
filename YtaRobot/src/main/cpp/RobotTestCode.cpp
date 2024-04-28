@@ -6,18 +6,20 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
 // <none>
 
 // C INCLUDES
-#include "rev/CANSparkMax.h"    // for interacting with spark max motor controllers
+#include "frc/BuiltInAccelerometer.h"   // for using the built-in accelerometer
+#include "frc/DutyCycleEncoder.h"       // for through bore encoder test
+#include "rev/CANSparkMax.h"            // for interacting with spark max motor controllers
 
 // C++ INCLUDES
-#include "RobotUtils.hpp"       // for DisplayMessage(), DisplayFormattedMessage()
-#include "YtaRobot.hpp"         // for robot class declaration
+#include "RobotUtils.hpp"               // for DisplayMessage(), DisplayFormattedMessage()
+#include "YtaRobot.hpp"                 // for robot class declaration
 
 
 // Helper macro to get the robot object, only for use in test class code
@@ -55,6 +57,7 @@ public:
 
     static void TimeTest();
     static void ButtonChangeTest();
+    static void SensorTest();
     static void AccelerometerTest();
     static void CandleLedsTest();
     static void RelayLedsTest();
@@ -67,7 +70,7 @@ private:
     // Singleton test object with members bound by reference to YtaRobot member objects.
     /*
     YtaRobotTest() :
-        m_pAccelerometer(YtaRobot::GetRobotInstance()->m_pAccelerometer)
+        m_rpDebugOutput(YtaRobot::GetRobotInstance()->m_pDebugOutput)
     {
     }
     static YtaRobotTest * GetInstance() { return m_pRobotTestObj; }
@@ -77,7 +80,7 @@ private:
     }
 
     static YtaRobotTest * m_pRobotTestObj;
-    BuiltInAccelerometer *& m_pAccelerometer;
+    DigitalOutput *& m_rpDebugOutput;
     */
 };
 
@@ -124,6 +127,7 @@ void YtaRobot::TestPeriodic()
     //YtaRobotTest::SuperstructureTest();
     //YtaRobotTest::TimeTest();
     //YtaRobotTest::ButtonChangeTest();
+    //YtaRobotTest::SensorTest();
     //YtaRobotTest::AccelerometerTest();
     //YtaRobotTest::CandleLedsTest();
     //YtaRobotTest::RelayLedsTest();
@@ -171,63 +175,40 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SuperstructureTest()
 {
-    // Intakes run opposite each other
-    static TalonFX * pIntake1 = new TalonFX(5);
-    static TalonFX * pIntake2 = new TalonFX(6);
-    // Feeders run opposite each other
-    static TalonFX * pFeeder1 = new TalonFX(7);
-    static TalonFX * pFeeder2 = new TalonFX(8);
-    // Shooters run opposite each other
-    static TalonFX * pShooter1 = new TalonFX(9);
-    static TalonFX * pShooter2 = new TalonFX(10);
-    // Hanger
-    static TalonFX * pWinch = new TalonFX(11);
-    
-    while (m_pJoystick->GetRawButton(1))
+    static TalonFX * pTalonFx9 = new TalonFX(9);
+    static TalonFX * pTalonFx10 = new TalonFX(10);
+    static TalonFX * pTalonFx11 = new TalonFX(11);
+    static TalonFX * pTalonFx12 = new TalonFX(12);
+    static DutyCycleOut dutyCycleOut9(0.0);
+    static DutyCycleOut dutyCycleOut10(0.0);
+    static DutyCycleOut dutyCycleOut11(0.0);
+    static DutyCycleOut dutyCycleOut12(0.0);
+
+    dutyCycleOut9.Output = 0.0;
+    dutyCycleOut10.Output = 0.0;
+    dutyCycleOut11.Output = 0.0;
+    dutyCycleOut12.Output = 0.0;
+
+    if (m_pJoystick->GetRawButton(1))
     {
-        pIntake1->Set(ControlMode::PercentOutput, 0.3);
-        pIntake2->Set(ControlMode::PercentOutput, 0.3);
+        dutyCycleOut9.Output = 0.1;
     }
-    pIntake1->Set(ControlMode::PercentOutput, 0.0);
-    pIntake2->Set(ControlMode::PercentOutput, 0.0);
-    while (m_pJoystick->GetRawButton(2))
+    if (m_pJoystick->GetRawButton(2))
     {
-        pFeeder1->Set(ControlMode::PercentOutput, -0.3);
-        pFeeder2->Set(ControlMode::PercentOutput, 0.3);
+        dutyCycleOut10.Output = 0.1;
     }
-    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
-    while (m_pJoystick->GetRawButton(3))
+    if (m_pJoystick->GetRawButton(3))
     {
-        pShooter1->Set(ControlMode::PercentOutput, 0.3);
-        pShooter2->Set(ControlMode::PercentOutput, -0.3);
+        dutyCycleOut11.Output = 0.1;
     }
-    pShooter1->Set(ControlMode::PercentOutput, 0.0);
-    pShooter2->Set(ControlMode::PercentOutput, 0.0);
-    while (m_pJoystick->GetRawButton(4))
+    if (m_pJoystick->GetRawButton(4))
     {
-        pIntake1->Set(ControlMode::PercentOutput, 0.3);
-        pIntake1->Set(ControlMode::PercentOutput, -0.3);
-        pFeeder1->Set(ControlMode::PercentOutput, -0.5);
-        pFeeder2->Set(ControlMode::PercentOutput, 0.5);
-        pShooter1->Set(ControlMode::PercentOutput, 1.0);
-        pShooter2->Set(ControlMode::PercentOutput, -1.0);
+        dutyCycleOut12.Output = 0.1;
     }
-    pIntake1->Set(ControlMode::PercentOutput, 0.0);
-    pIntake2->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder1->Set(ControlMode::PercentOutput, 0.0);
-    pFeeder2->Set(ControlMode::PercentOutput, 0.0);
-    pShooter1->Set(ControlMode::PercentOutput, 0.0);
-    pShooter2->Set(ControlMode::PercentOutput, 0.0);
-    while (m_pJoystick->GetRawButton(5))
-    {
-        pWinch->Set(ControlMode::PercentOutput, 1.0);
-    }
-    while (m_pJoystick->GetRawButton(6))
-    {
-        pWinch->Set(ControlMode::PercentOutput, -1.0);
-    }
-    pWinch->Set(ControlMode::PercentOutput, 0.0);
+    pTalonFx9->SetControl(dutyCycleOut9);
+    pTalonFx10->SetControl(dutyCycleOut10);
+    pTalonFx11->SetControl(dutyCycleOut11);
+    pTalonFx12->SetControl(dutyCycleOut12);
 }
 
 
@@ -240,36 +221,63 @@ void YtaRobotTest::SuperstructureTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::CtreSpeedControllerTest()
 {
-    static TalonFX * pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
-    static TalonFX * pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
-    static TalonFX * pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
-    static TalonFX * pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
-    
+    TalonFX * pLeft1 = nullptr;
+    TalonFX * pLeft2 = nullptr;
+    TalonFX * pRight1 = nullptr;
+    TalonFX * pRight2 = nullptr;
+    // Alternative control objects for testing with Phoenix 6
+    //static DutyCycleOut dutyCycleOut(0.0);
+    //static PositionVoltage positionVoltage(0.0_tr);
+    static bool bCreatedObjs = false;
+
+    // This approach is used instead of static objects in case calling
+    // constructors at program startup create the TalonFX objects instead
+    // of first function invocation.  The TalonFX IDs may be invalid in
+    // some scenarios.
+    if (!bCreatedObjs)
+    {
+        pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
+        pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
+        pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
+        pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
+        bCreatedObjs = true;
+    }
+ 
+    // Starting in 2024, wpilib seemed to update how DriverStation::RefreshData() is
+    // called (see IterativeRobotBase::LoopFunc()).  In order to use loops below
+    // (instead of conditional statements), manual calls to RefreshData() are required.
+    // Otherwise the loop never relinquishes thread control and the code never makes it
+    // back to LoopFunc().  This admittedly is bad practice, but it's test code.
+
     while (m_pJoystick->GetRawButton(1))
     {
-        pLeft1->Set(ControlMode::PercentOutput, 1.0);
-        pLeft2->Set(ControlMode::PercentOutput, 1.0);
+        pLeft1->Set(1.0);
+        pLeft2->Set(1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(2))
     {
-        pLeft1->Set(ControlMode::PercentOutput, -1.0);
-        pLeft2->Set(ControlMode::PercentOutput, -1.0);
+        pLeft1->Set(-1.0);
+        pLeft2->Set(-1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(3))
     {
-        pRight1->Set(ControlMode::PercentOutput, 1.0);
-        pRight2->Set(ControlMode::PercentOutput, 1.0);
+        pRight1->Set(1.0);
+        pRight2->Set(1.0);
+        DriverStation::RefreshData();
     }
     while (m_pJoystick->GetRawButton(4))
     {
-        pRight1->Set(ControlMode::PercentOutput, -1.0);
-        pRight2->Set(ControlMode::PercentOutput, -1.0);
+        pRight1->Set(-1.0);
+        pRight2->Set(-1.0);
+        DriverStation::RefreshData();
     }
     
-    pLeft1->Set(ControlMode::PercentOutput, 0.0);
-    pLeft2->Set(ControlMode::PercentOutput, 0.0);
-    pRight1->Set(ControlMode::PercentOutput, 0.0);
-    pRight2->Set(ControlMode::PercentOutput, 0.0);
+    pLeft1->Set(0.0);
+    pLeft2->Set(0.0);
+    pRight1->Set(0.0);
+    pRight2->Set(0.0);
 }
 
 
@@ -282,8 +290,8 @@ void YtaRobotTest::CtreSpeedControllerTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::RevSpeedControllerTest()
 {
-    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
-    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkMaxLowLevel::MotorType::kBrushless);
+    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkLowLevel::MotorType::kBrushless);
+    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkLowLevel::MotorType::kBrushless);
 
     while (m_pJoystick->GetRawButton(1))
     {
@@ -478,6 +486,20 @@ void YtaRobotTest::ButtonChangeTest()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::SensorTest
+///
+/// Test code to verify a sensor behavior.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::SensorTest()
+{
+    static DutyCycleEncoder * pRevThroughBoreEncoder = new DutyCycleEncoder(YtaRobot::SENSOR_TEST_CODE_DIO_CHANNEL);
+    (void)pRevThroughBoreEncoder->Get();
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobotTest::AccelerometerTest
 ///
 /// Test code to verify the built in accelerometer.
@@ -486,9 +508,10 @@ void YtaRobotTest::ButtonChangeTest()
 void YtaRobotTest::AccelerometerTest()
 {
     // Test code for reading the built in accelerometer
-    double x = YTA_ROBOT_OBJ()->m_pAccelerometer->GetX();
-    double y = YTA_ROBOT_OBJ()->m_pAccelerometer->GetY();
-    double z = YTA_ROBOT_OBJ()->m_pAccelerometer->GetZ();
+    static BuiltInAccelerometer * pAccelerometer = new BuiltInAccelerometer();
+    double x = pAccelerometer->GetX();
+    double y = pAccelerometer->GetY();
+    double z = pAccelerometer->GetZ();
     RobotUtils::DisplayFormattedMessage("x: %f, y: %f, z: %f\n", x, y, z);
 }
 

@@ -5,13 +5,14 @@
 /// @details
 /// Contains declarations of utility macros/routines for the robot code.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTUTILS_HPP
 #define ROBOTUTILS_HPP
 
 // SYSTEM INCLUDES
+#include <cassert>                              // for assert()
 #include <cstdarg>                              // for va_*
 #include <cstdio>                               // for printf
 #include <iostream>                             // for cout
@@ -36,6 +37,17 @@
     }                                                       \
     while (false);
 
+extern void ConstantExpressionAssert();
+#define ASSERT_CONSTEXPR(condition)                         \
+do                                                          \
+{                                                           \
+    if (!(condition))                                       \
+    {                                                       \
+        ConstantExpressionAssert();                         \
+    }                                                       \
+}                                                           \
+while (false);
+
 #define STRINGIFY(s) #s
 
 #define DISABLE_WARNING(flag)                               \
@@ -54,6 +66,20 @@
 ////////////////////////////////////////////////////////////////
 namespace RobotUtils
 {
+    // For use with creating more advanced SmartDashboard prints
+    struct DebugDigits
+    {
+        unsigned m_1;
+        unsigned m_10;
+        unsigned m_100;
+        unsigned m_1000;
+        unsigned m_10000;
+        unsigned m_100000;
+        unsigned m_1000000;
+        DebugDigits() : m_1(), m_10(), m_100(), m_1000(), m_10000(), m_100000(), m_1000000() {}
+        inline unsigned Value() { return (m_1 + m_10 + m_100 + m_1000 + m_10000 + m_100000 + m_1000000); }
+    };
+
     static const bool DEBUG_PRINTS = true;
     
     ////////////////////////////////////////////////////////////////
