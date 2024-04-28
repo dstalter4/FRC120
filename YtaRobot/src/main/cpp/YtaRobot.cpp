@@ -8,10 +8,11 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
+#include <cctype>                       // for alphanumeric character checking
 #include <cstddef>                      // for nullptr
 #include <cstring>                      // for memset
 
@@ -21,7 +22,6 @@
 // C++ INCLUDES
 #include "YtaRobot.hpp"                 // for class declaration (and other headers)
 #include "RobotCamera.hpp"              // for interacting with cameras
-#include "RobotI2c.hpp"                 // for I2cThread()
 #include "RobotUtils.hpp"               // for Trim(), Limit() and DisplayMessage()
 
 // STATIC MEMBER VARIABLES
@@ -36,30 +36,25 @@ YtaRobot * YtaRobot::m_pThis;
 ////////////////////////////////////////////////////////////////
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
+    m_AutoSwerveDirections              (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
-    m_pLeftDriveMotors                  (new TalonMotorGroup<TalonFX>("Left Drive", NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
-    m_pRightDriveMotors                 (new TalonMotorGroup<TalonFX>("Right Drive", NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralMode::Brake, FeedbackDevice::IntegratedSensor, true)),
+    m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
-    m_pTalonCoolingSolenoid             (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, TALON_COOLING_SOLENOID_FWD_CHANNEL, TALON_COOLING_SOLENOID_REV_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pMatchModeTimer                   (new Timer()),
     m_pSafetyTimer                      (new Timer()),
-    m_pAccelerometer                    (new BuiltInAccelerometer),
-    m_pAdxrs450Gyro                     (nullptr),
-    m_Bno055Angle                       (),
     m_CameraThread                      (RobotCamera::LimelightThread),
-    m_SerialPortBuffer                  (),
-    m_pSerialPort                       (new SerialPort(SERIAL_PORT_BAUD_RATE, SerialPort::kMXP, SERIAL_PORT_NUM_DATA_BITS, SerialPort::kParity_None, SerialPort::kStopBits_One)),
-    m_I2cThread                         (RobotI2c::I2cThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bDriveSwap                        (false),
+    m_bCameraAlignInProgress            (false),
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
@@ -68,9 +63,11 @@ YtaRobot::YtaRobot() :
     LiveWindow::SetEnabled(false);
     
     // Set the autonomous options
+    // @todo: Update these outside the constructor?
     m_AutonomousChooser.SetDefaultOption(AUTO_ROUTINE_1_STRING, AUTO_ROUTINE_1_STRING);
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_2_STRING, AUTO_ROUTINE_2_STRING);
     m_AutonomousChooser.AddOption(AUTO_ROUTINE_3_STRING, AUTO_ROUTINE_3_STRING);
+    m_AutonomousChooser.AddOption(AUTO_NO_ROUTINE_STRING, AUTO_NO_ROUTINE_STRING);
     m_AutonomousChooser.AddOption(AUTO_TEST_ROUTINE_STRING, AUTO_TEST_ROUTINE_STRING);
     SmartDashboard::PutData("Autonomous Modes", &m_AutonomousChooser);
     
@@ -85,22 +82,10 @@ YtaRobot::YtaRobot() :
     m_pCandle->ConfigAllSettings(candleConfig);
     m_pCandle->Animate(m_RainbowAnimation);
 
-    // Construct the ADXRS450 gyro if configured
-    if (ADXRS450_GYRO_PRESENT)
-    {
-        m_pAdxrs450Gyro = new ADXRS450_Gyro();
-    }
-
-    // Reset the serial port and clear buffer
-    m_pSerialPort->Reset();
-    std::memset(&m_SerialPortBuffer, 0U, sizeof(m_SerialPortBuffer));
-    
-    // Spawn the vision and I2C threads
-    // @todo: Use a control variable to prevent the threads from executing too soon.
+    // Spawn the vision thread
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     m_CameraThread.detach();
-    m_I2cThread.detach();
 }
 
 
@@ -175,6 +160,7 @@ void YtaRobot::ConfigureMotorControllers()
     // BaseTalonConfiguration constructor with FeedbackDevice::IntegratedSensor.
 
     /*
+    // @todo_phoenix6: Update the example for the new API.
     // Example configuration
     TalonFXConfiguration talonConfig;
     talonConfig.slot0.kP = 0.08;
@@ -212,9 +198,6 @@ void YtaRobot::InitialStateSetup()
     // First reset any member data
     ResetMemberData();
 
-    // Solenoids to known state
-    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
-    
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
     m_pMatchModeTimer->Stop();
@@ -230,7 +213,10 @@ void YtaRobot::InitialStateSetup()
 
     // Set the LEDs to the alliance color
     SetLedsToAllianceColor();
-    
+
+    // Indicate the camera thread can continue
+    RobotCamera::ReleaseThread();
+
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
 
@@ -258,17 +244,10 @@ void YtaRobot::TeleopInit()
     // Tele-op won't do detailed processing of the images unless instructed to
     RobotCamera::SetFullProcessing(false);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
-    
-    // Indicate to the I2C thread to get data less often
-    RobotI2c::SetThreadUpdateRate(I2C_RUN_INTERVAL_MS);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
-
-    // Set the swerve modules to a known angle.  This (somehow) mitigates
-    // the random spin when enabling teleop until it can be investigated.
-    m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.10, true, true);
 }
 
 
@@ -289,25 +268,23 @@ void YtaRobot::TeleopPeriodic()
 
     if (Yta::Drive::Config::USE_SWERVE_DRIVE)
     {
-        SwerveDriveSequence();
+        if (!m_bCameraAlignInProgress)
+        {
+            SwerveDriveSequence();
+        }
     }
     else
     {
         DriveControlSequence();
     }
 
-    //SuperStructureSequence();
-    CheckAndResetEncoderCounts();
-
-    PneumaticSequence();
-
-    //SerialPortSequence();
-    
-    //I2cSequence();
+    //PneumaticSequence();
     
     //CameraSequence();
 
-    LedSequence();
+    //LedSequence();
+    //BlinkMorseCodePattern();
+    //MusicSequence();
 
     UpdateSmartDashboard();
 }
@@ -325,34 +302,6 @@ void YtaRobot::UpdateSmartDashboard()
     // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
     // Nothing to send yet
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::SuperStructureTestSequence
-///
-/// Quick super structure test.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::SuperStructureTestSequence()
-{
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::CheckAndResetEncoderCounts
-///
-/// Checks for driver input to rezero all encoder counts.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::CheckAndResetEncoderCounts()
-{
-    if (m_pDriveController->GetButtonState(DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START) && m_pAuxController->GetButtonState(AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START))
-    {
-        // Nothing to reset yet
-    }
 }
 
 
@@ -507,6 +456,343 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::BlinkMorseCodePattern
+///
+/// This method contains the main workflow for blinking a Morse
+/// code pattern through the robot LEDs.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::BlinkMorseCodePattern()
+{
+    enum MorseCodeSignal
+    {
+        END_MARKER,
+        DOT,
+        DASH,
+        EMPTY,
+        INVALID
+    };
+
+    // Characters include the terminating break.
+    // The word break only contains four empty signals because
+    // the characters always end with the first three empty signals.
+    constexpr const MorseCodeSignal MORSE_A[] = {DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_B[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_C[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_D[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_E[] = {DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_F[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_G[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_H[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_I[] = {DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_J[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_K[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_L[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_M[] = {DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_N[] = {DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_O[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_P[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Q[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_R[] = {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_S[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_T[] = {DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_U[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_V[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_W[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_X[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Y[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_Z[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_0[] = {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_1[] = {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_2[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_3[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_4[] = {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_5[] = {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_6[] = {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_7[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_8[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_9[] = {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_PERIOD[] =            {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_COMMA[] =             {DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_QUESTION_MARK[] =     {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_SINGLE_QUOTE[] =      {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_FORWARD_SLASH[] =     {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_OPEN_PARENTHESIS[] =  {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_CLOSE_PARENTHESIS[] = {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_COLON[] =             {DASH, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_EQUAL[] =             {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_PLUS[] =              {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_HYPHEN[] =            {DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_DOUBLE_QUOTE[] =      {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_AT[] =                {DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_EXCLAMATION[] =       {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_AMPERSAND[] =         {DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_SEMICOLON[] =         {DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_UNDERSCORE[] =        {DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DASH, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_DOLLAR_SIGN[] =       {DOT, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, DOT, EMPTY, DOT, EMPTY, DASH, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_WORD_BREAK[] =        {EMPTY, EMPTY, EMPTY, EMPTY, END_MARKER};
+    constexpr const MorseCodeSignal MORSE_MESSAGE_END[] =       {END_MARKER};
+    constexpr const MorseCodeSignal MORSE_INVALID[] =           {INVALID};
+
+    // This table is kept in the same order as the ASCII table to facilitate easy conversion/indexing
+    const MorseCodeSignal * MORSE_SIGNALS[] = {
+                                                // 0 - 31
+                                                MORSE_MESSAGE_END, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID,
+                                                // 32 - 63
+                                                MORSE_WORD_BREAK, MORSE_EXCLAMATION, MORSE_DOUBLE_QUOTE, MORSE_INVALID, MORSE_DOLLAR_SIGN, MORSE_INVALID, MORSE_AMPERSAND, MORSE_SINGLE_QUOTE,
+                                                MORSE_OPEN_PARENTHESIS, MORSE_CLOSE_PARENTHESIS, MORSE_INVALID, MORSE_PLUS, MORSE_COMMA, MORSE_HYPHEN, MORSE_PERIOD, MORSE_FORWARD_SLASH,
+                                                MORSE_0, MORSE_1, MORSE_2, MORSE_3, MORSE_4, MORSE_5, MORSE_6, MORSE_7,
+                                                MORSE_8, MORSE_9, MORSE_COLON, MORSE_SEMICOLON, MORSE_INVALID, MORSE_EQUAL, MORSE_INVALID, MORSE_QUESTION_MARK,
+                                                // 64 - 95
+                                                MORSE_AT, MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G,
+                                                MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M, MORSE_N, MORSE_O,
+                                                MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W,
+                                                MORSE_X, MORSE_Y, MORSE_Z, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_UNDERSCORE,
+                                                // 96-127
+                                                MORSE_INVALID, MORSE_A, MORSE_B, MORSE_C, MORSE_D, MORSE_E, MORSE_F, MORSE_G,
+                                                MORSE_H, MORSE_I, MORSE_J, MORSE_K, MORSE_L, MORSE_M, MORSE_N, MORSE_O,
+                                                MORSE_P, MORSE_Q, MORSE_R, MORSE_S, MORSE_T, MORSE_U, MORSE_V, MORSE_W,
+                                                MORSE_X, MORSE_Y, MORSE_Z, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID, MORSE_INVALID
+                                              };
+
+    // Old approach commented out (uses a constant variable length array of pointers instead of fixed length array/string conversion).
+    //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
+    static const size_t MORSE_MSG_MAX_LENGTH = 128U;
+    static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
+    static const char MORSE_STRING[] = "S.O.S.";
+    static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
+    static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
+
+    static Timer * pMorseTimer = new Timer();
+    static bool bInit = false;
+
+    // Perform one time initialization logic
+    if (!bInit)
+    {
+        // Build the morse message by converting it from the human readable string
+        size_t messageOutputPosition = 0U;
+        for (size_t i = 0U; i < MORSE_STRING_SIZE; i++)
+        {
+            // Convert the character to its integer representation
+            uint8_t charVal = static_cast<uint8_t>(MORSE_STRING[i]);
+            const uint8_t NUM_ASCII_TABLE_ENTRIES = 128U;
+
+            // Make sure the index is in range
+            if (charVal >= NUM_ASCII_TABLE_ENTRIES)
+            {
+                // A not basic ASCII value was found at the current character position, move on
+                continue;
+            }
+
+            // Get the character's Morse code signal
+            const MorseCodeSignal * pThisCharacterMorseSignal = MORSE_SIGNALS[charVal];
+
+            // If the Morse character is valid, add it to the message
+            if (pThisCharacterMorseSignal[0] != INVALID)
+            {
+                // The only character with end marker first is the end of message marker.
+                // End of message also needs an end of word inserted, so we have to manually
+                // handle that here.
+                if (pThisCharacterMorseSignal[0] == END_MARKER)
+                {
+                    MORSE_MESSAGE[messageOutputPosition++] = MORSE_WORD_BREAK;
+                }
+                MORSE_MESSAGE[messageOutputPosition++] = pThisCharacterMorseSignal;
+            }
+        }
+
+        // Start with the LEDs off
+        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+
+        // Start the timer
+        pMorseTimer->Reset();
+        pMorseTimer->Start();
+
+        bInit = true;
+    }
+
+    // Deliberately start this index as all Fs so the initial state change rolls over.
+    static uint32_t currentCharacterSignalIndex = 0xFFFFFFFFU;
+    static uint32_t currentCharacterIndex = 0U;
+    static const MorseCodeSignal * pCurrentMorseCharacter = MORSE_MESSAGE[0];
+
+    // Signal display and time variables
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_UNIT_S = 0.25_s;
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DOT = SIGNAL_DISPLAY_TIME_UNIT_S;
+    constexpr const units::time::second_t SIGNAL_DISPLAY_TIME_DASH = SIGNAL_DISPLAY_TIME_UNIT_S * 3.0;
+    static units::time::second_t currentSignalDisplayLengthSeconds = 1.0_s;
+
+    // Check if a signal change is required
+    if (pMorseTimer->Get() > currentSignalDisplayLengthSeconds)
+    {
+        // Move on to the next signal
+        currentCharacterSignalIndex++;
+        pMorseTimer->Reset();
+    }
+    else
+    {
+        // The timer has not reached a point for a change, do nothing different
+        return;
+    }
+
+    // If we make it here, a state change is needed
+
+    // Examine the next signal
+    bool bLedsOn = false;
+    switch (pCurrentMorseCharacter[currentCharacterSignalIndex])
+    {
+        case DOT:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_DOT;
+            bLedsOn = true;
+            break;
+        }
+        case DASH:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_DASH;
+            bLedsOn = true;
+            break;
+        }
+        case EMPTY:
+        {
+            currentSignalDisplayLengthSeconds = SIGNAL_DISPLAY_TIME_UNIT_S;
+            bLedsOn = false;
+            break;
+        }
+        // At the end of the current character signals
+        case END_MARKER:
+        default:
+        {
+            currentSignalDisplayLengthSeconds = 0.0_s;
+            bLedsOn = false;
+
+            // Move to the next character
+            pCurrentMorseCharacter = MORSE_MESSAGE[++currentCharacterIndex];
+            currentCharacterSignalIndex = 0xFFFFFFFFU;
+
+            // Check if the next character is actually the end of message marker
+            if (pCurrentMorseCharacter[0] == END_MARKER)
+            {
+                // Back to the start of the message
+                currentCharacterIndex = 0U;
+                pCurrentMorseCharacter = MORSE_MESSAGE[0];
+            }
+
+            break;
+        }
+    }
+
+    // Update the state of the LEDs
+    if (bLedsOn)
+    {
+        if (m_AllianceColor.value() == DriverStation::Alliance::kRed)
+        {
+            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        }
+        else
+        {
+            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+        }
+    }
+    else
+    {
+        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::MusicSequence
+///
+/// This method contains the main workflow for controlling
+/// any hardware capable of playing music (e.g. TalonFX).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::MusicSequence()
+{
+    // Note: The control mode for the motors can only be one
+    //       thing at a time.  Using a motor for acutal motion
+    //       will not work at the same time as playing tones.
+    static bool bMusicPlaying = false;
+    if (m_pDriveController->GetButtonState(PLAY_MUSIC_BUTTON))
+    {
+        bMusicPlaying = true;
+    }
+
+    // Not playing any music, just return
+    if (!bMusicPlaying)
+    {
+        return;
+    }
+
+    // Add more of these as needed
+    static const MusicTone noNote(units::frequency::hertz_t(0));
+    static const MusicTone cNote(units::frequency::hertz_t(262));
+    static const MusicTone dNote(units::frequency::hertz_t(294));
+    static const MusicTone eNote(units::frequency::hertz_t(330));
+    static const MusicTone fNote(units::frequency::hertz_t(349));
+    static const MusicTone gNote(units::frequency::hertz_t(392));
+    static const MusicTone aNote(units::frequency::hertz_t(440));
+    static const MusicTone bNote(units::frequency::hertz_t(494));
+    static const MusicTone CNote(units::frequency::hertz_t(523));
+
+    static Timer * pMusicTimer = new Timer();
+    static units::time::second_t lastNotePlayTime = 0.0_s;
+    static bool bInit = false;
+    static uint32_t noteIndex = 0U;
+
+    if (!bInit)
+    {
+        pMusicTimer->Start();
+        bInit = true;
+    }
+
+    struct NoteControl
+    {
+        MusicTone m_Tone;
+        units::time::second_t m_LengthSeconds;
+    };
+
+    // Change the notes and the lengths in here to make a song.
+    // You can add or remove or change as many you want.
+    // If you need more tones (frequencies in hertz), add them up above.
+    // If you want a pause, use noNote and a length.
+    static NoteControl scaleNotes[] =
+    {
+        {noNote, 100_ms},
+        {cNote, 100_ms},
+        {dNote, 100_ms},
+        {eNote, 100_ms},
+        {fNote, 100_ms},
+        {gNote, 100_ms},
+        {aNote, 100_ms},
+        {bNote, 100_ms},
+        {CNote, 100_ms},
+        {noNote, 100_ms},
+    };
+    static const size_t MAX_NOTE_INDEX = sizeof(scaleNotes) / sizeof (NoteControl);
+
+    if ((pMusicTimer->Get() - lastNotePlayTime) > scaleNotes[noteIndex].m_LengthSeconds)
+    {
+        noteIndex++;
+        if (noteIndex >= MAX_NOTE_INDEX)
+        {
+            noteIndex = 0U;
+            bMusicPlaying = false;
+        }
+        // Pick a motor to play a sound
+        //m_pMusicMotor->SetControl(scaleNotes[noteIndex].m_Tone);
+        lastNotePlayTime = pMusicTimer->Get();
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::PneumaticSequence
 ///
 /// This method contains the main workflow for updating the
@@ -522,73 +808,6 @@ void YtaRobot::PneumaticSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::SerialPortSequence
-///
-/// This method contains the main workflow for interaction with
-/// the serial port.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::SerialPortSequence()
-{
-    /*
-    // Check for any incoming transmissions, limit it to our read buffer size
-    int32_t bytesReceived = m_pSerialPort->GetBytesReceived();
-    bytesReceived = (bytesReceived > SERIAL_PORT_BUFFER_SIZE_BYTES) ? SERIAL_PORT_BUFFER_SIZE_BYTES : bytesReceived;
-
-    // If we got data, read it
-    if (bytesReceived > 0)
-    {
-        static_cast<void>(m_pSerialPort->Read(m_SerialPortBuffer, bytesReceived));
-
-        // See if its a packet intended for us
-        if (memcmp(m_SerialPortBuffer, SERIAL_PORT_PACKET_HEADER, SERIAL_PORT_PACKET_HEADER_SIZE_BYTES) == 0)
-        {
-            // Next character is the command.  Array indexing starts at zero, thus no +1 on the size bytes constant
-            int32_t command = static_cast<int32_t>(m_SerialPortBuffer[SERIAL_PORT_PACKET_HEADER_SIZE_BYTES]) - ASCII_0_OFFSET;
-
-            // Sanity check it
-            if (command >= 0 && command <= 9)
-            {
-                RobotUtils::DisplayFormattedMessage("Received a valid packet, command: %d\n", command);
-            }
-            else
-            {
-                RobotUtils::DisplayFormattedMessage("Invalid command received: %d\n", command);
-            }
-        }
-
-        RobotUtils::DisplayFormattedMessage(m_SerialPortBuffer);
-    }
-    m_SerialPortBuffer[0] = NULL_CHARACTER;
-    */
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::I2cSequence
-///
-/// This method contains the main workflow for interaction with
-/// the I2C bus.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::I2cSequence()
-{
-    static std::chrono::time_point<std::chrono::high_resolution_clock> currentTime;
-    static std::chrono::time_point<std::chrono::high_resolution_clock> oldTime;
-    currentTime = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> elapsed = currentTime - oldTime;
-    if (elapsed.count() > I2C_RUN_INTERVAL_MS)
-    {
-        RobotI2c::ManualTrigger();
-        
-        oldTime = currentTime;
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
 /// @method YtaRobot::CameraSequence
 ///
 /// This method handles camera related behavior.  See the
@@ -597,6 +816,20 @@ void YtaRobot::I2cSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CameraSequence()
 {
+    if (m_pDriveController->GetButtonState(DRIVE_ALIGN_WITH_CAMERA_BUTTON))
+    {
+        m_bCameraAlignInProgress = true;
+        RobotCamera::SetLimelightPipeline(1);
+        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
+        RobotCamera::AutonomousCamera::AlignToTargetSwerve();
+    }
+    else
+    {
+        m_bCameraAlignInProgress = false;
+        RobotCamera::SetLimelightPipeline(0);
+        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
+    }
+
     static bool bFullProcessing = false;
     
     // @note: Use std::chrono if precise time control is needed.
@@ -632,52 +865,6 @@ void YtaRobot::CameraSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DriveMotorsCool
-///
-/// This method controls active or passive cooling of the drive
-/// motors.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::DriveMotorsCool()
-{
-    static Timer * pDriveMotorCoolTimer = new Timer();
-    static units::second_t lastDriveMotorCoolTime = 0_s;
-    static constexpr units::second_t DRIVE_MOTOR_COOL_ON_TIME = 10_s;
-    static constexpr units::second_t DRIVE_MOTOR_COOL_OFF_TIME = 10_s;
-    static bool bTimerStarted = false;
-    static bool bCoolingDriveMotors = true;
-
-    // If the first time here, start the timer
-    if (!bTimerStarted)
-    {
-        pDriveMotorCoolTimer->Reset();
-        pDriveMotorCoolTimer->Start();
-        bTimerStarted = true;
-    }
-
-    // Put a status on the smart dashboard
-    SmartDashboard::PutBoolean("Drive motor cooling", bCoolingDriveMotors);
-
-    // Get the current time
-    units::second_t currentTime = pDriveMotorCoolTimer->Get();
-
-    // Set some values for the common logic based on whether or not cooling is currently active or passive
-    units::second_t timerLimit = bCoolingDriveMotors ? DRIVE_MOTOR_COOL_ON_TIME : DRIVE_MOTOR_COOL_OFF_TIME;
-    DoubleSolenoid::Value solenoidValue = bCoolingDriveMotors ? TALON_COOLING_OFF_SOLENOID_VALUE : TALON_COOLING_ON_SOLENOID_VALUE;
-
-    // If the time until the next state change has elapsed
-    if ((currentTime - lastDriveMotorCoolTime) > timerLimit)
-    {
-        // Change solenoid state, update control variables
-        m_pTalonCoolingSolenoid->Set(solenoidValue);
-        bCoolingDriveMotors = !bCoolingDriveMotors;
-        lastDriveMotorCoolTime = currentTime;
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
 /// @method YtaRobot::SwerveDriveSequence
 ///
 /// This method contains the main workflow for swerve drive
@@ -696,9 +883,15 @@ void YtaRobot::SwerveDriveSequence()
         bFieldRelative = !bFieldRelative;
     }
 
-    if (m_pDriveController->DetectButtonChange(ZERO_GYRO_YAW_BUTTON))
+    if (m_pDriveController->DetectButtonChange(REZERO_SWERVE_BUTTON))
     {
         m_pSwerveDrive->ZeroGyroYaw();
+        m_pSwerveDrive->HomeModules();
+    }
+
+    if (m_pDriveController->DetectButtonChange(LOCK_SWERVE_WHEELS_BUTTON))
+    {
+        m_pSwerveDrive->LockWheels();
     }
 
     // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
@@ -708,20 +901,40 @@ void YtaRobot::SwerveDriveSequence()
     double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
     // Override normal control if a fine positioning request is made
-    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    switch (m_pDriveController->GetPovAsDirection())
     {
-        translationAxis = 0.0;
-        strafeAxis = 0.0;
-        rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
-    }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
-    {
-        translationAxis = 0.0;
-        strafeAxis = 0.0;
-        rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
-    }
-    else
-    {
+        case DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV:
+        {
+            translationAxis = SWERVE_DRIVE_SLOW_SPEED;
+            strafeAxis = 0.0;
+            rotationAxis = 0.0;
+            break;
+        }
+        case DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV:
+        {
+            translationAxis = -SWERVE_DRIVE_SLOW_SPEED;
+            strafeAxis = 0.0;
+            rotationAxis = 0.0;
+            break;
+        }
+        case DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV:
+        {
+            translationAxis = 0.0;
+            strafeAxis = 0.0;
+            rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
+            break;
+        }
+        case DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV:
+        {
+            translationAxis = 0.0;
+            strafeAxis = 0.0;
+            rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
+            break;
+        }
+        default:
+        {
+            break;
+        }
     }
 
     SmartDashboard::PutNumber("Strafe", strafeAxis);
@@ -738,7 +951,9 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
-    MarioKartLights(translationAxis, strafeAxis, rotationAxis);
+
+    // Pretend to Mario Kart drift
+    //MarioKartLights(translationAxis, strafeAxis, rotationAxis);
 
     // Display some useful information
     m_pSwerveDrive->UpdateSmartDashboard();
@@ -758,11 +973,6 @@ void YtaRobot::SwerveDriveSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::DriveControlSequence()
 {
-    if (Yta::Drive::Config::DRIVE_MOTOR_COOLING_ENABLED)
-    {
-        DriveMotorsCool();
-    }
-
     if (Yta::Drive::Config::DIRECTIONAL_ALIGN_ENABLED)
     {
         // Check for a directional align first
@@ -876,22 +1086,22 @@ bool YtaRobot::DirectionalInch()
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;
 
-    if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_UP)
+    if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_FORWARD_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_DOWN)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_REVERSE_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_LEFT)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_LEFT_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
     }
-    else if (m_pDriveController->GetPovAsDirection() == Yta::Controller::PovDirections::POV_RIGHT)
+    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_RIGHT_POV)
     {
         leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
         rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
@@ -1042,8 +1252,8 @@ void YtaRobot::DirectionalAlign()
                 destinationAngle = ANGLE_90_DEGREES * degreeMultiplier;
                 
                 // Read the starting angle
-                RobotI2c::ManualTrigger();
-                int startingAngle = static_cast<int>(GetGyroValue(BNO055));
+                // @todo: Use Pigeon2 to get angle.
+                int startingAngle = 0;
                 
                 // Do some angle math to figure out which direction is faster to turn.
                 // Examples:
@@ -1105,14 +1315,15 @@ void YtaRobot::DirectionalAlign()
         case DIRECTIONAL_ALIGN:
         {   
             // Force update gyro value
-            RobotI2c::ManualTrigger();
+            //RobotI2c::ManualTrigger();
             
             // Three conditions for stopping the align:
             // 1. Destination angle is reached
             // 2. Safety timer expires
             // 3. User cancels the operation
             // @todo: Is it a problem that (destinationAngle - 1) can be negative when angle == zero?
-            int currentAngle = static_cast<int>(GetGyroValue(BNO055));
+            // @todo: Use Pigeon2 to get angle.
+            int currentAngle = 0;
             if (((currentAngle >= (destinationAngle - 1)) && (currentAngle <= (destinationAngle + 1))) ||
                 (pDirectionalAlignTimer->Get() > DIRECTIONAL_ALIGN_MAX_TIME_S) ||
                 (bStateChangeAllowed))
@@ -1157,16 +1368,8 @@ void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
 
-    // @todo: Shut off the limelight LEDs?
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::ARRAY_OFF);
-    
-    // All motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
-
-    // Motor cooling off
-    m_pTalonCoolingSolenoid->Set(TALON_COOLING_OFF_SOLENOID_VALUE);
+    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Turn the rainbow animation back on    
     m_pCandle->Animate(m_RainbowAnimation);

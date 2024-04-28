@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of an autonomous test routines for YtaRobot.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -47,13 +47,22 @@ void YtaRobot::AutonomousTestRoutine()
 void YtaRobot::AutonomousTestSwerveRoutine()
 {
     // Simple demonstration of directional movements
-    AutonomousSwerveDriveSequence(ROBOT_FORWARD, ROBOT_NO_ROTATE, 0.10, 0.0, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_LEFT, ROBOT_NO_ROTATE, 0.10, 0.0, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_REVERSE, ROBOT_NO_ROTATE, 0.10, 0.0, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_RIGHT, ROBOT_NO_ROTATE, 0.10, 0.0, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_NO_DIRECTION, ROBOT_CLOCKWISE, 0.0, 0.10, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_NO_DIRECTION, ROBOT_COUNTER_CLOCKWISE, 0.0, 0.10, 1.0_s, true);
-    AutonomousSwerveDriveSequence(ROBOT_FORWARD, ROBOT_COUNTER_CLOCKWISE, 0.10, 0.10, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.0, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_STRAFE_LEFT, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.0, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.0, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_STRAFE_RIGHT, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.0, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_CLOCKWISE);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.10, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_COUNTER_CLOCKWISE);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.0, 0.10, 0.0, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, RobotStrafe::ROBOT_STRAFE_RIGHT, RobotRotation::ROBOT_CLOCKWISE);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.10, 0.10, 1.0_s, true);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_STRAFE_LEFT, RobotRotation::ROBOT_COUNTER_CLOCKWISE);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.10, 0.10, 1.0_s, true);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto test swerve routine done.");

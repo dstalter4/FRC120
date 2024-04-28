@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -20,35 +20,33 @@
 #include <thread>                               // for std::thread
 
 // C INCLUDES
-#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
-#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
-#include "ctre/phoenix/sensors/Pigeon2.h"       // for PigeonIMU
-#include "frc/ADXRS450_Gyro.h"                  // for using the SPI port FRC gyro
-#include "frc/AnalogGyro.h"                     // for using analog gyros
-#include "frc/BuiltInAccelerometer.h"           // for using the built-in accelerometer
 #include "frc/Compressor.h"                     // for retrieving info on the compressor
 #include "frc/DigitalInput.h"                   // for DigitalInput type
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
 #include "frc/DriverStation.h"                  // for interacting with the driver station
 #include "frc/Relay.h"                          // for Relay type
-#include "frc/SerialPort.h"                     // for interacting with a serial port
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
-#include "frc/Ultrasonic.h"                     // for Ultrasonic type
 #include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
 #include "DriveConfiguration.hpp"               // for information on the drive config
-#include "RobotI2c.hpp"                         // for GetGyroData()
 #include "RobotUtils.hpp"                       // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                      // for using swerve drive
-#include "TalonMotorGroup.hpp"                  // for Talon group motor control
 #include "YtaController.hpp"                    // for controller interaction
+#include "YtaTalon.hpp"                         // for custom Talon control
+#include "ctre/phoenix/led/CANdle.h"            // for interacting with the CANdle
+#include "ctre/phoenix/led/RainbowAnimation.h"  // for interacting with the CANdle
+#include "ctre/phoenix6/Pigeon2.hpp"            // for PigeonIMU
+#include "ctre/phoenix6/controls/MusicTone.hpp" // for creating music tones
 
 using namespace frc;
+using namespace ctre::phoenix6::controls;
+using namespace ctre::phoenix6::hardware;
+using namespace ctre::phoenix::led;
 
 
 ////////////////////////////////////////////////////////////////
@@ -95,12 +93,13 @@ public:
 private:
 
     // TYPEDEFS
-    typedef YtaTalon::MotorGroupControlMode MotorGroupControlMode;
+    typedef Yta::Talon::MotorGroupControlMode MotorGroupControlMode;
+    typedef Yta::Talon::TalonFxMotorController TalonFxMotorController;
     typedef Yta::Controller::Config::Models ControllerModels;
     typedef Yta::Controller::Config::Mappings ControllerMappings;
     typedef YtaDriveController<YtaCustomController> DriveControllerType;
     typedef YtaController<YtaCustomController> AuxControllerType;
-    
+
     // ENUMS
     enum RobotMode
     {
@@ -110,15 +109,15 @@ private:
         ROBOT_MODE_DISABLED,
         ROBOT_MODE_NOT_SET
     };
-    
-    enum DriveState
+
+    enum RobotDriveState
     {
         MANUAL_CONTROL,
         DIRECTIONAL_INCH,
         DIRECTIONAL_ALIGN
     };
     
-    enum RobotDirection
+    enum class RobotDirection
     {
         ROBOT_NO_DIRECTION,
         ROBOT_FORWARD,
@@ -126,22 +125,48 @@ private:
         ROBOT_LEFT,
         ROBOT_RIGHT
     };
-    
-    enum RobotRotate
+
+    enum class RobotTranslation
     {
-        ROBOT_NO_ROTATE,
+        ROBOT_NO_TRANSLATION,
+        ROBOT_TRANSLATION_FORWARD,
+        ROBOT_TRANSLATION_REVERSE
+    };
+
+    enum class RobotStrafe
+    {
+        ROBOT_NO_STRAFE,
+        ROBOT_STRAFE_LEFT,
+        ROBOT_STRAFE_RIGHT
+    };
+
+    enum class RobotRotation
+    {
+        ROBOT_NO_ROTATION,
         ROBOT_CLOCKWISE,
         ROBOT_COUNTER_CLOCKWISE
     };
 
-    enum GyroType
-    {
-        ADXRS450,
-        ANALOG,
-        BNO055
-    };
-    
     // STRUCTS
+    struct RobotSwerveDirections
+    {
+      public:
+        RobotSwerveDirections() : m_Translation(RobotTranslation::ROBOT_NO_TRANSLATION), m_Strafe(RobotStrafe::ROBOT_NO_STRAFE), m_Rotation(RobotRotation::ROBOT_NO_ROTATION) {}
+        inline void SetSwerveDirections(RobotTranslation translationDirection, RobotStrafe strafeDirection, RobotRotation rotationDirection)
+        {
+            m_Translation = translationDirection;
+            m_Strafe = strafeDirection;
+            m_Rotation = rotationDirection;
+        }
+        inline RobotTranslation GetTranslation() { return m_Translation; }
+        inline RobotStrafe GetStrafe() { return m_Strafe; }
+        inline RobotRotation GetRotation() { return m_Rotation; }
+      private:
+        RobotTranslation m_Translation;
+        RobotStrafe m_Strafe;
+        RobotRotation m_Rotation;
+    };
+
     struct LedColors
     {
         int m_Red;
@@ -149,7 +174,7 @@ private:
         int m_Blue;
         int m_White;
     };
-    
+
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
     // variable inside the function StartRobot() in the RobotBase class.
@@ -170,18 +195,12 @@ private:
     // Updates information on the smart dashboard for the drive team
     void UpdateSmartDashboard();
 
-    // Grabs a value from a sonar sensor individually
-    inline double GetSonarValue(Ultrasonic * pSensor);
-   
-    // Get a reading from the gyro sensor
-    inline double GetGyroValue(GyroType gyroType, AnalogGyro * pSensor = nullptr);
-
     // Autonomous wait for something to complete delay routine
     inline void AutonomousDelay(units::second_t time);
 
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
-    inline void AutonomousSwerveDriveSequence(RobotDirection direction, RobotRotate rotate, double speed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+    inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -211,7 +230,6 @@ private:
     // Main sequence for drive motor control
     void SwerveDriveSequence();
     void DriveControlSequence();
-    void SideDriveSequence();
 
     // Function to check for drive control direction swap
     inline void CheckForDriveSwap();
@@ -222,36 +240,26 @@ private:
     // Function to automatically align the robot to a certain point
     void DirectionalAlign();
 
-    // Function to periodically cool the drive talons
-    void DriveMotorsCool();
-
     // Main sequence for LED control
     void LedSequence();
     inline void SetLedsToAllianceColor();
     void MarioKartLights(double translation, double strafe, double rotate);
+    void BlinkMorseCodePattern();
+
+    // Main sequence for music control
+    void MusicSequence();
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
-
-    // Main sequence for interaction with the serial port
-    void SerialPortSequence();
-    
-    // Main sequence for I2C interaction
-    void I2cSequence();
     
     // Main sequence for vision processing
     void CameraSequence();
-
-    // Check for a request to reset encoder counts
-    void CheckAndResetEncoderCounts();
-
-    // Superstructure control testing sequence
-    void SuperStructureTestSequence();
     
     // MEMBER VARIABLES
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
+    RobotSwerveDirections           m_AutoSwerveDirections;                 // Used by autonomous routines to control swerve drive movements
     
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
@@ -262,10 +270,9 @@ private:
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
-    TalonMotorGroup<TalonFX> *      m_pLeftDriveMotors;                     // Left drive motor control
-    TalonMotorGroup<TalonFX> *      m_pRightDriveMotors;                    // Right drive motor control
-    TalonMotorGroup<TalonFX> *      m_pCarriageMotors;                      // Carriage motor control
-    TalonFX *                       m_pIntakeMotor;                         // Intake motor control
+    typedef Yta::Talon::EmptyTalonFx ArcadeDriveTalonFxType;                // Switch to TalonMotorGroup<TalonFX> for real implementation
+    ArcadeDriveTalonFxType *        m_pLeftDriveMotors;                     // Left drive motor control
+    ArcadeDriveTalonFxType *        m_pRightDriveMotors;                    // Right drive motor control
     
     // LEDs
     CANdle *                        m_pCandle;                              // Controls an RGB LED strip
@@ -281,8 +288,10 @@ private:
     // (none)
     
     // Pneumatics
-    DoubleSolenoid *                m_pTalonCoolingSolenoid;                // Controls the solenoid for cooling the drive talons
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
+
+    // Solenoids
+    // (none)
     
     // Servos
     // (none)
@@ -295,37 +304,23 @@ private:
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
-    BuiltInAccelerometer *          m_pAccelerometer;                       // Built in roborio accelerometer
+    // (none)
     
     // Gyro
-    ADXRS450_Gyro *                 m_pAdxrs450Gyro;                        // SPI port FRC gyro
-    int                             m_Bno055Angle;                          // Angle from the BNO055 sensor on the RIOduino
+    // (none)
 
     // Camera
     // Note: Only need to have a thread here and tie it to
     // the RobotCamera class, which handles everything else.
     std::thread                     m_CameraThread;
-
-    // Serial port configuration
-    static const int                SERIAL_PORT_BUFFER_SIZE_BYTES           = 64;
-    static const int                SERIAL_PORT_NUM_DATA_BITS               = 8;
-    static const int                SERIAL_PORT_BAUD_RATE                   = 115200;
-    static const int                ASCII_0_OFFSET                          = 48;
-    const char *                    SERIAL_PORT_PACKET_HEADER               = "Frc120Serial";
-    const int                       SERIAL_PORT_PACKET_HEADER_SIZE_BYTES    = sizeof(SERIAL_PORT_PACKET_HEADER);
-    char                            m_SerialPortBuffer[SERIAL_PORT_BUFFER_SIZE_BYTES];
-
-    // On board serial port
-    SerialPort *                    m_pSerialPort;
-    
-    // I2C configuration
-    std::thread                     m_I2cThread;
     
     // Misc
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
-    DriveState                      m_RobotDriveState;                      // Keep track of how the drive sequence flows
-    DriverStation::Alliance         m_AllianceColor;                        // Color reported by driver station during a match
+    RobotDriveState                 m_RobotDriveState;                      // Keep track of how the drive sequence flows
+    std::optional
+    <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
+    bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progres
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
     // CONSTS
@@ -346,19 +341,26 @@ private:
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
-    static const int                ZERO_GYRO_YAW_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
+    static const int                REZERO_SWERVE_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
+    static const int                LOCK_SWERVE_WHEELS_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
+    static const int                PLAY_MUSIC_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
+    static const int                DRIVE_ALIGN_WITH_CAMERA_BUTTON          = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_FORWARD_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_REVERSE_BUTTON      = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_LEFT_BUTTON         = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                DRIVE_CONTROLS_INCH_RIGHT_BUTTON        = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    
+
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_FORWARD_POV            = Yta::Controller::PovDirections::POV_INVALID_UP;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_REVERSE_POV            = Yta::Controller::PovDirections::POV_INVALID_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_LEFT_POV               = Yta::Controller::PovDirections::POV_INVALID_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_RIGHT_POV              = Yta::Controller::PovDirections::POV_INVALID_RIGHT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV  = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV   = Yta::Controller::PovDirections::POV_RIGHT;
+
     // Aux inputs
-    static const int                AUX_TOGGLE_LEDS_BUTTON                  = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     // CAN Signals
@@ -384,20 +386,20 @@ private:
     // (none)
     
     // Digital I/O Signals
+    static const int                SENSOR_TEST_CODE_DIO_CHANNEL            = 6;
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
     
     // Analog I/O Signals
     // (none)
     
     // Solenoid Signals
-    static const int                TALON_COOLING_SOLENOID_FWD_CHANNEL      = 6;
-    static const int                TALON_COOLING_SOLENOID_REV_CHANNEL      = 7;
+    // (none)
 
-    // Solenoids
-    static const DoubleSolenoid::Value  TALON_COOLING_ON_SOLENOID_VALUE     = DoubleSolenoid::kReverse;
-    static const DoubleSolenoid::Value  TALON_COOLING_OFF_SOLENOID_VALUE    = DoubleSolenoid::kForward;
-    
+    // Motor speeds
+    // (none)
+
     // Misc
+    const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
     const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
     const std::string               AUTO_ROUTINE_2_STRING                   = "Autonomous Routine 2";
     const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
@@ -410,28 +412,22 @@ private:
     static const int                ANGLE_360_DEGREES                       = 360;
     static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
-    static const int                QUADRATURE_ENCODING_ROTATIONS           = 4096;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEFT_DRIVE_MOTORS             = 2;
-    static const unsigned           NUMBER_OF_RIGHT_DRIVE_MOTORS            = 2;
     static const unsigned           NUMBER_OF_LEDS                          = 8;
-    static const char               NULL_CHARACTER                          = '\0';
-    static const bool               ADXRS450_GYRO_PRESENT                   = false;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
-    static const unsigned           I2C_RUN_INTERVAL_MS                     = 240U;
     
     static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
     static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
+    static constexpr double         JOYSTICK_AXIS_INPUT_DEAD_BAND           =  0.10;
     static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
     static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
     static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
-    static constexpr double         SWERVE_ROTATE_SLOW_JOYSTICK_THRESHOLD   =  0.10;
+    static constexpr double         SWERVE_DRIVE_SLOW_SPEED                 =  0.10;
     static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
     static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
     static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
-    static constexpr double         FALCON_ENCODER_COUNTS_PER_ROTATION      =  2048.0;
 
     static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
 
@@ -558,7 +554,7 @@ inline void YtaRobot::CheckForDriveSwap()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::SetLedsToAllianceColor()
 {
-    switch (m_AllianceColor)
+    switch (m_AllianceColor.value())
     {
         case DriverStation::Alliance::kRed:
         {
@@ -575,101 +571,6 @@ void YtaRobot::SetLedsToAllianceColor()
             break;
         }
     }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetGyroValue
-///
-/// This method is used to get a value from an analog gyro
-/// sensor.  There are three possible places a gyro could be
-/// connected: analog sensor, the on board SPI port (ADXRS450),
-/// or externally (BNO055 on a RIOduino).  This method will
-/// obtain a value from the sensor corresponding to the passed
-/// in parameter.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetGyroValue(GyroType gyroType, AnalogGyro * pSensor)
-{
-    double value = 0.0;
-    
-    switch (gyroType)
-    {
-        case ADXRS450:
-        {
-            if (m_pAdxrs450Gyro != nullptr)
-            {
-                value = m_pAdxrs450Gyro->GetAngle();
-            }
-            break;
-        }
-        case ANALOG:
-        {
-            if (pSensor != nullptr)
-            {
-                value = pSensor->GetAngle();
-            }
-            break;
-        }
-        case BNO055:
-        {
-            // Read the angle
-            GyroI2cData * pGyroData = RobotI2c::GetGyroData();
-            
-            // Only update the value if valid data came across the wire
-            if (pGyroData != nullptr)
-            {
-                m_Bno055Angle = pGyroData->m_xAxisInfo.m_Angle;
-                
-                // Reapply negative sign if needed
-                if (pGyroData->m_xAxisInfo.m_bIsNegative)
-                {
-                    m_Bno055Angle *= -1;
-                }
-            }
-            
-            value = static_cast<double>(m_Bno055Angle);
-            
-            break;
-        }
-        default:
-        {
-            // Should never happen
-            ASSERT(false);
-            break;
-        }
-    }
-    
-    if (RobotUtils::DEBUG_PRINTS)
-    {
-        SmartDashboard::PutNumber("Gyro angle", value);
-    }
-    
-    return value;
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::GetSonarValue
-///
-/// This method is used to get a value from the sonar sensor.
-/// It is intended to be used to turn a sensor briefly on and
-/// get a reading from it so as to not interfere with other
-/// sensors that may need to get readings.
-///
-////////////////////////////////////////////////////////////////
-inline double YtaRobot::GetSonarValue(Ultrasonic * pSensor)
-{
-    return 0.0;
-    
-    /*
-    pSensor->SetEnabled(true);
-    double sensorValue = pSensor->GetRangeInches();
-    pSensor->SetEnabled(false);
-    return sensorValue;
-    */
 }
 
 

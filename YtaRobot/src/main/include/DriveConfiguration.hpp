@@ -5,7 +5,7 @@
 /// @details
 /// Declarations describing the drive configuration.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2024 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef DRIVECONFIGURATION_HPP
@@ -44,7 +44,6 @@ namespace Config
 
     static const bool   USE_SWERVE_DRIVE                        = true;
     static const bool   USE_INVERTED_REVERSE_CONTROLS           = true;
-    static const bool   DRIVE_MOTOR_COOLING_ENABLED             = true;
     static const bool   DRIVE_SWAP_ENABLED                      = false;
     static const bool   SLOW_DRIVE_ENABLED                      = false;
     static const bool   DIRECTIONAL_ALIGN_ENABLED               = false;
