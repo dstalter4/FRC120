@@ -384,11 +384,11 @@ private:
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
     static const int                DRIVE_TOGGLE_LIFT_BUTTON                = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
-    static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
-    static const int                REZERO_SWERVE_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
+    static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
+    static const int                REZERO_SWERVE_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
     static const int                LOCK_SWERVE_WHEELS_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                PLAY_MUSIC_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
-    static const int                DRIVE_ALIGN_WITH_CAMERA_BUTTON          = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
+    static const int                PLAY_MUSIC_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
+    static const int                DRIVE_ALIGN_WITH_CAMERA_BUTTON          = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
     static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
@@ -468,12 +468,12 @@ private:
     // Motor speeds
     static constexpr double         INTAKE_MOTOR_SPEED                      = -1.0;
     static constexpr double         FEEDER_MOTOR_SPEED                      =  0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED    = -0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED   = -0.7;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED   =  0.2;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED    = -0.3;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED   = -0.3;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED   =  0.0;
     static constexpr double         SHOOTER_MOTOR_SPEAKER_CLOSE_CCW_SPEED   = -0.3;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CCW_SPEED  = -0.5;
-    static constexpr double         SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED  = -0.2;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_PODIUM_CCW_SPEED  = -0.3;
+    static constexpr double         SHOOTER_MOTOR_SPEAKER_CCW_OFFSET_SPEED  =  0.0;
     static constexpr double         SHOOTER_MOTOR_PASS_CW_SPEED             = -0.45;
     static constexpr double         SHOOTER_MOTOR_PASS_CW_OFFSET_SPEED      =  0.15;
     static constexpr double         SHOOTER_MOTOR_AMP_SPEED                 =  0.70;
@@ -494,7 +494,7 @@ private:
     static constexpr units::angle::degree_t PIVOT_ANGLE_RUNTIME_BASE        =  3.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_INTAKE_NOTE         = 30.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SPEAKER    = 48.0_deg;
-    static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 25.0_deg;
+    static constexpr units::angle::degree_t PIVOT_ANGLE_FROM_PODIUM         = 48.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_AMP        = 38.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_AMP_SHOT_STEP       =  4.0_deg;
     static constexpr units::angle::degree_t PIVOT_ANGLE_TOUCHING_SOURCE     = 50.0_deg;

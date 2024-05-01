@@ -68,6 +68,7 @@ void YtaRobot::AutonomousPeriodic()
     // Log a mode change if one occurred
     CheckAndUpdateRobotMode(ROBOT_MODE_AUTONOMOUS);
     
+    YtaRobotAutonomous::bAutonomousExecutionComplete = true;
     if (YtaRobotAutonomous::bAutonomousExecutionComplete)
     {
         return;

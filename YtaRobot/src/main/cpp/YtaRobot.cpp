@@ -387,21 +387,21 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
-    if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && m_bShootSpeaker)
+    if ((std::abs(m_pDriveController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && m_bShootSpeaker)
     {
         m_pIntakeMotor->SetDutyCycle(INTAKE_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if (m_pAuxController->GetButtonState(AUX_INTAKE_OUT_BUTTON))
+    else if (m_pDriveController->GetButtonState(AUX_INTAKE_OUT_BUTTON))
     {
         m_pIntakeMotor->SetDutyCycle(-INTAKE_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && !m_bShootSpeaker)
+    else if ((std::abs(m_pDriveController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && !m_bShootSpeaker)
     {
         // Same angle as when touching the amp
         //m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
@@ -558,7 +558,7 @@ void YtaRobot::ShootAmp()
     static Timer * pShootTimer = new Timer();
     static units::angle::degree_t pivotAngleAtShot = 0.0_deg;
 
-    if (std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
+    if (std::abs(m_pDriveController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND)
     {
         m_bShotInProgress = true;
         switch (shootState)
@@ -586,7 +586,7 @@ void YtaRobot::ShootAmp()
             }
             case WAIT_FOR_TRIGGER_RELEASE:
             {
-                if (m_pAuxController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
+                if (m_pDriveController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
                 {
                     m_AmpTargetDegrees += m_AmpTargetDegrees + PIVOT_ANGLE_AMP_SHOT_STEP;
                     pShootTimer->Reset();
@@ -670,7 +670,7 @@ void YtaRobot::ShootSpeaker()
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
     double shootSpeedOffset = 0.0;
-    if ((std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
+    if ((std::abs(m_pDriveController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
     {
         switch (shootState)
         {
@@ -738,7 +738,7 @@ void YtaRobot::ShootSpeaker()
                 feederSpeed = 0.0;
                 shootSpeed = TARGET_SHOOTER_SPEED;
                 shootSpeedOffset = TARGET_SHOOTER_OFFSET_SPEED;
-                if (m_pAuxController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
+                if (m_pDriveController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
                 {
                     shootState = SHOOTING;
                 }
@@ -1282,7 +1282,7 @@ void YtaRobot::BlinkMorseCodePattern()
     //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
     static const size_t MORSE_MSG_MAX_LENGTH = 128U;
     static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
-    static const char MORSE_STRING[] = "S.O.S.";
+    static const char MORSE_STRING[] = "Cedar Point";
     static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
     static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
 
@@ -1622,10 +1622,10 @@ void YtaRobot::CameraSequence()
 void YtaRobot::SwerveDriveSequence()
 {
     // Check for a switch between field relative and robot centric
-    static bool bFieldRelative = true;
+    static bool bFieldRelative = false;
     if (m_pDriveController->DetectButtonChange(FIELD_RELATIVE_TOGGLE_BUTTON))
     {
-        bFieldRelative = !bFieldRelative;
+        //bFieldRelative = !bFieldRelative;
     }
 
     if (m_pDriveController->DetectButtonChange(REZERO_SWERVE_BUTTON))
@@ -1649,9 +1649,9 @@ void YtaRobot::SwerveDriveSequence()
 
     // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
-    double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double translationAxis = 0.0;//RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double strafeAxis = 0.0;//RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double rotationAxis = 0.40 * RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
     if (bSwerveOutputLimited)
     {
@@ -1711,7 +1711,7 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
-    MarioKartLights(translationAxis, strafeAxis, rotationAxis);
+    //MarioKartLights(translationAxis, strafeAxis, rotationAxis);
 
     // Display some useful information
     m_pSwerveDrive->UpdateSmartDashboard();
