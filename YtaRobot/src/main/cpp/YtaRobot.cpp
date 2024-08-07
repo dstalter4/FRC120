@@ -387,21 +387,21 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
-    if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && m_bShootSpeaker)
+    if ((std::abs(m_pDriveController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && m_bShootSpeaker)
     {
         m_pIntakeMotor->SetDutyCycle(INTAKE_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if (m_pAuxController->GetButtonState(AUX_INTAKE_OUT_BUTTON))
+    else if (m_pDriveController->GetButtonState(AUX_INTAKE_OUT_BUTTON))
     {
         m_pIntakeMotor->SetDutyCycle(-INTAKE_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
         m_PivotTargetDegrees = PIVOT_ANGLE_INTAKE_NOTE;
         m_bIntakeInProgress = true;
     }
-    else if ((std::abs(m_pAuxController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && !m_bShootSpeaker)
+    else if ((std::abs(m_pDriveController->GetAxisValue(AUX_INTAKE_AXIS)) > AXIS_INPUT_DEAD_BAND) && !m_bShootSpeaker)
     {
         // Same angle as when touching the amp
         //m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
@@ -503,7 +503,8 @@ void YtaRobot::PivotSequence()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootSequence()
 {
-    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON))
+    // For the sign ceremony, only allow fixed distance shooting
+    if (false)//m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_AMP_SHOOT_BUTTON))
     {
         m_bShootSpeaker = !m_bShootSpeaker;
         if (m_bShootSpeaker)
@@ -513,7 +514,8 @@ void YtaRobot::ShootSequence()
             m_pAmpNoteControlMotor->SetDutyCycle(m_AmpIdleSpeed);
         }
     }
-    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_PODIUM_BUTTON))
+    // For the sign ceremony, only allow fixed distance shooting
+    if (false)//m_pAuxController->DetectButtonChange(AUX_TOGGLE_SPEAKER_PODIUM_BUTTON))
     {
         if (m_bShootSpeaker)
         {
@@ -526,7 +528,8 @@ void YtaRobot::ShootSequence()
     SmartDashboard::PutBoolean("Pass note", m_bPass);
     SmartDashboard::PutBoolean("Hold note", m_bHoldNote);
 
-    if (m_bShootSpeaker)
+    // For the sign ceremony, only allow fixed distance shooting
+    if (true)//m_bShootSpeaker)
     {
         ShootSpeaker();
     }
@@ -641,6 +644,7 @@ void YtaRobot::ShootAmp()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::ShootSpeaker()
 {
+    // For the sign ceremony, only allow fixed distance shooting
     if (m_pAuxController->DetectButtonChange(AUX_PASS_BUTTON))
     {
         m_bPass = !m_bPass;
@@ -659,9 +663,11 @@ void YtaRobot::ShootSpeaker()
     static Timer * pShootTimer = new Timer();
 
     // Constants used in the cases below
-    const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_SPEED : ((m_bShootPodium) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED : SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED);
-    const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
-    const double TARGET_SHOOTER_OFFSET_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_OFFSET_SPEED : ((m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0);
+    //const double TARGET_SHOOTER_SPEAKER_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_SPEED : ((m_bShootPodium) ? SHOOTER_MOTOR_SPEAKER_PODIUM_CW_SPEED : SHOOTER_MOTOR_SPEAKER_CLOSE_CW_SPEED);
+    //const double TARGET_SHOOTER_SPEED = (m_bShootSpeaker) ? TARGET_SHOOTER_SPEAKER_SPEED : m_AmpTargetSpeed;
+    //const double TARGET_SHOOTER_OFFSET_SPEED = (m_bPass) ? SHOOTER_MOTOR_PASS_CW_OFFSET_SPEED : ((m_bShootSpeaker) ? SHOOTER_MOTOR_SPEAKER_CW_OFFSET_SPEED : 0.0);
+    const double TARGET_SHOOTER_SPEED = -1.0;
+    const double TARGET_SHOOTER_OFFSET_SPEED = 0.1;
     const double BACK_FEED_SPEED = 0.2;
     const units::time::second_t TARGET_BACK_FEED_TIME_S = (m_bShootSpeaker) ? 0.04_s : 0.08_s;
     const units::time::second_t WAIT_FOR_PIVOT_MECHANISM_TIME_S = (m_bShootSpeaker) ? 0.5_s : 1.0_s;
@@ -670,7 +676,7 @@ void YtaRobot::ShootSpeaker()
     double feederSpeed = 0.0;
     double shootSpeed = 0.0;
     double shootSpeedOffset = 0.0;
-    if ((std::abs(m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
+    if ((std::abs(m_pDriveController->GetAxisValue(AUX_SHOOT_AXIS)) > AXIS_INPUT_DEAD_BAND))
     {
         switch (shootState)
         {
@@ -738,7 +744,7 @@ void YtaRobot::ShootSpeaker()
                 feederSpeed = 0.0;
                 shootSpeed = TARGET_SHOOTER_SPEED;
                 shootSpeedOffset = TARGET_SHOOTER_OFFSET_SPEED;
-                if (m_pAuxController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
+                if (m_pDriveController->GetButtonState(AUX_AMP_SHOOT_CONFIRM_BUTTON))
                 {
                     shootState = SHOOTING;
                 }
