@@ -765,8 +765,11 @@ void YtaRobot::ShootSpeaker()
         }
 
         // Sets the motors to the values configured above
-        m_pShooterMotors->Set(shootSpeed, shootSpeedOffset);
-        m_pFeederMotor->SetDutyCycle(feederSpeed);
+        m_pShooterMotors->Set(0.0, 0.0);//shootSpeed, shootSpeedOffset);
+        m_pFeederMotor->SetDutyCycle(0.0);//feederSpeed);
+        (void)shootSpeed;
+        (void)shootSpeedOffset;
+        (void)feederSpeed;
     }
     else
     {
