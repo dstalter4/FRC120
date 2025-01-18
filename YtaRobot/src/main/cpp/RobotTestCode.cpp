@@ -6,7 +6,7 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -15,7 +15,7 @@
 // C INCLUDES
 #include "frc/BuiltInAccelerometer.h"   // for using the built-in accelerometer
 #include "frc/DutyCycleEncoder.h"       // for through bore encoder test
-#include "rev/CANSparkMax.h"            // for interacting with spark max motor controllers
+#include "rev/SparkMax.h"               // for interacting with spark max motor controllers
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"               // for DisplayMessage(), DisplayFormattedMessage()
@@ -290,8 +290,8 @@ void YtaRobotTest::CtreSpeedControllerTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::RevSpeedControllerTest()
 {
-    static rev::CANSparkMax * pLeftNeo = new rev::CANSparkMax(1, rev::CANSparkLowLevel::MotorType::kBrushless);
-    static rev::CANSparkMax * pRightNeo = new rev::CANSparkMax(2, rev::CANSparkLowLevel::MotorType::kBrushless);
+    static rev::spark::SparkMax * pLeftNeo = new rev::spark::SparkMax(1, rev::spark::SparkMax::MotorType::kBrushless);
+    static rev::spark::SparkMax * pRightNeo = new rev::spark::SparkMax(2, rev::spark::SparkMax::MotorType::kBrushless);
 
     while (m_pJoystick->GetRawButton(1))
     {
