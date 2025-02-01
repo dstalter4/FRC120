@@ -88,8 +88,9 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
     //m_pDriveTalon->SetStatusFramePeriod(StatusFrameEnhanced::Status_2_Feedback0, 100);
 
     // Configure angle motor controller
+    // mk4 swerve uses Clockwise_Positive, mk4n uses CounterClockwise_Positive
     TalonFXConfiguration angleTalonConfig;
-    angleTalonConfig.MotorOutput.Inverted = InvertedValue::Clockwise_Positive;
+    angleTalonConfig.MotorOutput.Inverted = InvertedValue::CounterClockwise_Positive;
     angleTalonConfig.MotorOutput.NeutralMode = NeutralModeValue::Coast;
     angleTalonConfig.Feedback.SensorToMechanismRatio = SwerveConfig::ANGLE_GEAR_RATIO;
     angleTalonConfig.ClosedLoopGeneral.ContinuousWrap = true;

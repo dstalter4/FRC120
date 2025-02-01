@@ -367,7 +367,7 @@ private:
     // Note: The use of high CAN values if swerve drive is in use is
     //       to prevent instantiating multiple motor controllers with
     //       the same IDs, but still allow code for both drive base
-    //       types to be present.  When using swerve drive, IDs 1-8
+    //       types to be present.  When using swerve drive, IDs 11-18
     //       are used by the swerve modules (see the SwerveModuleConfigs
     //       in SwerveDrive.hpp).
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
