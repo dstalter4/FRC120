@@ -5,7 +5,7 @@
 /// @details
 /// Swerve drive configuration and constants.
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVECONFIG_HPP
@@ -20,9 +20,11 @@
 #include "units/length.h"                               // for distance user defined literals
 
 // C++ INCLUDES
-// (none)
+#include "ctre/phoenix6/CANcoder.hpp"                   // for CTRE CANcoder API
+#include "ctre/phoenix6/TalonFX.hpp"                    // for CTRE TalonFX API
 
 using namespace frc;
+using namespace ctre::phoenix6::signals;
 
 
 ////////////////////////////////////////////////////////////////
@@ -33,18 +35,29 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 namespace SwerveConfig
 {
+    // Represents the configurable parameters in a swerve module
+    struct SwerveModuleConfig
+    {
+        const double DRIVE_GEAR_RATIO;
+        const double ANGLE_GEAR_RATIO;
+        const InvertedValue DRIVE_MOTOR_INVERTED_VALUE;
+        const InvertedValue ANGLE_MOTOR_INVERTED_VALUE;
+        const SensorDirectionValue CANCODER_INVERTED_VALUE;
+    };
+
+    // SDS MK4 L3 Very Fast configuration
+    static constexpr const SwerveModuleConfig SDS_MK4_CONFIG = {(6.12 / 1.0), (12.8 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::Clockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
+
+    // SDS MK4n L3+ configuration
+    static constexpr const SwerveModuleConfig SDS_MK4N_CONFIG = {(5.36 / 1.0), (18.75 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::CounterClockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
+
+    // The swerve module configuration on the robot
+    static constexpr const SwerveModuleConfig & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK4N_CONFIG;
+
     static constexpr const size_t NUM_SWERVE_DRIVE_MODULES = 4U;
 
     // 1 inch = 0.0254 meters
     static constexpr const double METERS_PER_INCH = 0.0254;
-
-    // @todo: Abstract swerve module configs into a data structure
-    // SDS MK4 L3 Very Fast configuration
-    //static constexpr double DRIVE_GEAR_RATIO = (6.12 / 1.0);
-    //static constexpr double ANGLE_GEAR_RATIO = (12.8 / 1.0);
-    // SDS MK4n L3+ configuration
-    static constexpr double DRIVE_GEAR_RATIO = (5.36 / 1.0);
-    static constexpr double ANGLE_GEAR_RATIO = (18.75 / 1.0);
 
     static constexpr double FX_INTEGRATED_SENSOR_UNITS_PER_ROTATION = 2048.0;
     static constexpr double WHEEL_CIRCUMFERENCE = 4.0 * METERS_PER_INCH * M_PI;
