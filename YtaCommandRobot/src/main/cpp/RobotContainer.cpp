@@ -1,35 +1,90 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+////////////////////////////////////////////////////////////////////////////////
+/// @file   RobotContainer.cpp
+/// @author David Stalter
+///
+/// @details
+/// Robot container implementation.
+///
+/// Copyright (c) 2025 Youth Technology Academy
+////////////////////////////////////////////////////////////////////////////////
 
-#include "RobotContainer.h"
+// WPILIB INCLUDES
+#include <frc2/command/Commands.h>
 
-#include <frc2/command/button/Trigger.h>
+// C++ INCLUDES
+#include "RobotContainer.hpp"
+#include "commands/AutonomousCommands.hpp"
+#include "commands/TeleopCommands.hpp"
 
-#include "commands/Autos.h"
-#include "commands/ExampleCommand.h"
 
-RobotContainer::RobotContainer() {
-  // Initialize all of your commands and subsystems here
+////////////////////////////////////////////////////////////////
+/// @method RobotContainer::RobotContainer
+///
+/// Constructor for a robot container object.
+///
+////////////////////////////////////////////////////////////////
+RobotContainer::RobotContainer() :
+    m_AutonomousSubsystem(),
+    m_TeleopSubsystem()
+{
+    // Initialize all of your commands and subsystems here
+    //m_TeleopSubsystem.SetDefaultCommand(frc2::cmd::Run(
+    //    [this] {
+    //      m_TeleopSubsystem.TeleopRoutine(
+    //          );
+    //    },
+    //    {&m_TeleopSubsystem}));
 
-  // Configure the button bindings
-  ConfigureBindings();
+    // Cannot bind an rvalue reference to a pointer (or lvalue)
+    m_TeleopSubsystem.SetDefaultCommand(TeleopHelperCommand(&m_TeleopSubsystem));
+
+    // Configure the button bindings
+    ConfigureBindings();
 }
 
-void RobotContainer::ConfigureBindings() {
-  // Configure your trigger bindings here
 
-  // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-  frc2::Trigger([this] {
-    return m_subsystem.ExampleCondition();
-  }).OnTrue(ExampleCommand(&m_subsystem).ToPtr());
+////////////////////////////////////////////////////////////////
+/// @method RobotContainer::ConfigureBindings
+///
+/// Function to bind commands to controller inputs.
+///
+////////////////////////////////////////////////////////////////
+void RobotContainer::ConfigureBindings()
+{
+    // Configure your trigger bindings here
 
-  // Schedule `ExampleMethodCommand` when the Xbox controller's B button is
-  // pressed, cancelling on release.
-  m_driverController.B().WhileTrue(m_subsystem.ExampleMethodCommand());
+    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
+    //frc2::Trigger([this] {
+    //  return m_subsystem.ExampleCondition();
+    //}).OnTrue(ExampleCommand(&m_subsystem).ToPtr());
+
+    // Schedule `ExampleMethodCommand` when the Xbox controller's B button is
+    // pressed, cancelling on release.
+    //m_driverController.B().WhileTrue(m_subsystem.ExampleMethodCommand());
 }
 
-frc2::CommandPtr RobotContainer::GetAutonomousCommand() {
-  // An example command will be run in autonomous
-  return autos::ExampleAuto(&m_subsystem);
+
+////////////////////////////////////////////////////////////////
+/// @method RobotContainer::GetAutonomousCommand
+///
+/// Retrieves the command to use during autonomous.
+///
+////////////////////////////////////////////////////////////////
+frc2::CommandPtr RobotContainer::GetAutonomousCommand()
+{
+    // An example command will be run in autonomous
+    return Yta::Autonomous::ExampleCommand(&m_AutonomousSubsystem);
+}
+
+
+////////////////////////////////////////////////////////////////
+/// @method RobotContainer::GetTeleopCommand
+///
+/// Retrieves the command to use during teleop.
+///
+////////////////////////////////////////////////////////////////
+frc2::CommandPtr RobotContainer::GetTeleopCommand()
+{
+    // An example command will be run in teleop
+    return Yta::Teleop::StaticFactoryCommand(&m_TeleopSubsystem);
 }

@@ -1,35 +1,50 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+////////////////////////////////////////////////////////////////////////////////
+/// @file   RobotContainer.hpp
+/// @author David Stalter
+///
+/// @details
+/// Robot container declarations.
+///
+/// Copyright (c) 2025 Youth Technology Academy
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
+// WPILIB INCLUDES
 #include <frc2/command/CommandPtr.h>
-#include <frc2/command/button/CommandXboxController.h>
 
-#include "Constants.h"
-#include "subsystems/ExampleSubsystem.h"
+// C++ INCLUDES
+#include "subsystems/AutonomousSubsystem.hpp"
+#include "subsystems/TeleopSubsystem.hpp"
+#include "commands/TeleopCommands.hpp"
 
-/**
- * This class is where the bulk of the robot should be declared.  Since
- * Command-based is a "declarative" paradigm, very little robot logic should
- * actually be handled in the {@link Robot} periodic methods (other than the
- * scheduler calls).  Instead, the structure of the robot (including subsystems,
- * commands, and trigger mappings) should be declared here.
- */
-class RobotContainer {
- public:
-  RobotContainer();
 
-  frc2::CommandPtr GetAutonomousCommand();
+////////////////////////////////////////////////////////////////
+/// @class RobotContainer
+///
+/// This class is where the bulk of the robot should be
+/// declared.  Since Command-based is a "declarative" paradigm,
+/// very little robot logic should actually be handled in the
+/// {@link Robot} periodic methods (other than the scheduler
+/// calls).  Instead, the structure of the robot (including
+/// subsystems, commands, and trigger mappings) should be
+/// declared here.
+///
+////////////////////////////////////////////////////////////////
+class RobotContainer
+{
+public:
+    RobotContainer();
 
- private:
-  // Replace with CommandPS4Controller or CommandJoystick if needed
-  frc2::CommandXboxController m_driverController{
-      OperatorConstants::kDriverControllerPort};
+    frc2::CommandPtr GetAutonomousCommand();
+    frc2::CommandPtr GetTeleopCommand();
 
-  // The robot's subsystems are defined here...
-  ExampleSubsystem m_subsystem;
+private:
+    // The robot's subsystems are defined here.
+    // Subsystems automatically get Periodic() invoked by the command scheduler.
+    AutonomousSubsystem m_AutonomousSubsystem;
+    TeleopSubsystem m_TeleopSubsystem;
 
-  void ConfigureBindings();
+    // In the example project, but currently unimplemented
+    void ConfigureBindings();
 };
