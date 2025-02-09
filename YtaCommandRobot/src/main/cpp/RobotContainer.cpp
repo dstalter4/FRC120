@@ -27,16 +27,30 @@ RobotContainer::RobotContainer() :
     m_AutonomousSubsystem(),
     m_TeleopSubsystem()
 {
-    // Initialize all of your commands and subsystems here
-    //m_TeleopSubsystem.SetDefaultCommand(frc2::cmd::Run(
-    //    [this] {
-    //      m_TeleopSubsystem.TeleopRoutine(
-    //          );
-    //    },
-    //    {&m_TeleopSubsystem}));
+    // Options:
+    //
+    // 1. Directly set the default command by constructing one with a lambda.
+    // 2. Create a command object for a custom command.
+    // 3. Register the subsystem and let its periodic function run.
 
+    // Option 1
+    m_TeleopSubsystem.SetDefaultCommand(frc2::cmd::Run(
+        // Lambda
+        [this]
+        {
+            m_TeleopSubsystem.MainRoutine();
+        },
+
+        // Requirements
+        {&m_TeleopSubsystem}
+    ));
+
+    // Option 2
     // Cannot bind an rvalue reference to a pointer (or lvalue)
-    m_TeleopSubsystem.SetDefaultCommand(TeleopHelperCommand(&m_TeleopSubsystem));
+    //m_TeleopSubsystem.SetDefaultCommand(TeleopHelperCommand(&m_TeleopSubsystem));
+    TeleopHelperCommand(&m_TeleopSubsystem).Schedule();
+
+    // Option 3 happened when the subsystem was registered
 
     // Configure the button bindings
     ConfigureBindings();

@@ -46,8 +46,9 @@ public:
     // An example method querying a boolean state of the subsystem (for example, a digital sensor).
     bool ExampleConditionFunction();
 
-private:
     // Function to handle the primary responsibilities of teleop.
     // This is the glue function to bind a TimedRobot into a CommandRobot
     void MainRoutine();
+
+private:
 };
