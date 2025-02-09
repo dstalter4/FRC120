@@ -1,16 +1,51 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+////////////////////////////////////////////////////////////////////////////////
+/// @file   AutonomousCommands.hpp
+/// @author David Stalter
+///
+/// @details
+/// Factory and custom autonomous commands.
+///
+/// Copyright (c) 2025 Youth Technology Academy
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
+// WPILIB INCLUDES
+#include <frc2/command/CommandHelper.h>
 #include <frc2/command/CommandPtr.h>
 
-#include "subsystems/ExampleSubsystem.h"
+// C++ INCLUDES
+// (none)
 
-namespace autos {
-/**
- * Example static factory for an autonomous command.
- */
-frc2::CommandPtr ExampleAuto(ExampleSubsystem* subsystem);
-}  // namespace autos
+// FORWARD DECLARATIONS
+class AutonomousSubsystem;
+
+
+////////////////////////////////////////////////////////////////
+/// @namespace Yta::Autonomous
+///
+////////////////////////////////////////////////////////////////
+namespace Yta::Autonomous
+{
+    frc2::CommandPtr ExampleCommand(AutonomousSubsystem * pAutonomousSubsystem);
+}
+
+
+////////////////////////////////////////////////////////////////
+/// @class AutonomousHelperCommand
+///
+/// Declarations for a custom autonomous command.
+///
+////////////////////////////////////////////////////////////////
+class AutonomousHelperCommand : public frc2::CommandHelper<frc2::Command, AutonomousHelperCommand>
+{
+public:
+    // Creates a new AutonomousHelperCommand.
+    explicit AutonomousHelperCommand(AutonomousSubsystem * pAutonomousSubsystem);
+
+    // Primary execution function for the command
+    virtual void Execute();
+
+private:
+    AutonomousSubsystem * m_pAutonomousSubsystem;
+};

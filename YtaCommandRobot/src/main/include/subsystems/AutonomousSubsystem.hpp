@@ -1,12 +1,29 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
+////////////////////////////////////////////////////////////////////////////////
+/// @file   AutonomousSubsystem.hpp
+/// @author David Stalter
+///
+/// @details
+/// Autonomous subsystem for a command based robot.
+///
+/// Copyright (c) 2025 Youth Technology Academy
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
+// WPILIB INCLUDES
 #include <frc2/command/CommandPtr.h>
 #include <frc2/command/SubsystemBase.h>
 
+// C++ INCLUDES
+// (none)
+
+
+////////////////////////////////////////////////////////////////
+/// @class AutonomousSubsystem
+///
+/// Declarations for the teleop subsystem.
+///
+////////////////////////////////////////////////////////////////
 class AutonomousSubsystem : public frc2::SubsystemBase
 {
 public:
@@ -22,12 +39,10 @@ public:
 
 
 
-    // Example static factory for a autonomous command
+    // Example static factory for a autonomous command.
     frc2::CommandPtr StaticFactoryCommand();
 
     // An example method querying a boolean state of the subsystem (for example, a digital sensor).
-    //
-    // @return value of some boolean subsystem state, such as a digital sensor.
     bool ExampleConditionFunction();
 
 private:
