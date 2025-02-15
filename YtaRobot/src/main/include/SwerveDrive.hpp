@@ -89,15 +89,15 @@ private:
 
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
-    // 2025 Raw Measurements (bevels right)
-    // FL: 0.816162_tr (293.81832_deg)
-    // FR: 0.371582_tr (133.76952_deg)
-    // BL: 0.037598_tr (13.53528_deg)
-    // BR: 0.478027_tr (172.08972_deg)
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 11, 12, 1, 293.81832_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 13, 14, 2, 133.76952_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 15, 16, 3, 13.53528_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 17, 18, 4, 172.08972_deg};
+    // 2025 Raw Measurements (bevels right), Recal measurements after base module swaps
+    // FL: 0.816162_tr (293.81832_deg), 0.315430_tr (113.5548_deg)
+    // FR: 0.371582_tr (133.76952_deg), 0.856934_tr (308.49624_deg)
+    // BL: 0.037598_tr (13.53528_deg), 0.538330_tr (193.7988_deg)
+    // BR: 0.478027_tr (172.08972_deg), 0.972900_tr (350.244_deg)
+    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 11, 12, 1, 113.5548_deg};
+    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 13, 14, 2, 308.49624_deg};
+    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 15, 16, 3, 193.7988_deg};
+    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 17, 18, 4, 350.244_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;
