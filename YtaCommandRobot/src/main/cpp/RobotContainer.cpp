@@ -9,6 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // WPILIB INCLUDES
+#include <frc/smartdashboard/SmartDashboard.h>
 #include <frc2/command/Commands.h>
 
 // C++ INCLUDES
@@ -48,7 +49,7 @@ RobotContainer::RobotContainer() :
     // Option 2
     // Cannot bind an rvalue reference to a pointer (or lvalue)
     //m_TeleopSubsystem.SetDefaultCommand(TeleopHelperCommand(&m_TeleopSubsystem));
-    TeleopHelperCommand(&m_TeleopSubsystem).Schedule();
+    //TeleopHelperCommand(&m_TeleopSubsystem).Schedule();
 
     // Option 3 happened when the subsystem was registered
 
@@ -87,7 +88,16 @@ void RobotContainer::ConfigureBindings()
 frc2::CommandPtr RobotContainer::GetAutonomousCommand()
 {
     // An example command will be run in autonomous
-    return Yta::Autonomous::ExampleCommand(&m_AutonomousSubsystem);
+    //return Yta::Autonomous::ExampleCommand(&m_AutonomousSubsystem);
+    static uint32_t l1;
+    static uint32_t l2;
+    static uint32_t l3;
+    return frc2::cmd::Sequence
+    (
+        frc2::InstantCommand([](){frc::SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
+        frc2::InstantCommand([](){frc::SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
+        frc2::InstantCommand([](){frc::SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
+    );
 }
 
 

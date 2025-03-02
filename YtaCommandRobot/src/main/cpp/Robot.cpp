@@ -95,15 +95,39 @@ void Robot::TeleopInit()
     m_TeleopCommand = m_RobotContainer.GetTeleopCommand();
     if (m_TeleopCommand)
     {
-        m_TeleopCommand->Schedule();
+        //m_TeleopCommand->Schedule();
     }
 }
 
 ////////////////////////////////////////////////////////////////
 /// This function is called periodically during operator control.
 ////////////////////////////////////////////////////////////////
+#include "commands/TeleopCommands.hpp"
+#include "frc/smartdashboard/SmartDashboard.h"
 void Robot::TeleopPeriodic()
 {
+    static frc2::CommandPtr teleopCmd = TeleopHelperCommand(m_RobotContainer.GetTeleopSubsystem()).ToPtr();
+    static uint32_t iteration = 0UL;
+    if ((iteration % 4) == 0U)
+    {
+        // This probably can't be cancelled if it's continuously scheduled
+        //m_RobotContainer.ScheduleSingleTeleopCommand();
+
+        //m_TeleopCommand->Cancel();
+        teleopCmd.Schedule();
+    }
+    else if ((iteration % 5) == 0U)
+    {
+        //teleopCmd.Cancel();
+        m_TeleopCommand->Schedule();
+    }
+    else
+    {
+        m_TeleopCommand->Cancel();
+        teleopCmd.Cancel();
+    }
+    iteration++;
+    frc::SmartDashboard::PutNumber("Iteration", iteration);
 }
 
 ////////////////////////////////////////////////////////////////

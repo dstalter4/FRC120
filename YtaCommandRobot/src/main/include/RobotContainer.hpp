@@ -16,7 +16,7 @@
 // C++ INCLUDES
 #include "subsystems/AutonomousSubsystem.hpp"
 #include "subsystems/TeleopSubsystem.hpp"
-#include "commands/TeleopCommands.hpp"
+#include "commands/TeleopCommands.hpp"  // remove?
 
 
 ////////////////////////////////////////////////////////////////
@@ -38,6 +38,8 @@ public:
 
     frc2::CommandPtr GetAutonomousCommand();
     frc2::CommandPtr GetTeleopCommand();
+    void ScheduleSingleTeleopCommand() { TeleopHelperCommand(&m_TeleopSubsystem).Schedule(); }
+    TeleopSubsystem * GetTeleopSubsystem() { return &m_TeleopSubsystem; }
 
 private:
     // The robot's subsystems are defined here.

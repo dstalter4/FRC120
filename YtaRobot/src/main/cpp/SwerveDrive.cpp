@@ -44,6 +44,33 @@ SwerveDrive::SwerveDrive(Pigeon2 * pPigeon) :
 }
 
 
+Pose2d SwerveDrive::GetPose()
+{
+    return m_Odometry.GetPose();
+}
+void SwerveDrive::SetPose(Pose2d pose)
+{
+    //m_Odometry.ResetPose(pose);
+    wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModulePositions = {{0.0_m, 0.0_deg}};
+    for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+    {
+        swerveModulePositions[i] = m_SwerveModules[i].GetSwerveModulePosition();
+    }
+    m_Odometry.ResetPosition(m_pPigeon->GetYaw().GetValue(), swerveModulePositions, pose);
+}
+void SwerveDrive::SetModuleStates(wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModuleStates)
+{
+    // Desaturate the wheel speeds
+    SwerveConfig::Kinematics.DesaturateWheelSpeeds(&swerveModuleStates, SwerveConfig::MAX_DRIVE_VELOCITY_MPS);
+
+    // Set each individual swerve module state
+    for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+    {
+        m_SwerveModules[i].SetDesiredState(swerveModuleStates[i], false);
+    }
+}
+
+
 ////////////////////////////////////////////////////////////////
 /// @method SwerveDrive::SetModuleStates
 ///
@@ -101,6 +128,8 @@ void SwerveDrive::SetModuleStates(Translation2d translation, double rotation, bo
 void SwerveDrive::UpdateSmartDashboard()
 {
     // Reference code calls update odometry here on m_Odometry, but it doesn't appear to be used anywhere.
+    // Autonomous trajectories probably need this to be called periodically.
+    //m_Odometry.Update();
 
     SmartDashboard::PutNumber("Pigeon yaw", m_pPigeon->GetYaw().GetValueAsDouble());
     SmartDashboard::PutNumber("Pigeon pitch", m_pPigeon->GetPitch().GetValueAsDouble());

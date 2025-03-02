@@ -20,6 +20,7 @@
 
 // C++ INCLUDES
 #include "YtaRobot.hpp"             // for inline autonomous function declarations
+#include "YtaRobotAutonomousCommand.hpp"       // for autonomous command declarations
 
 using namespace frc;
 
@@ -43,6 +44,7 @@ namespace YtaRobotAutonomous
     
     // VARIABLES
     extern bool bAutonomousExecutionComplete;
+    extern AutonomousSubsystem m_AutonomousSubsystem;
     
     // CONSTS
     
@@ -56,6 +58,7 @@ namespace YtaRobotAutonomous
     //static const bool       ROUTINE_2                           = false;
     //static const bool       ROUTINE_3                           = false;
     //static const bool       TEST_ENABLED                        = false;
+    static const bool       USE_COMMAND_BASED_AUTONOMOUS        = true;
 
     // Autonomous drive speed constants
     static constexpr double DRIVE_SPEED_SLOW                    =  0.30;

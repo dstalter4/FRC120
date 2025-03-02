@@ -48,6 +48,10 @@ public:
     // Updates each swerve module based on the inputs
     void SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop);
 
+    Pose2d GetPose();
+    void SetPose(Pose2d pose);
+    void SetModuleStates(wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModuleStates);
+
     // Puts useful values on the dashboard
     void UpdateSmartDashboard();
 

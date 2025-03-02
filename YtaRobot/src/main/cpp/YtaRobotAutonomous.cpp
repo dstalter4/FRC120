@@ -9,7 +9,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
-// <none>
+#include <frc2/command/Command.h>
+#include <frc2/command/Commands.h>
+#include <frc2/command/CommandScheduler.h>
 
 // C INCLUDES
 // (none)
@@ -17,10 +19,28 @@
 // C++ INCLUDES
 #include "YtaRobot.hpp"                 // for robot class declaration
 #include "YtaRobotAutonomous.hpp"       // for autonomous declarations
+#include "YtaRobotAutonomousCommand.hpp"       // for autonomous command declarations
 #include "RobotCamera.hpp"              // for interacting with cameras
+#include "RobotUtils.hpp"
 
 // NAMESPACE DATA
 bool YtaRobotAutonomous::bAutonomousExecutionComplete;
+AutonomousSubsystem YtaRobotAutonomous::m_AutonomousSubsystem;
+
+
+std::optional<CommandPtr> f_AutonomousCommand;
+CommandPtr GetCommand()
+{
+    static uint32_t l1;
+    static uint32_t l2;
+    static uint32_t l3;
+    return cmd::Sequence
+    (
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
+    );
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -48,6 +68,43 @@ void YtaRobot::AutonomousInit()
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     RobotCamera::SetLimelightPipeline(0);
+
+    if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
+    {
+        //m_AutonomousCommand = m_RobotContainer.GetAutonomousCommand();
+        //if (m_AutonomousCommand)
+        //{
+        //    m_AutonomousCommand->Schedule();
+        //}
+        RobotUtils::DisplayMessage("Autonomous init - command based.");
+        //static AutonomousHelperCommand autonomousCommand(&YtaRobotAutonomous::m_AutonomousSubsystem);
+        //autonomousCommand.Schedule();
+        
+        //CommandPtr autonomousCommand = AutonomousTestTrajectoryRoutine();
+        //std::optional<CommandPtr> autonomousCommand = GetCommand();
+        // Scheduled commands must have non-local scope!  Otherwise the scheduler does not continue to see them.
+        f_AutonomousCommand = GetCommand();
+        if (f_AutonomousCommand)
+        {
+            RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
+            f_AutonomousCommand->Schedule();
+        }
+        else
+        {
+            RobotUtils::DisplayMessage("Autonomous init - command NOT scheduled.");
+        }
+        /*
+        static uint32_t l1;
+        static uint32_t l2;
+        static uint32_t l3;
+        cmd::Sequence
+        (
+            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
+            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
+            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
+        ).Schedule();
+        */
+    }
 }
 
 
@@ -67,6 +124,19 @@ void YtaRobot::AutonomousPeriodic()
 {
     // Log a mode change if one occurred
     CheckAndUpdateRobotMode(ROBOT_MODE_AUTONOMOUS);
+
+    if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
+    {
+        //RobotUtils::DisplayMessage("Autonomous periodic - command based.");
+        // This updates the odometry so it is accurate for the command running
+        static uint32_t ac;
+        SmartDashboard::PutNumber("Autonomous periodic counter", ac++);
+        m_pSwerveDrive->UpdateSmartDashboard();
+        //static std::optional<CommandPtr> autonomousCommand = AutonomousTestTrajectoryRoutine();
+        //autonomousCommand->Schedule();
+        CommandScheduler::GetInstance().Run();
+        return;
+    }
     
     if (YtaRobotAutonomous::bAutonomousExecutionComplete)
     {
@@ -128,7 +198,7 @@ void YtaRobot::AutonomousPeriodic()
     }
     
     // One shot through autonomous is over, indicate as such.
-    YtaRobotAutonomous::bAutonomousExecutionComplete = true;
+    //YtaRobotAutonomous::bAutonomousExecutionComplete = true;
     
     /*
     // Idle until auto is terminated

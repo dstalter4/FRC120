@@ -18,11 +18,17 @@
 #include "frc/trajectory/Trajectory.h"              // for working with trajectories
 #include "frc/trajectory/TrajectoryConfig.h"        // for creating a trajectory config
 #include "frc/trajectory/TrajectoryGenerator.h"     // for generating a trajectory
+#include "frc/trajectory/TrapezoidProfile.h"
+#include "frc/controller/ProfiledPIDController.h"
+#include "frc2/command/Commands.h"
+#include "frc2/command/SwerveControllerCommand.h"
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                           // for DisplayMessage()
 #include "YtaRobot.hpp"                             // for robot class declaration
 #include "YtaRobotAutonomous.hpp"                   // for autonomous declarations
+#include "SwerveConfig.hpp"
+#include "SwerveDrive.hpp"
 
 
 ////////////////////////////////////////////////////////////////
@@ -75,8 +81,9 @@ void YtaRobot::AutonomousTestSwerveRoutine()
 /// Autonomous swerve test routine.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::AutonomousTestTrajectoryRoutine()
+CommandPtr YtaRobot::AutonomousTestTrajectoryRoutine()
 {
+RobotUtils::DisplayMessage("Autonomous trajectory - enter.");
     // Swerve trajectory routine, but requires switching to command based robot.
 
     //TrajectoryConfig config =
@@ -87,6 +94,7 @@ void YtaRobot::AutonomousTestTrajectoryRoutine()
     TrajectoryConfig trajectoryConfig = {0.5_mps, 1.0_mps_sq};
     trajectoryConfig.SetKinematics(SwerveConfig::Kinematics);
 
+RobotUtils::DisplayMessage("Autonomous trajectory - point 1.");
     // An example trajectory to follow.  All units in meters.
     //Trajectory exampleTrajectory =
     //TrajectoryGenerator.generateTrajectory(
@@ -101,16 +109,23 @@ void YtaRobot::AutonomousTestTrajectoryRoutine()
     const Pose2d FINAL_POSE = {2_m, 0_m, 0_deg};
     const std::vector<Translation2d> WAY_POINTS = 
     {
-        {0_m, 0_m}
+        {1_m, 0_m}
     };
     Trajectory testTrajectory = TrajectoryGenerator::GenerateTrajectory(INITIAL_POSE, WAY_POINTS, FINAL_POSE, trajectoryConfig);
-    (void)testTrajectory;
+    //(void)testTrajectory;
+RobotUtils::DisplayMessage("Autonomous trajectory - point 2.");
 
     //var thetaController =
     //new ProfiledPIDController(
     //    Constants.AutoConstants.kPThetaController, 0, 0, Constants.AutoConstants.kThetaControllerConstraints);
     //thetaController.enableContinuousInput(-Math.PI, Math.PI);
+    // Values are max velocity, max acceleration
+    TrapezoidProfile<units::radians>::Constraints thetaPidControllerConstraints(3.1415_rad_per_s, 3.1415_rad_per_s_sq);
+    // Parameters are P, I, D, TrapezoidProfile<>::Constraints
+    ProfiledPIDController<units::radians> thetaPidController(0.5, 0.0, 0.0, thetaPidControllerConstraints);
+    thetaPidController.EnableContinuousInput(units::radian_t(-std::numbers::pi), units::radian_t(std::numbers::pi));
 
+RobotUtils::DisplayMessage("Autonomous trajectory - point 3.");
     //SwerveControllerCommand swerveControllerCommand =
     //new SwerveControllerCommand(
     //    exampleTrajectory,
@@ -121,7 +136,45 @@ void YtaRobot::AutonomousTestTrajectoryRoutine()
     //    thetaController,
     //    s_Swerve::setModuleStates,
     //    s_Swerve);
+    PIDController xPidController(0.5, 0.0, 0.0);
+    PIDController yPidController(0.5, 0.0, 0.0);
+    CommandPtr swerveControllerCommand = 
+    SwerveControllerCommand<SwerveConfig::NUM_SWERVE_DRIVE_MODULES>
+    (
+        testTrajectory,
+        [this](){return m_pSwerveDrive->GetPose();},
+        SwerveConfig::Kinematics,
+        xPidController,
+        yPidController,
+        thetaPidController,
+        [this](auto moduleStates){ m_pSwerveDrive->SetModuleStates(moduleStates); }
+        // Last parameter is requirements and (maybe?) can be defaulted
+    ).ToPtr();
+
+    //addCommands(
+    //    new InstantCommand(() -> s_Swerve.setPose(exampleTrajectory.getInitialPose())),
+    //    swerveControllerCommand
+    //);
+/*
+    return cmd::Sequence
+    (
+        InstantCommand([this, initialPose = testTrajectory.InitialPose()]() { m_pSwerveDrive->SetPose(initialPose); }, {}).ToPtr(),
+        std::move(swerveControllerCommand),
+        InstantCommand([this] { m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, false, false); }, {}).ToPtr()
+    );
+*/
+    RobotUtils::DisplayMessage("Autonomous trajectory - before sequencing.");
+    static uint32_t l1;
+    static uint32_t l2;
+    static uint32_t l3;
+    return cmd::Sequence
+    (
+        InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
+        InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
+        InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
+    );
+    RobotUtils::DisplayMessage("Autonomous trajectory - after sequencing.");
 
     // Returning from here will enter the idle state until autonomous is over
-    RobotUtils::DisplayMessage("Auto test trajectory routine done.");
+    //RobotUtils::DisplayMessage("Auto test trajectory routine done.");
 }

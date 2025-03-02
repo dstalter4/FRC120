@@ -46,6 +46,7 @@ public:
 
     // Primary execution function for the command
     virtual void Execute();
+    virtual bool IsFinished() { return true; }
 
 private:
     TeleopSubsystem * m_pTeleopSubsystem;

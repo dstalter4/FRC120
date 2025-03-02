@@ -31,6 +31,7 @@
 #include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
+#include "frc2/command/Command.h"               // for CommandPtr
 
 // C++ INCLUDES
 #include "DriveConfiguration.hpp"               // for information on the drive config
@@ -44,6 +45,7 @@
 #include "ctre/phoenix6/controls/MusicTone.hpp" // for creating music tones
 
 using namespace frc;
+using namespace frc2;
 using namespace ctre::phoenix6::controls;
 using namespace ctre::phoenix6::hardware;
 using namespace ctre::phoenix::led;
@@ -213,7 +215,7 @@ private:
     void AutonomousRoutine3();
     void AutonomousTestRoutine();
     void AutonomousTestSwerveRoutine();
-    void AutonomousTestTrajectoryRoutine();
+    CommandPtr AutonomousTestTrajectoryRoutine();
     void AutonomousCommon();
     void AutonomousCommonRed();
     void AutonomousCommonBlue();

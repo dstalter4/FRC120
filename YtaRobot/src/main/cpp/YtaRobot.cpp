@@ -239,6 +239,7 @@ void YtaRobot::TeleopInit()
     
     // Autonomous should have left things in a known state, but
     // just in case clear everything.
+    CommandScheduler::GetInstance().CancelAll();
     InitialStateSetup();
 
     // Tele-op won't do detailed processing of the images unless instructed to
