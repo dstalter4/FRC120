@@ -7,7 +7,7 @@
 /// YTA controller implementation or the built-in FRC types.
 ///
 ///
-/// Copyright (c) 2023 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTACONTROLLER_HPP
@@ -24,6 +24,7 @@
 
 // C++ INCLUDES
 #include "ControllerConfiguration.hpp"  // for the controller axis/button mappings
+#include "YtaButtonBox.hpp"             // for creating a YTA button box controller
 #include "YtaCustomController.hpp"      // for creating custom YTA controllers
 
 using namespace frc;
