@@ -83,7 +83,8 @@ void YtaRobot::AutonomousInit()
         //CommandPtr autonomousCommand = AutonomousTestTrajectoryRoutine();
         //std::optional<CommandPtr> autonomousCommand = GetCommand();
         // Scheduled commands must have non-local scope!  Otherwise the scheduler does not continue to see them.
-        f_AutonomousCommand = GetCommand();
+        //f_AutonomousCommand = GetCommand();
+        f_AutonomousCommand = AutonomousTestTrajectoryRoutine();
         if (f_AutonomousCommand)
         {
             RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
