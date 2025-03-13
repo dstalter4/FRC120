@@ -260,7 +260,12 @@ private:
     
     // Main sequence for vision processing
     void CameraSequence();
-    
+
+    // Superstructure sequences
+    void LiftSequence();
+    void ArmPivotSequence();
+    void GamePieceControlSequence();
+
     // MEMBER VARIABLES
     
     // Autonomous
@@ -279,6 +284,9 @@ private:
     typedef Yta::Talon::EmptyTalonFx ArcadeDriveTalonFxType;                // Switch to TalonMotorGroup<TalonFX> for real implementation
     ArcadeDriveTalonFxType *        m_pLeftDriveMotors;                     // Left drive motor control
     ArcadeDriveTalonFxType *        m_pRightDriveMotors;                    // Right drive motor control
+    TalonMotorGroup<TalonFX> *      m_pLiftMotors;                          // Lift motor control
+    TalonFxMotorController *        m_pArmPivotMotor;                       // Arm pivot motor control
+    TalonFxMotorController *        m_pAlgaeCoralMotor;                     // Motor for manipulating game pieces
     
     // LEDs
     CANdle *                        m_pCandle;                              // Controls an RGB LED strip
@@ -367,7 +375,13 @@ private:
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV   = Yta::Controller::PovDirections::POV_RIGHT;
 
     // Aux inputs
+    static const int                AUX_TARE_LIFT_BUTTON                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
+    static const int                AUX_AUTO_MOVE_LIFT_UP_DOWN_BUTTON       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
+    static const int                AUX_TOGGLE_LIFT_BRAKE_COAST_BUTTON      = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+
+    static const Yta::Controller::PovDirections  AUX_CONTROLS_LIFT_UP                       = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  AUX_CONTROLS_LIFT_DOWN                     = Yta::Controller::PovDirections::POV_DOWN;
 
     // CAN Signals
     // Note: The use of high CAN values if swerve drive is in use is
@@ -376,6 +390,10 @@ private:
     //       types to be present.  When using swerve drive, IDs 11-18
     //       are used by the swerve modules (see the SwerveModuleConfigs
     //       in SwerveDrive.hpp).
+    // Superstructure uses IDs starting at 21
+    static const unsigned           LIFT_MOTORS_CAN_START_ID                = 21;
+    static const unsigned           ARM_PIVOT_MOTOR_CAN_ID                  = 23;
+    static const unsigned           ALGAE_CORAL_MOTOR_CAN_ID                = 24;
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 

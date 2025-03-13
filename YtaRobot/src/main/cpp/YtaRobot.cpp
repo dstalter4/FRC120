@@ -43,6 +43,9 @@ YtaRobot::YtaRobot() :
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
     m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pLiftMotors                       (new TalonMotorGroup<TalonFX>("Lift motors", TWO_MOTORS, LIFT_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Brake, false)),
+    m_pArmPivotMotor                    (new TalonFxMotorController(ARM_PIVOT_MOTOR_CAN_ID)),
+    m_pAlgaeCoralMotor                  (new TalonFxMotorController(ALGAE_CORAL_MOTOR_CAN_ID)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
     m_RainbowAnimation                  ({1, 0.5, 308}),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
@@ -181,6 +184,49 @@ void YtaRobot::ConfigureMotorControllers()
     const StatorCurrentLimitConfiguration INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG = {true, 5.0, 50.0, 5.0};
     pTalon->ConfigStatorCurrentLimit(INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG);
     */
+
+    // Some notes about applying motor configurations:
+    // - The classes/structs in YtaTalon.hpp have motor configuration objects in them.
+    // - Declaring stack local or class scope configuration objects are *separate and
+    //   distinct* from the configuration objects in the YtaTalon.hpp classes/structs.
+    // - If a stack local or class scope configuration is applied, it will overwrite
+    //   the configuration stored in the device.
+    // - Calling the methods provided by YtaTalon.hpp *never* update the configuration
+    //   objects in the classes/structs.  To update those objects, retrieve the objects
+    //   via things like m_MotorConfiguration (for individual motors) or
+    //   GetMotorConfiguration() (for motor groups).
+    // - The classes/structs in YtaTalon.hpp provide ApplyConfiguration() routines.
+    //   These can be used to directly apply a stack local or class scope configuration,
+    //   or to apply an updated configuration when the configuration objects were directly
+    //   modified.  Keep the notes above in mind when calling them.
+    // - The ApplyConfiguration() method for motor groups will default to applying the
+    //   configuration to all motors unless a specific CAN ID is given.  The configuration
+    //   applied to each motor in the group is the *saved configuration* for that specific
+    //   motor.  It may be different for each motor, depending on the robot code.
+    // - Configurations can be applied to the whole configuration object type, or to
+    //   sub-types only (e.g. TalonFXConfiguration vs. CurrentLimitsConfigs), as
+    //   ApplyConfiguration() is overloaded.  The template version only applies stack
+    //   local or class scope configs, so remember the notes above.  Right now the
+    //   template version is disabled, so don't call it.
+    // - Thank CTRE for all this.  Instead of letting the config be a member of the motor
+    //   object class with simple getter/setters, it's separate and overly complex.
+
+    // Configure lift motors (only needs to be applied to the lead motor of the group)
+    // Brake mode was set when the motor group was constructed
+    (void)m_pLiftMotors->GetMotorConfiguration(LIFT_MOTORS_CAN_START_ID)->Feedback.WithSensorToMechanismRatio(12.0 / 1.0);
+    (void)m_pLiftMotors->GetMotorConfiguration(LIFT_MOTORS_CAN_START_ID)->Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    m_pLiftMotors->ApplyConfiguration(LIFT_MOTORS_CAN_START_ID);
+    (void)m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+
+    // Configure arm pivot motor
+    (void)m_pArmPivotMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    (void)m_pArmPivotMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(135.0 / 1.0);
+    (void)m_pArmPivotMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    m_pArmPivotMotor->ApplyConfiguration();
+
+    // Configure algae/coral motor
+    (void)m_pAlgaeCoralMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    m_pAlgaeCoralMotor->ApplyConfiguration();
 }
 
 
@@ -279,6 +325,10 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    LiftSequence();
+    ArmPivotSequence();
+    GamePieceControlSequence();
+
     //PneumaticSequence();
     
     //CameraSequence();
@@ -303,6 +353,163 @@ void YtaRobot::UpdateSmartDashboard()
     // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
     // Nothing to send yet
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::LiftSequence
+///
+/// This method contains the main workflow for controlling
+/// the lift on the robot.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::LiftSequence()
+{
+    // Lift mechanism can do slightly over 5x sprocket rotations from bottom to top
+    // Measured 0->1890 degrees = 5.25 turns.  Limit range to five rotations (0->1800 degrees).
+    // Give tolerance at top/bottom of 45 degrees.
+    static TalonFX * pLiftLeaderTalon = m_pLiftMotors->GetMotorObject(LIFT_MOTORS_CAN_START_ID);
+    static units::angle::degree_t liftAngleTargetDegrees = 45.0_deg;
+
+    units::angle::turn_t liftAngleTurns = pLiftLeaderTalon->GetPosition().GetValue();
+    units::angle::degree_t liftAngleDegrees = liftAngleTurns;
+    SmartDashboard::PutNumber("Lift angle", liftAngleDegrees.value());
+    SmartDashboard::PutNumber("Target lift angle", liftAngleTargetDegrees.value());
+
+
+    static bool bTareInProgress = false;
+    // If the tare button is being held
+    if (m_pAuxController->GetButtonState(AUX_TARE_LIFT_BUTTON))
+    {
+        // Allow manual movement, but only down
+        if (m_pAuxController->GetPovAsDirection() == AUX_CONTROLS_LIFT_DOWN)
+        {
+            m_pLiftMotors->Set(-0.1);
+        }
+        else
+        {
+            m_pLiftMotors->Set(0.0);
+        }
+        bTareInProgress = true;
+    }
+    // When the tare button is released, set the new zero
+    if (m_pAuxController->DetectButtonChange(AUX_TARE_LIFT_BUTTON, Yta::Controller::ButtonStateChanges::BUTTON_RELEASED))
+    {
+        (void)pLiftLeaderTalon->GetConfigurator().SetPosition(0.0_tr);
+        liftAngleTargetDegrees = 45.0_deg;
+        bTareInProgress = false;
+    }
+    // Don't continue if a tare is in progress
+    if (bTareInProgress)
+    {
+        return;
+    }
+
+
+    if ((m_pAuxController->GetPovAsDirection() == AUX_CONTROLS_LIFT_UP) && (liftAngleTargetDegrees < 1845.0_deg))
+    {
+        liftAngleTargetDegrees += 5.0_deg;
+    }
+    else if ((m_pAuxController->GetPovAsDirection() == AUX_CONTROLS_LIFT_DOWN) && (liftAngleTargetDegrees > 45.0_deg))
+    {
+        liftAngleTargetDegrees -= 5.0_deg;
+    }
+    else
+    {
+    }
+
+    static bool bIsRaised = false;
+    if (m_pAuxController->DetectButtonChange(AUX_AUTO_MOVE_LIFT_UP_DOWN_BUTTON))
+    {
+        if (bIsRaised)
+        {
+            liftAngleTargetDegrees = 45.0_deg;
+        }
+        else
+        {
+            liftAngleTargetDegrees = 1800.0_deg;
+        }
+        bIsRaised = !bIsRaised;
+    }
+
+
+    // Check for a change between brake and coast
+    static bool bOnCoast = false;
+    if (m_pAuxController->DetectButtonChange(AUX_TOGGLE_LIFT_BRAKE_COAST_BUTTON))
+    {
+        if (bOnCoast)
+        {
+            m_pLiftMotors->SetBrakeMode();
+        }
+        else
+        {
+            m_pLiftMotors->SetCoastMode();
+        }
+        bOnCoast = !bOnCoast;
+    }
+    SmartDashboard::PutBoolean("Lift motors coast", bOnCoast);
+
+
+    static double liftP = 18.0;
+    static double liftD = 0.1;
+    bool bPidChanged = false;
+    if (m_pAuxController->DetectButtonChange(1))
+    {
+        liftP -= 1.0;
+        bPidChanged = true;
+    }
+    if (m_pAuxController->DetectButtonChange(2))
+    {
+        liftP += 1.0;
+        bPidChanged = true;
+    }
+    if (m_pAuxController->DetectButtonChange(3))
+    {
+        liftD -= 0.05;
+        bPidChanged = true;
+    }
+    if (m_pAuxController->DetectButtonChange(4))
+    {
+        liftD += 0.05;
+        bPidChanged = true;
+    }
+    if (bPidChanged)
+    {
+        m_pLiftMotors->GetMotorConfiguration()->Slot0.kP = liftP;
+        m_pLiftMotors->GetMotorConfiguration()->Slot0.kD = liftD;
+        m_pLiftMotors->ApplyConfiguration();
+    }
+    SmartDashboard::PutNumber("Lift kP", liftP);
+    SmartDashboard::PutNumber("Lift kD", liftD);
+
+    m_pLiftMotors->SetAngle(liftAngleTargetDegrees.value());
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ArmPivotSequence
+///
+/// This method contains the main workflow for controlling
+/// the arm pivot mechanism on the robot.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ArmPivotSequence()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::GamePieceControlSequence
+///
+/// This method contains the main workflow for controlling
+/// game pice actions (algae/coral in/out).
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::GamePieceControlSequence()
+{
 }
 
 
@@ -895,7 +1102,7 @@ void YtaRobot::SwerveDriveSequence()
         m_pSwerveDrive->LockWheels();
     }
 
-    // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
+    // The GetDriveX() and GetDriveY() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);

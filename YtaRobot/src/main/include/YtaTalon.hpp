@@ -603,7 +603,7 @@ void TalonMotorGroup<TalonType>::SetCoastMode()
     for (unsigned i = 0U; i < m_NumMotors; i++)
     {
         m_pMotorsInfo[i]->m_MotorConfiguration.MotorOutput.NeutralMode = NeutralModeValue::Coast;
-        m_pMotorsInfo[i]->m_pTalon->GetConfigurator().Apply(m_pMotorsInfo[i].m_MotorConfiguration.MotorOutput);
+        m_pMotorsInfo[i]->m_pTalon->GetConfigurator().Apply(m_pMotorsInfo[i]->m_MotorConfiguration.MotorOutput);
     }
 }
 
@@ -621,7 +621,7 @@ void TalonMotorGroup<TalonType>::SetBrakeMode()
     for (unsigned i = 0U; i < m_NumMotors; i++)
     {
         m_pMotorsInfo[i]->m_MotorConfiguration.MotorOutput.NeutralMode = NeutralModeValue::Brake;
-        m_pMotorsInfo[i]->m_pTalon->GetConfigurator().Apply(m_pMotorsInfo[i].m_MotorConfiguration.MotorOutput);
+        m_pMotorsInfo[i]->m_pTalon->GetConfigurator().Apply(m_pMotorsInfo[i]->m_MotorConfiguration.MotorOutput);
     }
 }
 
