@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous routines for YtaRobot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -26,21 +26,7 @@
 // NAMESPACE DATA
 bool YtaRobotAutonomous::bAutonomousExecutionComplete;
 AutonomousSubsystem YtaRobotAutonomous::m_AutonomousSubsystem;
-
-
-std::optional<CommandPtr> f_AutonomousCommand;
-CommandPtr GetCommand()
-{
-    static uint32_t l1;
-    static uint32_t l2;
-    static uint32_t l3;
-    return cmd::Sequence
-    (
-        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
-        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
-        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
-    );
-}
+std::optional<CommandPtr> AutonomousCommand;
 
 
 ////////////////////////////////////////////////////////////////
@@ -71,40 +57,27 @@ void YtaRobot::AutonomousInit()
 
     if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
     {
-        //m_AutonomousCommand = m_RobotContainer.GetAutonomousCommand();
-        //if (m_AutonomousCommand)
-        //{
-        //    m_AutonomousCommand->Schedule();
-        //}
         RobotUtils::DisplayMessage("Autonomous init - command based.");
-        //static AutonomousHelperCommand autonomousCommand(&YtaRobotAutonomous::m_AutonomousSubsystem);
-        //autonomousCommand.Schedule();
-        
-        //CommandPtr autonomousCommand = AutonomousTestTrajectoryRoutine();
-        //std::optional<CommandPtr> autonomousCommand = GetCommand();
-        // Scheduled commands must have non-local scope!  Otherwise the scheduler does not continue to see them.
-        //f_AutonomousCommand = GetCommand();
-        f_AutonomousCommand = AutonomousTestTrajectoryRoutine();
-        if (f_AutonomousCommand)
+
+        // Scheduled commands must have non-local scope!
+        // Otherwise the scheduler does not continue to see them.
+        AutonomousCommand = AutonomousTestCommandDashboardRoutine();
+        //AutonomousCommand = AutonomousTestCommandMotionRoutine();
+        //AutonomousCommand = AutonomousTestTrajectoryRoutine();
+
+        if (AutonomousCommand.has_value())
         {
             RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
-            f_AutonomousCommand->Schedule();
+            AutonomousCommand->Schedule();
         }
         else
         {
             RobotUtils::DisplayMessage("Autonomous init - command NOT scheduled.");
         }
-        /*
-        static uint32_t l1;
-        static uint32_t l2;
-        static uint32_t l3;
-        cmd::Sequence
-        (
-            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
-            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
-            InstantCommand([this](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr()
-        ).Schedule();
-        */
+    }
+    else
+    {
+        RobotUtils::DisplayMessage("Autonomous init - time based.");
     }
 }
 
@@ -128,17 +101,39 @@ void YtaRobot::AutonomousPeriodic()
 
     if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
     {
-        //RobotUtils::DisplayMessage("Autonomous periodic - command based.");
-        // This updates the odometry so it is accurate for the command running
-        static uint32_t ac;
-        SmartDashboard::PutNumber("Autonomous periodic counter", ac++);
-        m_pSwerveDrive->UpdateSmartDashboard();
-        //static std::optional<CommandPtr> autonomousCommand = AutonomousTestTrajectoryRoutine();
-        //autonomousCommand->Schedule();
-        CommandScheduler::GetInstance().Run();
-        return;
+        AutonomousPeriodicCommand();
     }
-    
+    else
+    {
+        AutonomousPeriodicTimed();
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousPeriodicCommand
+///
+/// Main workflow for command based autonomous routines.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::AutonomousPeriodicCommand()
+{
+    // Update the swerve odometry and run the command scheduler
+    m_pSwerveDrive->UpdateOdometry();
+    CommandScheduler::GetInstance().Run();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousPeriodicTimed
+///
+/// Main workflow for time based autonomous routines.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::AutonomousPeriodicTimed()
+{    
     if (YtaRobotAutonomous::bAutonomousExecutionComplete)
     {
         return;
@@ -199,7 +194,7 @@ void YtaRobot::AutonomousPeriodic()
     }
     
     // One shot through autonomous is over, indicate as such.
-    //YtaRobotAutonomous::bAutonomousExecutionComplete = true;
+    YtaRobotAutonomous::bAutonomousExecutionComplete = true;
     
     /*
     // Idle until auto is terminated

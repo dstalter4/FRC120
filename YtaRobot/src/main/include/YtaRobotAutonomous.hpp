@@ -6,7 +6,7 @@
 /// Contains the declarations for the autonomous portions of code ran in an FRC
 /// robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOTAUTONOMOUS_HPP
@@ -45,6 +45,7 @@ namespace YtaRobotAutonomous
     // VARIABLES
     extern bool bAutonomousExecutionComplete;
     extern AutonomousSubsystem m_AutonomousSubsystem;
+    extern std::optional<CommandPtr> AutonomousCommand;
     
     // CONSTS
     

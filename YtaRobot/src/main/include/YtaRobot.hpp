@@ -210,15 +210,19 @@ private:
     
     // Autonomous routines
     // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this)!
+    void AutonomousPeriodicTimed();
+    void AutonomousPeriodicCommand();
+    void AutonomousCommon();
+    void AutonomousCommonRed();
+    void AutonomousCommonBlue();
     void AutonomousRoutine1();
     void AutonomousRoutine2();
     void AutonomousRoutine3();
     void AutonomousTestRoutine();
     void AutonomousTestSwerveRoutine();
+    CommandPtr AutonomousTestCommandDashboardRoutine();
+    CommandPtr AutonomousTestCommandMotionRoutine();
     CommandPtr AutonomousTestTrajectoryRoutine();
-    void AutonomousCommon();
-    void AutonomousCommonRed();
-    void AutonomousCommonBlue();
 
     // Resets member variables
     void ResetMemberData();

@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of an autonomous test routines for YtaRobot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -76,22 +76,39 @@ void YtaRobot::AutonomousTestSwerveRoutine()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::AutonomousTestTrajectoryRoutine
+/// @method YtaRobot::AutonomousTestCommandDashboardRoutine
 ///
-/// Autonomous swerve test routine.
+/// Autonomous test demonstration routine that uses commands.
+/// Runs a few instant commands sequenced together passing in
+/// simple lambdas to display things on the smart dashboard.
 ///
 ////////////////////////////////////////////////////////////////
-CommandPtr YtaRobot::AutonomousTestTrajectoryRoutine()
+CommandPtr YtaRobot::AutonomousTestCommandDashboardRoutine()
 {
-#if 0
-    //static uint32_t l1;
-    //static uint32_t l2;
-    //static uint32_t l3;
+    static uint32_t lambda1Var;
+    static uint32_t lambda2Var;
+    static uint32_t lambda3Var;
     return cmd::Sequence
     (
-        //InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 1", ++l1);}).ToPtr(),
-        //InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 2", ++l2);}).ToPtr(),
-        //InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 3", ++l3);}).ToPtr(),
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 1", ++lambda1Var);}).ToPtr(),
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 2", ++lambda2Var);}).ToPtr(),
+        InstantCommand([](){SmartDashboard::PutNumber("Autonomous lambda 3", ++lambda3Var);}).ToPtr()
+    );
+
+}
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousTestCommandMotionRoutine
+///
+/// Autonomous test demonstration routine that uses commands.
+/// Runs a few instant commands that produce simple motion.
+///
+////////////////////////////////////////////////////////////////
+CommandPtr YtaRobot::AutonomousTestCommandMotionRoutine()
+{
+    return cmd::Sequence
+    (
         InstantCommand([this]()
         {
             m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_FORWARD, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
@@ -103,71 +120,51 @@ CommandPtr YtaRobot::AutonomousTestTrajectoryRoutine()
             AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.10, 0.0, 0.0, 1.0_s, true);
         }).ToPtr()
     );
-#else
+}
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousTestTrajectoryRoutine
+///
+/// Autonomous swerve test trajectory routine.
+///
+////////////////////////////////////////////////////////////////
+CommandPtr YtaRobot::AutonomousTestTrajectoryRoutine()
+{
     // Swerve trajectory routine, but requires switching to command based robot.
 
-    //TrajectoryConfig config =
-    //new TrajectoryConfig(
-    //        Constants.AutoConstants.kMaxSpeedMetersPerSecond,
-    //        Constants.AutoConstants.kMaxAccelerationMetersPerSecondSquared)
-    //    .setKinematics(Constants.Swerve.swerveKinematics);
+    // Constructed with max velocity, max acceleration
     TrajectoryConfig trajectoryConfig = {1.5_mps, 3.0_mps_sq};
     trajectoryConfig.SetKinematics(SwerveConfig::Kinematics);
 
     // An example trajectory to follow.  All units in meters.
-    //Trajectory exampleTrajectory =
-    //TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-        //new Pose2d(0, 0, new Rotation2d(0)),
-        // Pass through these two interior waypoints, making an 's' curve path
-        //List.of(new Translation2d(1, 1), new Translation2d(2, -1)),
-        // End 3 meters straight ahead of where we started, facing forward
-        //new Pose2d(3, 0, new Rotation2d(0)),
-        //config);
-    // First parameter is field y-axis (positive is forward), second parameter is field x-axis (positive is left)
+    // 1. Start at the origin facing the +X direction (INITIAL_POSE)
+    // 2. Pass through these two interior waypoints, making an 's' curve path (WAY_POINTS)
+    // 3. End three meters straight ahead of the start position, facing forward (FINAL_POSE)
+    // Note: First pose parameter is field y-axis (positive is forward)
+    //       Second pose parameter is field x-axis (positive is left)
     const Pose2d INITIAL_POSE = {0_m, 0_m, 0_deg};
-    const Pose2d FINAL_POSE = {5_m, 0_m, 0_deg};
+    const Pose2d FINAL_POSE = {3_m, 0_m, 0_deg};
     const std::vector<Translation2d> WAY_POINTS = 
     {
-        // Do the swerve modules position right for rotation?
-        //{1_m, 0_m},
-        //{1_m, -1_m},
-        //{1_m, -2_m}
-
-        {2.5_m, 1.0_m},
-        {4.0_m, -1.0_m}
-
-        // Test S-pattern
-        //{1_m, 1_m},
-        //{2_m, -1_m},
-        //{3_m, 1_m},
-        //{4_m, -1_m}
+        {1.0_m,  1.0_m},
+        {2.0_m, -1.0_m}
     };
     Trajectory testTrajectory = TrajectoryGenerator::GenerateTrajectory(INITIAL_POSE, WAY_POINTS, FINAL_POSE, trajectoryConfig);
-    //(void)testTrajectory;
 
-    //var thetaController =
-    //new ProfiledPIDController(
-    //    Constants.AutoConstants.kPThetaController, 0, 0, Constants.AutoConstants.kThetaControllerConstraints);
-    //thetaController.enableContinuousInput(-Math.PI, Math.PI);
-    // Values are max velocity, max acceleration
-    TrapezoidProfile<units::radians>::Constraints thetaPidControllerConstraints(3.1415_rad_per_s, 3.1415_rad_per_s_sq);
-    // Parameters are P, I, D, TrapezoidProfile<>::Constraints
-    ProfiledPIDController<units::radians> thetaPidController(0.5, 0.0, 0.0, thetaPidControllerConstraints);
-    thetaPidController.EnableContinuousInput(units::radian_t(-std::numbers::pi), units::radian_t(std::numbers::pi));
-
-    //SwerveControllerCommand swerveControllerCommand =
-    //new SwerveControllerCommand(
-    //    exampleTrajectory,
-    //    s_Swerve::getPose,
-    //    Constants.Swerve.swerveKinematics,
-    //    new PIDController(Constants.AutoConstants.kPXController, 0, 0),
-    //    new PIDController(Constants.AutoConstants.kPYController, 0, 0),
-    //    thetaController,
-    //    s_Swerve::setModuleStates,
-    //    s_Swerve);
+    // Translation PID controllers
     PIDController xPidController(1.0, 0.0, 0.0);
     PIDController yPidController(1.0, 0.0, 0.0);
+
+    // Values are max angular velocity, max angular acceleration
+    TrapezoidProfile<units::radians>::Constraints thetaPidControllerConstraints(3.1415_rad_per_s, 3.1415_rad_per_s_sq);
+    
+    // Parameters are P, I, D, TrapezoidProfile<>::Constraints
+    ProfiledPIDController<units::radians> thetaPidController(0.5, 0.0, 0.0, thetaPidControllerConstraints);
+
+    thetaPidController.EnableContinuousInput(units::radian_t(-std::numbers::pi), units::radian_t(std::numbers::pi));
+
+    // Construct the swerve controller command
     CommandPtr swerveControllerCommand = 
     SwerveControllerCommand<SwerveConfig::NUM_SWERVE_DRIVE_MODULES>
     (
@@ -181,18 +178,11 @@ CommandPtr YtaRobot::AutonomousTestTrajectoryRoutine()
         // Last parameter is requirements and (maybe?) can be defaulted
     ).ToPtr();
 
-    //addCommands(
-    //    new InstantCommand(() -> s_Swerve.setPose(exampleTrajectory.getInitialPose())),
-    //    swerveControllerCommand
-    //);
+    // Build the command sequence and return it
     return cmd::Sequence
     (
         InstantCommand([this, initialPose = testTrajectory.InitialPose()]() { m_pSwerveDrive->SetPose(initialPose); }, {}).ToPtr(),
         std::move(swerveControllerCommand),
         InstantCommand([this] { m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, false, false); }, {}).ToPtr()
     );
-
-    // Returning from here will enter the idle state until autonomous is over
-    //RobotUtils::DisplayMessage("Auto test trajectory routine done.");
-#endif
 }

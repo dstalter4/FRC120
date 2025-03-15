@@ -953,6 +953,9 @@ void YtaRobot::SwerveDriveSequence()
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
 
+    // Update the odometry
+    m_pSwerveDrive->UpdateOdometry();
+
     // Pretend to Mario Kart drift
     //MarioKartLights(translationAxis, strafeAxis, rotationAxis);
 

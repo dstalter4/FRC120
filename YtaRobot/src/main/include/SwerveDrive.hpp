@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEDRIVE_HPP
@@ -45,15 +45,26 @@ public:
     // Constructor
     SwerveDrive(Pigeon2 * pPigeon);
 
-    // Updates each swerve module based on the inputs
-    void SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop);
-
+    // Gets the current 2D pose from the swerve module states
     Pose2d GetPose();
+
+    // Sets the swerve module states to the passed in 2D pose
     void SetPose(Pose2d pose);
+
+    // Updates each swerve module based on specified inputs (used by autonomous)
     void SetModuleStates(wpi::array<SwerveModuleState, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> swerveModuleStates);
+
+    // Updates each swerve module based on controller inputs (used by teleop)
+    void SetModuleStates(Translation2d translation, double rotation, bool bFieldRelative, bool bIsOpenLoop);
 
     // Puts useful values on the dashboard
     void UpdateSmartDashboard();
+
+    // Update the odometry
+    inline void UpdateOdometry()
+    {
+        m_Odometry.Update(m_pPigeon->GetYaw().GetValue(), GetModulePositions());
+    }
 
     // Sets the gyro yaw back to zero degrees
     inline void ZeroGyroYaw()
@@ -80,6 +91,8 @@ public:
     }
 
 private:
+    wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> GetModulePositions();
+
     Pigeon2 * m_pPigeon;
     SwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
 
@@ -88,8 +101,6 @@ private:
     // alliance station. As your robot turns to the left, your gyroscope angle should increase. By default, WPILib
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
-
-    static constexpr const SwerveModulePosition INITIAL_SWERVE_MODULE_POSITION = {0_m, 0_deg};
 
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
