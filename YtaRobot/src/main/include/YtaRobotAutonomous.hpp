@@ -20,7 +20,6 @@
 
 // C++ INCLUDES
 #include "YtaRobot.hpp"             // for inline autonomous function declarations
-#include "YtaRobotAutonomousCommand.hpp"       // for autonomous command declarations
 
 using namespace frc;
 
@@ -44,7 +43,6 @@ namespace YtaRobotAutonomous
     
     // VARIABLES
     extern bool bAutonomousExecutionComplete;
-    extern AutonomousSubsystem m_AutonomousSubsystem;
     extern std::optional<CommandPtr> AutonomousCommand;
     
     // CONSTS

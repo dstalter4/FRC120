@@ -19,13 +19,11 @@
 // C++ INCLUDES
 #include "YtaRobot.hpp"                 // for robot class declaration
 #include "YtaRobotAutonomous.hpp"       // for autonomous declarations
-#include "YtaRobotAutonomousCommand.hpp"       // for autonomous command declarations
 #include "RobotCamera.hpp"              // for interacting with cameras
-#include "RobotUtils.hpp"
+#include "RobotUtils.hpp"               // for DisplayMessage()
 
 // NAMESPACE DATA
 bool YtaRobotAutonomous::bAutonomousExecutionComplete;
-AutonomousSubsystem YtaRobotAutonomous::m_AutonomousSubsystem;
 std::optional<CommandPtr> AutonomousCommand;
 
 
