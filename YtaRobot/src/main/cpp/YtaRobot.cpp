@@ -239,6 +239,7 @@ void YtaRobot::TeleopInit()
     
     // Autonomous should have left things in a known state, but
     // just in case clear everything.
+    CommandScheduler::GetInstance().CancelAll();
     InitialStateSetup();
 
     // Tele-op won't do detailed processing of the images unless instructed to
@@ -951,6 +952,9 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+
+    // Update the odometry
+    m_pSwerveDrive->UpdateOdometry();
 
     // Pretend to Mario Kart drift
     //MarioKartLights(translationAxis, strafeAxis, rotationAxis);

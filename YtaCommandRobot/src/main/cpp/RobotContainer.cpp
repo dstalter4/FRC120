@@ -48,7 +48,7 @@ RobotContainer::RobotContainer() :
     // Option 2
     // Cannot bind an rvalue reference to a pointer (or lvalue)
     //m_TeleopSubsystem.SetDefaultCommand(TeleopHelperCommand(&m_TeleopSubsystem));
-    TeleopHelperCommand(&m_TeleopSubsystem).Schedule();
+    //TeleopHelperCommand(&m_TeleopSubsystem).Schedule();
 
     // Option 3 happened when the subsystem was registered
 

@@ -5,22 +5,24 @@
 /// @details
 /// Implementation of autonomous routines for YtaRobot.
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
-// <none>
+#include <frc2/command/CommandScheduler.h>      // for scheduling commands
 
 // C INCLUDES
 // (none)
 
 // C++ INCLUDES
-#include "YtaRobot.hpp"                 // for robot class declaration
-#include "YtaRobotAutonomous.hpp"       // for autonomous declarations
-#include "RobotCamera.hpp"              // for interacting with cameras
+#include "YtaRobot.hpp"                         // for robot class declaration
+#include "YtaRobotAutonomous.hpp"               // for autonomous declarations
+#include "RobotCamera.hpp"                      // for interacting with cameras
+#include "RobotUtils.hpp"                       // for DisplayMessage()
 
 // NAMESPACE DATA
 bool YtaRobotAutonomous::bAutonomousExecutionComplete;
+std::optional<CommandPtr> AutonomousCommand;
 
 
 ////////////////////////////////////////////////////////////////
@@ -48,6 +50,31 @@ void YtaRobot::AutonomousInit()
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     RobotCamera::SetLimelightPipeline(0);
+
+    if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
+    {
+        RobotUtils::DisplayMessage("Autonomous init - command based.");
+
+        // Scheduled commands must have non-local scope!
+        // Otherwise the scheduler does not continue to see them.
+        AutonomousCommand = AutonomousTestCommandDashboardRoutine();
+        //AutonomousCommand = AutonomousTestCommandMotionRoutine();
+        //AutonomousCommand = AutonomousTestTrajectoryRoutine();
+
+        if (AutonomousCommand.has_value())
+        {
+            RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
+            AutonomousCommand->Schedule();
+        }
+        else
+        {
+            RobotUtils::DisplayMessage("Autonomous init - command NOT scheduled.");
+        }
+    }
+    else
+    {
+        RobotUtils::DisplayMessage("Autonomous init - time based.");
+    }
 }
 
 
@@ -67,7 +94,42 @@ void YtaRobot::AutonomousPeriodic()
 {
     // Log a mode change if one occurred
     CheckAndUpdateRobotMode(ROBOT_MODE_AUTONOMOUS);
-    
+
+    if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
+    {
+        AutonomousPeriodicCommand();
+    }
+    else
+    {
+        AutonomousPeriodicTimed();
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousPeriodicCommand
+///
+/// Main workflow for command based autonomous routines.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::AutonomousPeriodicCommand()
+{
+    // Update the swerve odometry and run the command scheduler
+    m_pSwerveDrive->UpdateOdometry();
+    CommandScheduler::GetInstance().Run();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousPeriodicTimed
+///
+/// Main workflow for time based autonomous routines.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::AutonomousPeriodicTimed()
+{    
     if (YtaRobotAutonomous::bAutonomousExecutionComplete)
     {
         return;

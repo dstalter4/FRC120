@@ -9,7 +9,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // WPILIB INCLUDES
+#include <frc2/command/Commands.h>
 #include <frc2/command/CommandScheduler.h>
+#include <frc/smartdashboard/SmartDashboard.h>
 
 // C++ INCLUDES
 #include "Robot.hpp"
@@ -104,6 +106,51 @@ void Robot::TeleopInit()
 ////////////////////////////////////////////////////////////////
 void Robot::TeleopPeriodic()
 {
+    // Demonstration of some command scheduling
+
+    static uint32_t instantCount = 0UL;
+    static frc2::CommandPtr instantCommand = frc2::InstantCommand([this](){ frc::SmartDashboard::PutNumber("Instant command", instantCount++); }).ToPtr();
+    static bool bTeleopCommandScheduled = true;
+    static bool bCommandsPaused = false;
+
+    // Scheduler runs every 20ms, so there are 50 iterations per second
+    static uint32_t iteration = 0UL;
+
+    // Every five seconds, cancel all commands for a bit
+    if ((iteration % 250) == 0U)
+    {
+        bCommandsPaused = !bCommandsPaused;
+        if (bCommandsPaused)
+        {
+            m_TeleopCommand->Cancel();
+            instantCommand.Cancel();
+        }
+    }
+
+    if (!bCommandsPaused)
+    {
+        if ((iteration % 50) == 0U)
+        {
+            // Once a second, switch the teleop command on/off
+            if (bTeleopCommandScheduled)
+            {
+                m_TeleopCommand->Cancel();
+            }
+            else
+            {
+                m_TeleopCommand->Schedule();
+            }
+            bTeleopCommandScheduled = !bTeleopCommandScheduled;
+        }
+
+        // Every three seconds, schedule the instant command
+        if ((iteration % 150) == 0U)
+        {
+            instantCommand.Schedule();
+        }
+    }
+
+    iteration++;
 }
 
 ////////////////////////////////////////////////////////////////
