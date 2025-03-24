@@ -225,6 +225,38 @@ public:
     }
 
     ////////////////////////////////////////////////////////////////
+    /// @method YtaController<ControllerType>::DetectPovChange
+    ///
+    /// This method is used to check if the POV input has undergone
+    /// a state change.  Some robot program my logic may only want
+    /// to detect POV edge transitions.  If a POV input is held down
+    /// this may result in incorrect operation.  This logic will
+    /// monitor the POV state and track any changes to it.  If a
+    /// state change matches the requested parameter, it will report
+    /// the edge transition once (and only once).  This logic
+    /// assumes that the robot program only use a POV input for one
+    /// purpose (which should always be the case).
+    ///
+    ////////////////////////////////////////////////////////////////
+    inline bool DetectPovChange(Yta::Controller::PovDirections povDirection)
+    {
+        bool bPressed = false;
+        static bool m_LastPovChangeReported = false;
+        Yta::Controller::PovDirections currentPovDirection = GetPovAsDirection();
+        if (currentPovDirection != m_LastPovDirection)
+        {
+            m_LastPovChangeReported = false;
+            m_LastPovDirection = currentPovDirection;
+        }
+        if ((!m_LastPovChangeReported) && (povDirection == m_LastPovDirection))
+        {
+            bPressed = true;
+            m_LastPovChangeReported = true;
+        }
+        return bPressed;
+    }
+
+    ////////////////////////////////////////////////////////////////
     /// @method YtaController<ControllerType>::DetectButtonChange
     ///
     /// This method is used to check if a button has undergone a
@@ -298,6 +330,8 @@ protected:
 private:
     // Tracks the state of the buttons (pressed/released)
     Yta::Controller::ButtonStateChanges m_ButtonStateChanges;
+    Yta::Controller::PovDirections m_LastPovDirection;
+    bool m_LastPovChangeReported;
 
     // Prevent copying/assignment
     YtaController(const YtaController&) = delete;
@@ -392,7 +426,9 @@ template <class ControllerType>
 YtaController<ControllerType>::YtaController(Yta::Controller::Config::Models controllerModel, int controllerPort) :
     m_pController(new ControllerType(controllerPort)),
     m_ControllerModel(controllerModel),
-    m_ButtonStateChanges()
+    m_ButtonStateChanges(),
+    m_LastPovDirection(Yta::Controller::PovDirections::POV_NOT_PRESSED),
+    m_LastPovChangeReported(false)
 {
 }
 
