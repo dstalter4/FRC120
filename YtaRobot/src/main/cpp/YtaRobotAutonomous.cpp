@@ -116,6 +116,7 @@ void YtaRobot::AutonomousPeriodic()
 void YtaRobot::AutonomousPeriodicCommand()
 {
     // Update the swerve odometry and run the command scheduler
+    // @todo: The odometry updates may be causing drift
     m_pSwerveDrive->UpdateOdometry();
     CommandScheduler::GetInstance().Run();
 }

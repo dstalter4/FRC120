@@ -160,6 +160,20 @@ void YtaRobot::RobotPeriodic()
         bRobotPeriodicStarted = true;
     }
 
+    WaitForSensorConfig();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::WaitForSensorConfig
+///
+/// Waits for any sensors on the robot that route to the RIO
+/// to stabilize for accurate readings.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::WaitForSensorConfig()
+{
     // This is the logic to wait to take the absolute encoder readings until the RIO is ready
     static units::time::second_t enabledTimeStamp = 0.0_s;
     units::time::second_t currentTimeStamp = m_pRobotProgramTimer->Get();
@@ -186,7 +200,7 @@ void YtaRobot::RobotPeriodic()
 
             // This is the delta between the current mechanism position and the desired starting position (or zero point)
             units::angle::degree_t armStartingOffsetDegrees = armEncoderValueDegrees - ARM_STARTING_POSITION_ENCODER_VALUE;
-            std::printf("armStartingOffsetDegrees (start): %f\n", armStartingOffsetDegrees.value());
+            //std::printf("armStartingOffsetDegrees (start): %f\n", armStartingOffsetDegrees.value());
 
             // If the starting offset is negative, we crossed over the absolute encoder boundary
             // We give a tolerance of five degrees in case the mechanism is near where we want to start
@@ -202,9 +216,9 @@ void YtaRobot::RobotPeriodic()
 
             // At this point we have the angle we want relative to zero
             (void)m_pArmPivotMotor->m_pTalonFx->GetConfigurator().SetPosition(armStartingOffsetDegrees);
-            std::printf("armEncoderValue: %f\n", armEncoderValue);
-            std::printf("armEncoderValueDegrees: %f\n", armEncoderValueDegrees.value());
-            std::printf("armStartingOffsetDegrees (final): %f\n", armStartingOffsetDegrees.value());
+            //std::printf("armEncoderValue: %f\n", armEncoderValue);
+            //std::printf("armEncoderValueDegrees: %f\n", armEncoderValueDegrees.value());
+            //std::printf("armStartingOffsetDegrees (final): %f\n", armStartingOffsetDegrees.value());
 //// END ARM
 /// START WRIST
             double wristEncoderValue = m_pWristAbsoluteEncoder->Get();
@@ -212,7 +226,7 @@ void YtaRobot::RobotPeriodic()
 
             // This is the delta between the current mechanism position and the desired starting position (or zero point)
             units::angle::degree_t wristStartingOffsetDegrees = wristEncoderValueDegrees - WRIST_STARTING_POSITION_ENCODER_VALUE;
-            std::printf("wristStartingOffsetDegrees (start): %f\n", wristStartingOffsetDegrees.value());
+            //std::printf("wristStartingOffsetDegrees (start): %f\n", wristStartingOffsetDegrees.value());
 
             // If the starting offset is negative, we crossed over the absolute encoder boundary
             // We give a tolerance of five degrees in case the mechanism is near where we want to start
@@ -227,9 +241,9 @@ void YtaRobot::RobotPeriodic()
 
             // At this point we have the angle we want relative to zero
             (void)m_pWristPivotMotor->m_pTalonFx->GetConfigurator().SetPosition(wristStartingOffsetDegrees);
-            std::printf("wristEncoderValue: %f\n", wristEncoderValue);
-            std::printf("wristEncoderValueDegrees: %f\n", wristEncoderValueDegrees.value());
-            std::printf("wristStartingOffsetDegrees (final): %f\n", wristStartingOffsetDegrees.value());
+            //std::printf("wristEncoderValue: %f\n", wristEncoderValue);
+            //std::printf("wristEncoderValueDegrees: %f\n", wristEncoderValueDegrees.value());
+            //std::printf("wristStartingOffsetDegrees (final): %f\n", wristStartingOffsetDegrees.value());
 //// END WRIST
             m_AbsoluteEncodersInitialized = true;
         }

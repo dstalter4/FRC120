@@ -57,7 +57,7 @@ namespace YtaRobotAutonomous
     //static const bool       ROUTINE_2                           = false;
     //static const bool       ROUTINE_3                           = false;
     //static const bool       TEST_ENABLED                        = false;
-    static const bool       USE_COMMAND_BASED_AUTONOMOUS        = true;
+    static const bool       USE_COMMAND_BASED_AUTONOMOUS        = false;
 
     // Autonomous drive speed constants
     static constexpr double DRIVE_SPEED_SLOW                    =  0.30;

@@ -326,6 +326,7 @@ private:
     void WristSequence();
     void HangSequence();
     void GamePieceControlSequence();
+    void WaitForSensorConfig();
 
     // MEMBER VARIABLES
     
