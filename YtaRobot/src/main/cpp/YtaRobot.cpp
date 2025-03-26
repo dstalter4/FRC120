@@ -641,6 +641,7 @@ void YtaRobot::LiftSequence()
     }
 
     // Based on the current lift position, set the target angle
+    // @todo: Track that lift is in motion and restrict arm control
     switch (m_LiftPosition)
     {
         case LiftPosition::LIFT_DOWN:
