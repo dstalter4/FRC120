@@ -262,6 +262,7 @@ private:
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+    inline void AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);

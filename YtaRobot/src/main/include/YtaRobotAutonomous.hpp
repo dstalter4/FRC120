@@ -248,6 +248,37 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwe
 
 
 ////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousRotateByGyroSequence
+///
+/// Turns the robot by the gyro.
+///
+////////////////////////////////////////////////////////////////
+inline void YtaRobot::AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative)
+{
+    double startingGyroAngle = m_pPigeon->GetYaw().GetValueAsDouble();
+
+    while (std::abs(m_pPigeon->GetYaw().GetValueAsDouble() - startingGyroAngle) <= rotateDegrees)
+    {
+        if (robotRotation == RobotRotation::ROBOT_CLOCKWISE)
+        {
+            m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, rotateSpeed, bFieldRelative, true);
+        }
+        else if (robotRotation == RobotRotation::ROBOT_COUNTER_CLOCKWISE)
+        {
+            m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, -rotateSpeed, bFieldRelative, true);
+        }
+        else
+        {
+        }
+    }
+
+    // Stop motion
+    m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method YtaRobot::AutonomousBackDrive
 ///
 /// Back drives the motors to abruptly stop the robot.
