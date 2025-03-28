@@ -60,9 +60,19 @@ YtaRobot::YtaRobot() :
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_LiftTargetDegrees                 (LIFT_DOWN_ANGLE),
     m_ArmTargetDegrees                  (ARM_STARTING_POSITION_DEGREES),
-    m_ArmManualOffsetDegrees            (0.0_deg),
+    m_ArmLoadingOffsetDegrees           (0.0_deg),
+    m_ArmNeutralOffsetDegrees           (0.0_deg),
+    m_ArmL1OffsetDegrees                (0.0_deg),
+    m_ArmL2L3OffsetDegrees              (0.0_deg),
+    m_ArmL4OffsetDegrees                (0.0_deg),
+    m_pArmManualOffsetDegrees           (&m_ArmNeutralOffsetDegrees),
     m_WristTargetDegrees                (WRIST_STARTING_POSITION_DEGREES),
-    m_WristManualOffsetDegrees          (0.0_deg),
+    m_WristLoadingOffsetDegrees         (0.0_deg),
+    m_WristNeutralOffsetDegrees         (0.0_deg),
+    m_WristL1OffsetDegrees              (0.0_deg),
+    m_WristL2L3OffsetDegrees            (0.0_deg),
+    m_WristL4OffsetDegrees              (0.0_deg),
+    m_pWristManualOffsetDegrees         (&m_WristNeutralOffsetDegrees),
     m_LiftPosition                      (LiftPosition::LIFT_DOWN),
     m_ArmPosition                       (ArmPosition::NEUTRAL),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
@@ -160,6 +170,7 @@ void YtaRobot::RobotPeriodic()
         bRobotPeriodicStarted = true;
     }
 
+    // @todo: Read and display sensor values for calibration when not enabled
     WaitForSensorConfig();
 }
 
@@ -190,7 +201,7 @@ void YtaRobot::WaitForSensorConfig()
         static constexpr const units::time::second_t RIO_DUTY_CYCLE_ENCODER_STARTUP_DELAY = 2.0_s;
         if ((currentTimeStamp - enabledTimeStamp) > RIO_DUTY_CYCLE_ENCODER_STARTUP_DELAY)
         {
-/// START ARM
+        /// START ARM
             // Increases going down, crosses the zero boundary
             // Decreases going up, crosses the zero boundary
             // Range of motion is ~195.12_deg
@@ -219,8 +230,8 @@ void YtaRobot::WaitForSensorConfig()
             //std::printf("armEncoderValue: %f\n", armEncoderValue);
             //std::printf("armEncoderValueDegrees: %f\n", armEncoderValueDegrees.value());
             //std::printf("armStartingOffsetDegrees (final): %f\n", armStartingOffsetDegrees.value());
-//// END ARM
-/// START WRIST
+        /// END ARM
+        /// START WRIST
             double wristEncoderValue = m_pWristAbsoluteEncoder->Get();
             units::angle::degree_t wristEncoderValueDegrees(wristEncoderValue * ANGLE_360_DEGREES);
 
@@ -244,7 +255,7 @@ void YtaRobot::WaitForSensorConfig()
             //std::printf("wristEncoderValue: %f\n", wristEncoderValue);
             //std::printf("wristEncoderValueDegrees: %f\n", wristEncoderValueDegrees.value());
             //std::printf("wristStartingOffsetDegrees (final): %f\n", wristStartingOffsetDegrees.value());
-//// END WRIST
+        /// END WRIST
             m_AbsoluteEncodersInitialized = true;
         }
     }
@@ -753,35 +764,45 @@ void YtaRobot::ArmSequence()
     {
         case ArmPosition::LOADING:
         {
-            m_ArmTargetDegrees = m_ArmManualOffsetDegrees + ARM_LOADING_TARGET_DEGREES;
-            m_WristTargetDegrees = m_WristManualOffsetDegrees + WRIST_LOADING_TARGET_DEGREES;
+            m_pArmManualOffsetDegrees = &m_ArmLoadingOffsetDegrees;
+            m_ArmTargetDegrees = (*m_pArmManualOffsetDegrees) + ARM_LOADING_TARGET_DEGREES;
+            m_pWristManualOffsetDegrees = &m_WristLoadingOffsetDegrees;
+            m_WristTargetDegrees = (*m_pWristManualOffsetDegrees) + WRIST_LOADING_TARGET_DEGREES;
             break;
         }
         case ArmPosition::NEUTRAL:
         {
-            m_ArmTargetDegrees = m_ArmManualOffsetDegrees + ARM_NEUTRAL_TARGET_DEGREES;
-            m_WristTargetDegrees = m_WristManualOffsetDegrees + WRIST_NEUTRAL_TARGET_DEGREES;
+            m_pArmManualOffsetDegrees = &m_ArmNeutralOffsetDegrees;
+            m_ArmTargetDegrees = (*m_pArmManualOffsetDegrees) + ARM_NEUTRAL_TARGET_DEGREES;
+            m_pWristManualOffsetDegrees = &m_WristNeutralOffsetDegrees;
+            m_WristTargetDegrees = (*m_pWristManualOffsetDegrees) + WRIST_NEUTRAL_TARGET_DEGREES;
             break;
         }
         case ArmPosition::REEF_L1:
         {
             // Lift is down at this reef level
-            m_ArmTargetDegrees = m_ArmManualOffsetDegrees + ARM_REEF_L1_TARGET_DEGREES;
-            m_WristTargetDegrees = m_WristManualOffsetDegrees + WRIST_REEF_L1_TARGET_DEGREES;
+            m_pArmManualOffsetDegrees = &m_ArmL1OffsetDegrees;
+            m_ArmTargetDegrees = (*m_pArmManualOffsetDegrees) + ARM_REEF_L1_TARGET_DEGREES;
+            m_pWristManualOffsetDegrees = &m_WristL1OffsetDegrees;
+            m_WristTargetDegrees = (*m_pWristManualOffsetDegrees) + WRIST_REEF_L1_TARGET_DEGREES;
             break;
         }
         case ArmPosition::REEF_L2_L3:
         {
             // Lift is either down or mid at this reef level
-            m_ArmTargetDegrees = m_ArmManualOffsetDegrees + ARM_REEF_L2_L3_TARGET_DEGREES;
-            m_WristTargetDegrees = m_WristManualOffsetDegrees + WRIST_REEF_L2_L3_TARGET_DEGREES;
+            m_pArmManualOffsetDegrees = &m_ArmL2L3OffsetDegrees;
+            m_ArmTargetDegrees = (*m_pArmManualOffsetDegrees) + ARM_REEF_L2_L3_TARGET_DEGREES;
+            m_pWristManualOffsetDegrees = &m_WristL2L3OffsetDegrees;
+            m_WristTargetDegrees = (*m_pWristManualOffsetDegrees) + WRIST_REEF_L2_L3_TARGET_DEGREES;
             break;
         }
         case ArmPosition::REEF_L4:
         {
             // Lift is up for this reef level
-            m_ArmTargetDegrees = m_ArmManualOffsetDegrees + ARM_REEF_L4_TARGET_DEGREES;
-            m_WristTargetDegrees = m_WristManualOffsetDegrees + WRIST_REEF_L4_TARGET_DEGREES;
+            m_pArmManualOffsetDegrees = &m_ArmL4OffsetDegrees;
+            m_ArmTargetDegrees = (*m_pArmManualOffsetDegrees) + ARM_REEF_L4_TARGET_DEGREES;
+            m_pWristManualOffsetDegrees = &m_WristL4OffsetDegrees;
+            m_WristTargetDegrees = (*m_pWristManualOffsetDegrees) + WRIST_REEF_L4_TARGET_DEGREES;
             break;
         }
         default:
@@ -801,7 +822,7 @@ void YtaRobot::ArmSequence()
     // Update smart dashboard
     SmartDashboard::PutNumber("Arm angle", armAngleDegrees.value());
     SmartDashboard::PutNumber("Arm target angle", m_ArmTargetDegrees.value());
-    SmartDashboard::PutNumber("Arm offset angle", m_ArmManualOffsetDegrees.value());
+    SmartDashboard::PutNumber("Arm offset angle", (*m_pArmManualOffsetDegrees).value());
     SmartDashboard::PutNumber("Arm encoder", m_pArmAbsoluteEncoder->Get());
     SmartDashboard::PutNumber("Arm position (enum)", static_cast<uint32_t>(m_ArmPosition));
 }
@@ -836,22 +857,22 @@ void YtaRobot::WristSequence()
     {
         if (bAdjustWrist)
         {
-            m_WristManualOffsetDegrees += ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
+            (*m_pWristManualOffsetDegrees) += ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
         }
         else
         {
-            m_ArmManualOffsetDegrees += ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
+            (*m_pArmManualOffsetDegrees) += ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
         }
     }
     if (m_pAuxController->DetectButtonChange(AUX_DECREASE_ANGLE_OFFSET_BUTTON))
     {
         if (bAdjustWrist)
         {
-            m_WristManualOffsetDegrees -= ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
+            (*m_pWristManualOffsetDegrees) -= ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
         }
         else
         {
-            m_ArmManualOffsetDegrees -= ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
+            (*m_pArmManualOffsetDegrees) -= ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES;
         }
     }
 
@@ -866,7 +887,7 @@ void YtaRobot::WristSequence()
     // Update smart dashboard
     SmartDashboard::PutNumber("Wrist angle", wristAngleDegrees.value());
     SmartDashboard::PutNumber("Wrist target angle", m_WristTargetDegrees.value());
-    SmartDashboard::PutNumber("Wrist offset angle", m_WristManualOffsetDegrees.value());
+    SmartDashboard::PutNumber("Wrist offset angle", (*m_pWristManualOffsetDegrees).value());
     SmartDashboard::PutNumber("Wrist encoder", m_pWristAbsoluteEncoder->Get());
     SmartDashboard::PutBoolean("Angle adjust wrist", bAdjustWrist);
 }

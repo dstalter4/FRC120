@@ -398,9 +398,19 @@ private:
     // Misc
     units::angle::degree_t          m_LiftTargetDegrees;                    // Tracks the desired angle position of the lift
     units::angle::degree_t          m_ArmTargetDegrees;                     // Tracks the desired angle position of the arm
-    units::angle::degree_t          m_ArmManualOffsetDegrees;               // Tracks the desired manual offset of the arm angle
+    units::angle::degree_t          m_ArmLoadingOffsetDegrees;              // Tracks the desired manual offset of the arm angle when loading
+    units::angle::degree_t          m_ArmNeutralOffsetDegrees;              // Tracks the desired manual offset of the arm angle when neutral
+    units::angle::degree_t          m_ArmL1OffsetDegrees;                   // Tracks the desired manual offset of the arm angle when at L1
+    units::angle::degree_t          m_ArmL2L3OffsetDegrees;                 // Tracks the desired manual offset of the arm angle when at L2/L3
+    units::angle::degree_t          m_ArmL4OffsetDegrees;                   // Tracks the desired manual offset of the arm angle when at L4
+    units::angle::degree_t *        m_pArmManualOffsetDegrees;              // Pointer to the current variable for manual offset of the arm angle
     units::angle::degree_t          m_WristTargetDegrees;                   // Tracks the desired angle position of the wrist
-    units::angle::degree_t          m_WristManualOffsetDegrees;             // Tracks the desired manual offset of the wrist angle
+    units::angle::degree_t          m_WristLoadingOffsetDegrees;            // Tracks the desired manual offset of the wrist angle when loading
+    units::angle::degree_t          m_WristNeutralOffsetDegrees;            // Tracks the desired manual offset of the wrist angle when neutral
+    units::angle::degree_t          m_WristL1OffsetDegrees;                 // Tracks the desired manual offset of the wrist angle when at L1
+    units::angle::degree_t          m_WristL2L3OffsetDegrees;               // Tracks the desired manual offset of the wrist angle when at L2/L3
+    units::angle::degree_t          m_WristL4OffsetDegrees;                 // Tracks the desired manual offset of the wrist angle when at L4
+    units::angle::degree_t *        m_pWristManualOffsetDegrees;            // Pointer to the current variable for manual offset of the wrist angle
     LiftPosition                    m_LiftPosition;                         // Keep track of where the lift is currently positioned
     ArmPosition                     m_ArmPosition;                          // Keep track of where the arm is currently positioned
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
