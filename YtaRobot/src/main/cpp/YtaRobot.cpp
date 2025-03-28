@@ -1587,16 +1587,18 @@ void YtaRobot::SwerveDriveSequence()
         }
         case DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV:
         {
+            // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;
-            strafeAxis = 0.0;
-            rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
+            strafeAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (0.0) : (SWERVE_DRIVE_SLOW_SPEED);
+            rotationAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (SWERVE_ROTATE_SLOW_SPEED) : (0.0);
             break;
         }
         case DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV:
         {
+            // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;
-            strafeAxis = 0.0;
-            rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
+            strafeAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (0.0) : (-SWERVE_DRIVE_SLOW_SPEED);
+            rotationAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (-SWERVE_ROTATE_SLOW_SPEED) : (0.0);
             break;
         }
         default:
