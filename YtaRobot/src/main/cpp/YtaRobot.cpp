@@ -502,6 +502,7 @@ void YtaRobot::UpdateSmartDashboard()
     // Build a stack of "lights" to give visual feedback to the
     // drive team on the current overall superstructure position
     bool bLoad = false;
+    bool bNeutral = false;
     bool bL1 = false;
     bool bL2 = false;
     bool bL3 = false;
@@ -515,6 +516,11 @@ void YtaRobot::UpdateSmartDashboard()
                 case ArmPosition::LOADING:
                 {
                     bLoad = true;
+                    break;
+                }
+                case ArmPosition::NEUTRAL:
+                {
+                    bNeutral = true;
                     break;
                 }
                 case ArmPosition::REEF_L1:
@@ -556,6 +562,7 @@ void YtaRobot::UpdateSmartDashboard()
         }
     }
     SmartDashboard::PutBoolean("Load", bLoad);
+    SmartDashboard::PutBoolean("Neutral", bNeutral);
     SmartDashboard::PutBoolean("L1", bL1);
     SmartDashboard::PutBoolean("L2", bL2);
     SmartDashboard::PutBoolean("L3", bL3);
