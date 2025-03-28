@@ -468,7 +468,7 @@ void YtaRobot::TeleopPeriodic()
     //CameraSequence();
 
     //LedSequence();
-    //BlinkMorseCodePattern();
+    BlinkMorseCodePattern();
     //MusicSequence();
 
     UpdateSmartDashboard();

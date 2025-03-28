@@ -557,7 +557,7 @@ private:
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = 8;
+    static const unsigned           NUMBER_OF_LEDS                          = 91 + 8;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     
