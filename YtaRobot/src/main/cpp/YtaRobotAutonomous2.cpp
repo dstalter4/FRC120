@@ -23,11 +23,28 @@
 ////////////////////////////////////////////////////////////////
 /// @method YtaRobot::AutonomousRoutine2
 ///
-/// Autonomous routine 2.
+/// Autonomous routine 2.  Left side when viewing the field from
+/// the driver station.
 ///
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine2()
 {
+    // The robot faces the driver station, so it is off by 180 degrees
+    m_pPigeon->SetYaw(units::angle::degree_t(ANGLE_180_DEGREES));
+
+    // We have to wait for the absolute encoders to stabilize
+    while (!m_AbsoluteEncodersInitialized)
+    {
+        WaitForSensorConfig();
+    }
+
+    // Drive towards the reef (remember that the robot is facing the opposite alliance wall)
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.0, 2.5_s, true);
+
+    // Turn towards the reef (forward is still the other alliance wall, thus clockwise)
+    AutonomousRotateByGyroSequence(RobotRotation::ROBOT_CLOCKWISE, 60.0, 0.2, true);
+
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 2 done.");
 }

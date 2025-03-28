@@ -544,9 +544,9 @@ private:
 
     // Misc
     const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
-    const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
-    const std::string               AUTO_ROUTINE_2_STRING                   = "Autonomous Routine 2";
-    const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
+    const std::string               AUTO_ROUTINE_1_STRING                   = "Straight";
+    const std::string               AUTO_ROUTINE_2_STRING                   = "Left side";
+    const std::string               AUTO_ROUTINE_3_STRING                   = "Right side";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
 
     static const int                OFF                                     = 0;
