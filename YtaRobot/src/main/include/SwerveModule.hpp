@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve module on a swerve drive robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEMODULE_HPP
@@ -74,6 +74,9 @@ private:
 
     // Point the module wheel in the correct direciton to form an X to prevent movement
     void LockWheel();
+
+    // Align the swerve module to the absolute encoder
+    void RecalibrateModules();
 
     // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);

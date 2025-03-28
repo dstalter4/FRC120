@@ -407,6 +407,9 @@ void YtaRobot::InitialStateSetup()
 
     // Reset the heartbeat
     m_HeartBeat = 0U;
+
+    // Point the swerve modules straight
+    m_pSwerveDrive->HomeModules();
 }
 
 
@@ -1554,6 +1557,7 @@ void YtaRobot::SwerveDriveSequence()
     if (m_pDriveController->DetectButtonChange(REZERO_SWERVE_BUTTON))
     {
         m_pSwerveDrive->ZeroGyroYaw();
+        m_pSwerveDrive->RecalibrateModules();
         m_pSwerveDrive->HomeModules();
     }
 

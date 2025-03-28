@@ -90,6 +90,15 @@ public:
         }
     }
 
+    // Recalibrate the modules based on the absolute encoder
+    inline void RecalibrateModules()
+    {
+        for (uint32_t i = 0U; i < SwerveConfig::NUM_SWERVE_DRIVE_MODULES; i++)
+        {
+            m_SwerveModules[i].RecalibrateModules();
+        }
+    }
+
 private:
     wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> GetModulePositions();
 
