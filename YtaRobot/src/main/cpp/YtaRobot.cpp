@@ -862,7 +862,7 @@ void YtaRobot::WristSequence()
         bAdjustWrist = !bAdjustWrist;
     }
 
-    // Check for a request to manually adjust the wrist angle
+    // Check for a request to manually adjust the wrist or arm angle
     if (m_pAuxController->DetectButtonChange(AUX_INCREASE_ANGLE_OFFSET_BUTTON))
     {
         if (bAdjustWrist)
@@ -1589,7 +1589,7 @@ void YtaRobot::SwerveDriveSequence()
             rotationAxis = 0.0;
             break;
         }
-        case DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV:
+        case DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV:
         {
             // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;
@@ -1597,7 +1597,7 @@ void YtaRobot::SwerveDriveSequence()
             rotationAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (SWERVE_ROTATE_SLOW_SPEED) : (0.0);
             break;
         }
-        case DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV:
+        case DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV:
         {
             // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;

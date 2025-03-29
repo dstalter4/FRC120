@@ -262,6 +262,8 @@ private:
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+
+    // Autonomous drive for a specified angle
     inline void AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
@@ -459,8 +461,8 @@ private:
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_RIGHT_POV              = Yta::Controller::PovDirections::POV_INVALID_RIGHT;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV  = Yta::Controller::PovDirections::POV_LEFT;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV   = Yta::Controller::PovDirections::POV_RIGHT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV = Yta::Controller::PovDirections::POV_RIGHT;
 
     // Aux inputs
     static const int                AUX_WRIST_IN_AXIS                       = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
