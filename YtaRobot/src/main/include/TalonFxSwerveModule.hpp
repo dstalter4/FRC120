@@ -3,7 +3,8 @@
 /// @author David Stalter
 ///
 /// @details
-/// Implements functionality for a swerve module on a swerve drive robot.
+/// Implements functionality for a TalonFX swerve module on a swerve drive
+/// robot.
 ///
 /// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +24,7 @@
 #include "units/voltage.h"                              // for voltage unit user defined literals
 
 // C++ INCLUDES
+#include "SwerveConfig.hpp"                             // for ModuleInformation structure
 #include "ctre/phoenix6/CANcoder.hpp"                   // for CTRE CANcoder API
 #include "ctre/phoenix6/TalonFX.hpp"                    // for CTRE TalonFX API
 
@@ -44,26 +46,8 @@ class TalonFxSwerveModule
     friend class SwerveDrive;
 
 private:
-    enum ModulePosition
-    {
-        FRONT_LEFT,
-        FRONT_RIGHT,
-        BACK_LEFT,
-        BACK_RIGHT
-    };
-
-    struct SwerveModuleConfig
-    {
-        const char * m_pModuleName;
-        ModulePosition m_Position;
-        int m_DriveMotorCanId;
-        int m_AngleMotorCanId;
-        int m_CanCoderId;
-        const Rotation2d m_CancoderReferenceAbsoluteOffset;
-    };
-
     // Constructor
-    TalonFxSwerveModule(SwerveModuleConfig config);
+    TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleInfo);
 
     // Points the module to zero degrees, which should be straight forward
     inline void HomeModule()
@@ -103,7 +87,7 @@ private:
     DisplayStrings m_DisplayStrings;
     static uint32_t m_DetailedModuleDisplayIndex;
 
-    ModulePosition m_MotorGroupPosition;
+    SwerveConfig::ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;
     TalonFX * m_pAngleTalon;
     CANcoder * m_pAngleCanCoder;

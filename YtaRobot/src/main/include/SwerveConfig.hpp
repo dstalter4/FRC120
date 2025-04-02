@@ -35,8 +35,26 @@ using namespace ctre::phoenix6::signals;
 ////////////////////////////////////////////////////////////////
 namespace SwerveConfig
 {
+    enum ModulePosition
+    {
+        FRONT_LEFT,
+        FRONT_RIGHT,
+        BACK_LEFT,
+        BACK_RIGHT
+    };
+
+    struct ModuleInformation
+    {
+        const char * m_pModuleName;
+        ModulePosition m_Position;
+        int m_DriveMotorCanId;
+        int m_AngleMotorCanId;
+        int m_CanCoderId;
+        const Rotation2d m_CancoderReferenceAbsoluteOffset;
+    };
+
     // Represents the configurable parameters in a swerve module
-    struct SwerveModuleConfig
+    struct ModuleConfiguration
     {
         const double DRIVE_GEAR_RATIO;
         const double ANGLE_GEAR_RATIO;
@@ -46,13 +64,13 @@ namespace SwerveConfig
     };
 
     // SDS MK4 L3 Very Fast configuration
-    static constexpr const SwerveModuleConfig SDS_MK4_CONFIG = {(6.12 / 1.0), (12.8 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::Clockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
+    static constexpr const ModuleConfiguration SDS_MK4_CONFIG = {(6.12 / 1.0), (12.8 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::Clockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
 
     // SDS MK4n L3+ configuration
-    static constexpr const SwerveModuleConfig SDS_MK4N_CONFIG = {(5.36 / 1.0), (18.75 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::CounterClockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
+    static constexpr const ModuleConfiguration SDS_MK4N_CONFIG = {(5.36 / 1.0), (18.75 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::CounterClockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
 
     // The swerve module configuration on the robot
-    static constexpr const SwerveModuleConfig & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK4N_CONFIG;
+    static constexpr const ModuleConfiguration & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK4N_CONFIG;
 
     static constexpr const size_t NUM_SWERVE_DRIVE_MODULES = 4U;
 

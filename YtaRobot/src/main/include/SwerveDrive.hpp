@@ -39,8 +39,6 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 class SwerveDrive
 {
-    typedef TalonFxSwerveModule::SwerveModuleConfig SwerveModuleConfig;
-
 public:
     // Constructor
     SwerveDrive(Pigeon2 * pPigeon);
@@ -118,10 +116,10 @@ private:
     // FR: 0.371582_tr (133.76952_deg), 0.856934_tr (308.49624_deg), 0.540039 (194.41404_deg), magnet fix: 0.647461 (233.08596_deg)
     // BL: 0.037598_tr (13.53528_deg), 0.538330_tr (193.7988_deg), 0.871094 (313.59384_deg), magnet fix: 0.766113 (275.80068_deg)
     // BR: 0.478027_tr (172.08972_deg), 0.972900_tr (350.244_deg), 0.315186 (113.46696_deg), magnet fix: 0.314453 (113.20308_deg)
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", TalonFxSwerveModule::FRONT_LEFT, 11, 12, 1, 352.08972_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", TalonFxSwerveModule::FRONT_RIGHT, 13, 14, 2, 233.08596_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", TalonFxSwerveModule::BACK_LEFT, 15, 16, 3, 275.80068_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", TalonFxSwerveModule::BACK_RIGHT, 17, 18, 4, 113.20308_deg};
+    static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 352.08972_deg};
+    static constexpr const SwerveConfig::ModuleInformation FRONT_RIGHT_MODULE_INFO = {"Front right", SwerveConfig::ModulePosition::FRONT_RIGHT, 13, 14, 2, 233.08596_deg};
+    static constexpr const SwerveConfig::ModuleInformation BACK_LEFT_MODULE_INFO = {"Back left", SwerveConfig::ModulePosition::BACK_LEFT, 15, 16, 3, 275.80068_deg};
+    static constexpr const SwerveConfig::ModuleInformation BACK_RIGHT_MODULE_INFO = {"Back right", SwerveConfig::ModulePosition::BACK_RIGHT, 17, 18, 4, 113.20308_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;
