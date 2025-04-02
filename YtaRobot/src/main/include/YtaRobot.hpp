@@ -534,7 +534,7 @@ private:
     static constexpr const units::angle::degree_t ARM_STARTING_POSITION_ENCODER_VALUE   = units::angle::degree_t(0.7476 * 360.0);
     static constexpr const units::angle::degree_t ARM_ENDING_POSITION_ENCODER_VALUE     = units::angle::degree_t(0.0000 * 360.0);
     static constexpr const units::angle::degree_t ARM_LOADING_TARGET_DEGREES            = 195.0_deg;
-    static constexpr const units::angle::degree_t ARM_NEUTRAL_TARGET_DEGREES            = 180.0_deg;
+    static constexpr const units::angle::degree_t ARM_NEUTRAL_TARGET_DEGREES            = 185.0_deg;
     static constexpr const units::angle::degree_t ARM_REEF_L1_TARGET_DEGREES            = 75.0_deg;
     static constexpr const units::angle::degree_t ARM_REEF_L2_L3_TARGET_DEGREES         = 30.0_deg;
     static constexpr const units::angle::degree_t ARM_REEF_L4_TARGET_DEGREES            = -15.0_deg;
@@ -542,13 +542,13 @@ private:
     static constexpr const units::angle::degree_t ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES  = 10.0_deg;
 
     static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_DEGREES       = 135.0_deg;
-    static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_ENCODER_VALUE = units::angle::degree_t(0.7510 * 360.0);
+    static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_ENCODER_VALUE = units::angle::degree_t(0.5203 * 360.0);
     static constexpr const units::angle::degree_t WRIST_ENDING_POSITION_ENCODER_VALUE   = units::angle::degree_t(0.0000 * 360.0);
-    static constexpr const units::angle::degree_t WRIST_LOADING_TARGET_DEGREES          = 35.0_deg;
+    static constexpr const units::angle::degree_t WRIST_LOADING_TARGET_DEGREES          = 55.0_deg;
     static constexpr const units::angle::degree_t WRIST_NEUTRAL_TARGET_DEGREES          = 135.0_deg;
-    static constexpr const units::angle::degree_t WRIST_REEF_L1_TARGET_DEGREES          = 135.0_deg;
-    static constexpr const units::angle::degree_t WRIST_REEF_L2_L3_TARGET_DEGREES       = 195.0_deg;
-    static constexpr const units::angle::degree_t WRIST_REEF_L4_TARGET_DEGREES          = 60.0_deg;
+    static constexpr const units::angle::degree_t WRIST_REEF_L1_TARGET_DEGREES          = 85.0_deg;
+    static constexpr const units::angle::degree_t WRIST_REEF_L2_L3_TARGET_DEGREES       = 175.0_deg;
+    static constexpr const units::angle::degree_t WRIST_REEF_L4_TARGET_DEGREES          = 50.0_deg;
 
     static constexpr const units::angle::degree_t ENCODER_BOUNDARY_TOLERANCE_DEGREES    = -5.0_deg;
 
