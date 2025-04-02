@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file   SwerveModule.cpp
+/// @file   TalonFxSwerveModule.cpp
 /// @author David Stalter
 ///
 /// @details
@@ -20,15 +20,15 @@
 #include "RobotUtils.hpp"                           // for ConvertCelsiusToFahrenheit
 #include "SwerveConfig.hpp"                         // for swerve configuration and constants
 #include "SwerveConversions.hpp"                    // for conversion functions
-#include "SwerveModule.hpp"                         // for class declaration
+#include "TalonFxSwerveModule.hpp"                  // for class declaration
 
 using namespace frc;
 
-uint32_t SwerveModule::m_DetailedModuleDisplayIndex = 0U;
+uint32_t TalonFxSwerveModule::m_DetailedModuleDisplayIndex = 0U;
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::SwerveModule
+/// @method TalonFxSwerveModule::TalonFxSwerveModule
 ///
 /// Constructs a swerve module object.  This will configure the
 /// settings for each TalonFX (PID values, current limiting,
@@ -40,7 +40,7 @@ uint32_t SwerveModule::m_DetailedModuleDisplayIndex = 0U;
 /// 2025: Bevels facing right is 1.0 forward on the Talons.
 ///
 ////////////////////////////////////////////////////////////////
-SwerveModule::SwerveModule(SwerveModuleConfig config) :
+TalonFxSwerveModule::TalonFxSwerveModule(SwerveModuleConfig config) :
     m_MotorGroupPosition(config.m_Position),
     m_pDriveTalon(new TalonFX(config.m_DriveMotorCanId)),
     m_pAngleTalon(new TalonFX(config.m_AngleMotorCanId)),
@@ -118,13 +118,13 @@ SwerveModule::SwerveModule(SwerveModuleConfig config) :
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::RecalibrateModules
+/// @method TalonFxSwerveModule::RecalibrateModules
 ///
 /// Recalibrates the swerve module by reading the absolute
 /// encoder and setting the appropriate motor controller values.
 ///
 ////////////////////////////////////////////////////////////////
-void SwerveModule::RecalibrateModules()
+void TalonFxSwerveModule::RecalibrateModules()
 {
     // Reset the swerve module to the absolute angle starting position.
     // This reads the current angle from the CANCoder and figures out how
@@ -168,7 +168,7 @@ void SwerveModule::RecalibrateModules()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::Optimize
+/// @method TalonFxSwerveModule::Optimize
 ///
 /// Optimizes a swerve module state for use with setting a
 /// desired state.  This finds the shortest way to move to a
@@ -176,7 +176,7 @@ void SwerveModule::RecalibrateModules()
 /// the target speed, if necessary).
 ///
 ////////////////////////////////////////////////////////////////
-SwerveModuleState SwerveModule::Optimize(SwerveModuleState desiredState, Rotation2d currentAngle)
+SwerveModuleState TalonFxSwerveModule::Optimize(SwerveModuleState desiredState, Rotation2d currentAngle)
 {
     // This is a custom optimize function, since default WPILib optimize assumes continuous controller which CTRE and Rev onboard is not
     double targetAngle = SwerveConversions::AdjustAngleScope(currentAngle.Degrees().value(), desiredState.angle.Degrees().value());
@@ -201,14 +201,14 @@ SwerveModuleState SwerveModule::Optimize(SwerveModuleState desiredState, Rotatio
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::SetDesiredState
+/// @method TalonFxSwerveModule::SetDesiredState
 ///
 /// Sets a swerve module to the input state.  It computes the
 /// target velocity and angle and updates the motor controllers
 /// as appropriate.
 ///
 ////////////////////////////////////////////////////////////////
-void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop)
+void TalonFxSwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop)
 {
     // Custom optimize command, since default WPILib optimize assumes continuous controller which CTRE is not
     // @todo_phoenix6: This -1 multiplier is critical.  Figure out why.
@@ -251,13 +251,13 @@ void SwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOpenL
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::GetSwerveModuleState
+/// @method TalonFxSwerveModule::GetSwerveModuleState
 ///
 /// Returns a swerve module state based on information from the
 /// motor controllers and sensors.
 ///
 ////////////////////////////////////////////////////////////////
-SwerveModuleState SwerveModule::GetSwerveModuleState()
+SwerveModuleState TalonFxSwerveModule::GetSwerveModuleState()
 {
     // Get the current velocity
     units::angular_velocity::turns_per_second_t driveTalonVelocityRps = m_pDriveTalon->GetVelocity().GetValue();
@@ -272,13 +272,13 @@ SwerveModuleState SwerveModule::GetSwerveModuleState()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::GetSwerveModulePosition
+/// @method TalonFxSwerveModule::GetSwerveModulePosition
 ///
 /// Returns a swerve module position based on information from
 /// the motor controllers and sensors.
 ///
 ////////////////////////////////////////////////////////////////
-SwerveModulePosition SwerveModule::GetSwerveModulePosition()
+SwerveModulePosition TalonFxSwerveModule::GetSwerveModulePosition()
 {
     // Get the current distance
     units::angle::turn_t driveTalonPositionInTurns = m_pDriveTalon->GetPosition().GetValue();
@@ -293,33 +293,33 @@ SwerveModulePosition SwerveModule::GetSwerveModulePosition()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::LockWheel
+/// @method TalonFxSwerveModule::LockWheel
 ///
 /// Sets the wheel angle of a swerve module to the correct
 /// direction to form an X to prevent movement.
 ///
 ////////////////////////////////////////////////////////////////
-void SwerveModule::LockWheel()
+void TalonFxSwerveModule::LockWheel()
 {
     units::angle::degree_t targetAngleDegrees = 0.0_deg;
     switch (m_MotorGroupPosition)
     {
-        case SwerveModule::FRONT_LEFT:
+        case TalonFxSwerveModule::FRONT_LEFT:
         {
             targetAngleDegrees = 45.0_deg;
             break;
         }
-        case SwerveModule::FRONT_RIGHT:
+        case TalonFxSwerveModule::FRONT_RIGHT:
         {
             targetAngleDegrees = -45.0_deg;
             break;
         }
-        case SwerveModule::BACK_LEFT:
+        case TalonFxSwerveModule::BACK_LEFT:
         {
             targetAngleDegrees = -45.0_deg;
             break;
         }
-        case SwerveModule::BACK_RIGHT:
+        case TalonFxSwerveModule::BACK_RIGHT:
         {
             targetAngleDegrees = 45.0_deg;
             break;
@@ -335,12 +335,12 @@ void SwerveModule::LockWheel()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method SwerveModule::UpdateSmartDashboard
+/// @method TalonFxSwerveModule::UpdateSmartDashboard
 ///
 /// Support routine to put useful information on the dashboard.
 ///
 ////////////////////////////////////////////////////////////////
-void SwerveModule::UpdateSmartDashboard()
+void TalonFxSwerveModule::UpdateSmartDashboard()
 {
     // Print the encoder values every time
     SmartDashboard::PutNumber(m_DisplayStrings.m_CancoderAngleString, m_pAngleCanCoder->GetAbsolutePosition().GetValueAsDouble());

@@ -25,7 +25,7 @@
 
 // C++ INCLUDES
 #include "SwerveConfig.hpp"                             // for swerve configuration and constants
-#include "SwerveModule.hpp"                             // for interacting with a swerve module
+#include "TalonFxSwerveModule.hpp"                      // for interacting with a TalonFX swerve module
 #include "ctre/phoenix6/Pigeon2.hpp"                    // for PigeonIMU
 
 using namespace frc;
@@ -39,7 +39,7 @@ using namespace frc;
 ////////////////////////////////////////////////////////////////
 class SwerveDrive
 {
-    typedef SwerveModule::SwerveModuleConfig SwerveModuleConfig;
+    typedef TalonFxSwerveModule::SwerveModuleConfig SwerveModuleConfig;
 
 public:
     // Constructor
@@ -103,7 +103,7 @@ private:
     wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> GetModulePositions();
 
     Pigeon2 * m_pPigeon;
-    SwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
+    TalonFxSwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
 
     // From https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-odometry.html
     // 0 degrees / radians represents the robot angle when the robot is facing directly toward your opponent’s
@@ -118,10 +118,10 @@ private:
     // FR: 0.371582_tr (133.76952_deg), 0.856934_tr (308.49624_deg), 0.540039 (194.41404_deg), magnet fix: 0.647461 (233.08596_deg)
     // BL: 0.037598_tr (13.53528_deg), 0.538330_tr (193.7988_deg), 0.871094 (313.59384_deg), magnet fix: 0.766113 (275.80068_deg)
     // BR: 0.478027_tr (172.08972_deg), 0.972900_tr (350.244_deg), 0.315186 (113.46696_deg), magnet fix: 0.314453 (113.20308_deg)
-    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", SwerveModule::FRONT_LEFT, 11, 12, 1, 352.08972_deg};
-    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", SwerveModule::FRONT_RIGHT, 13, 14, 2, 233.08596_deg};
-    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", SwerveModule::BACK_LEFT, 15, 16, 3, 275.80068_deg};
-    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", SwerveModule::BACK_RIGHT, 17, 18, 4, 113.20308_deg};
+    static constexpr const SwerveModuleConfig FRONT_LEFT_MODULE_CONFIG = {"Front left", TalonFxSwerveModule::FRONT_LEFT, 11, 12, 1, 352.08972_deg};
+    static constexpr const SwerveModuleConfig FRONT_RIGHT_MODULE_CONFIG = {"Front right", TalonFxSwerveModule::FRONT_RIGHT, 13, 14, 2, 233.08596_deg};
+    static constexpr const SwerveModuleConfig BACK_LEFT_MODULE_CONFIG = {"Back left", TalonFxSwerveModule::BACK_LEFT, 15, 16, 3, 275.80068_deg};
+    static constexpr const SwerveModuleConfig BACK_RIGHT_MODULE_CONFIG = {"Back right", TalonFxSwerveModule::BACK_RIGHT, 17, 18, 4, 113.20308_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file   SwerveModule.hpp
+/// @file   TalonFxSwerveModule.hpp
 /// @author David Stalter
 ///
 /// @details
@@ -8,8 +8,8 @@
 /// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SWERVEMODULE_HPP
-#define SWERVEMODULE_HPP
+#ifndef TALONFXSWERVEMODULE_HPP
+#define TALONFXSWERVEMODULE_HPP
 
 // SYSTEM INCLUDES
 #include <cmath>                                        // for M_PI
@@ -34,12 +34,12 @@ using namespace ctre::phoenix6::signals;
 
 
 ////////////////////////////////////////////////////////////////
-/// @class SwerveModule
+/// @class TalonFxSwerveModule
 ///
-/// Declarations for a swerve module object.
+/// Declarations for a TalonFX swerve module object.
 ///
 ////////////////////////////////////////////////////////////////
-class SwerveModule
+class TalonFxSwerveModule
 {
     friend class SwerveDrive;
 
@@ -63,7 +63,7 @@ private:
     };
 
     // Constructor
-    SwerveModule(SwerveModuleConfig config);
+    TalonFxSwerveModule(SwerveModuleConfig config);
 
     // Points the module to zero degrees, which should be straight forward
     inline void HomeModule()
@@ -124,8 +124,8 @@ private:
     static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(1.51 / 12.0);
     static constexpr units::unit_t<ka_unit> KA = units::unit_t<ka_unit>(0.27 / 12.0);
 
-    SwerveModule(const SwerveModule &) = delete;
-    SwerveModule & operator=(const SwerveModule &) = delete;
+    TalonFxSwerveModule(const TalonFxSwerveModule &) = delete;
+    TalonFxSwerveModule & operator=(const TalonFxSwerveModule &) = delete;
 };
 
-#endif // SWERVEMODULE_HPP
+#endif // TALONFXSWERVEMODULE_HPP
