@@ -26,6 +26,9 @@
 using namespace frc;
 using namespace ctre::phoenix6::signals;
 
+class TalonFxSwerveModule;
+class NeoSwerveModule;
+
 
 ////////////////////////////////////////////////////////////////
 /// @namespace SwerveConfig
@@ -50,7 +53,7 @@ namespace SwerveConfig
         int m_DriveMotorCanId;
         int m_AngleMotorCanId;
         int m_CanCoderId;
-        const Rotation2d m_CancoderReferenceAbsoluteOffset;
+        const Rotation2d m_EncoderReferenceAbsoluteOffset;
     };
 
     // Represents the configurable parameters in a swerve module
@@ -58,6 +61,13 @@ namespace SwerveConfig
     {
         const double DRIVE_GEAR_RATIO;
         const double ANGLE_GEAR_RATIO;
+
+        // These types are specific to CTRE configurations, but the
+        // concepts apply to swerve in general.  Swerve modules using
+        // Neo motors will ignore the inverted values here and just
+        // directly specify true/false for invert.  If something
+        // besides a typical CTRE setup is used, this part of the
+        // configuration may need to be reworked.
         const InvertedValue DRIVE_MOTOR_INVERTED_VALUE;
         const InvertedValue ANGLE_MOTOR_INVERTED_VALUE;
         const SensorDirectionValue CANCODER_INVERTED_VALUE;
@@ -69,7 +79,8 @@ namespace SwerveConfig
     // SDS MK4n L3+ configuration
     static constexpr const ModuleConfiguration SDS_MK4N_CONFIG = {(5.36 / 1.0), (18.75 / 1.0), InvertedValue::CounterClockwise_Positive, InvertedValue::CounterClockwise_Positive, SensorDirectionValue::CounterClockwise_Positive};
 
-    // The swerve module configuration on the robot
+    // The swerve module configuration on the robot (change the typedef based on the motors on the module)
+    typedef TalonFxSwerveModule SwerveModuleType;
     static constexpr const ModuleConfiguration & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK4N_CONFIG;
 
     static constexpr const size_t NUM_SWERVE_DRIVE_MODULES = 4U;

@@ -45,13 +45,13 @@ TalonFxSwerveModule::TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleI
     m_MotorGroupPosition(moduleInfo.m_Position),
     m_pDriveTalon(new TalonFX(moduleInfo.m_DriveMotorCanId)),
     m_pAngleTalon(new TalonFX(moduleInfo.m_AngleMotorCanId)),
-    m_pAngleCanCoder(new CANcoder(moduleInfo.m_CanCoderId, "canivore-120")),
-    m_LastAngle(),
-    m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA)),
     m_DriveDutyCycleOut(0.0),
     m_DriveVelocityVoltage(0.0_tps),
     m_AnglePositionVoltage(0.0_tr),
-    CANCODER_REFERENCE_ABSOLUTE_OFFSET(moduleInfo.m_CancoderReferenceAbsoluteOffset)
+    m_pAngleCanCoder(new CANcoder(moduleInfo.m_CanCoderId, "canivore-120")),
+    m_LastAngle(),
+    m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA)),
+    CANCODER_REFERENCE_ABSOLUTE_OFFSET(moduleInfo.m_EncoderReferenceAbsoluteOffset)
 {
     // Build the strings to use in the display method
     std::snprintf(&m_DisplayStrings.m_CancoderAngleString[0], DisplayStrings::MAX_MODULE_DISPLAY_STRING_LENGTH, "%s %s", moduleInfo.m_pModuleName, "cancoder");
@@ -223,6 +223,7 @@ void TalonFxSwerveModule::SetDesiredState(SwerveModuleState desiredState, bool b
     }
     else
     {
+        // @todo: This needs validation (partially works, but max speed is inaccurate).
         units::angular_velocity::turns_per_second_t driveTalonDesiredVelocityTps = units::angular_velocity::turns_per_second_t(SwerveConversions::MpsToRps(desiredState.speed.value(), SwerveConfig::WHEEL_CIRCUMFERENCE));
         m_DriveVelocityVoltage.Velocity = driveTalonDesiredVelocityTps;
         m_DriveVelocityVoltage.FeedForward = m_pFeedForward->Calculate(desiredState.speed);

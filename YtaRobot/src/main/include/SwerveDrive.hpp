@@ -25,6 +25,7 @@
 
 // C++ INCLUDES
 #include "SwerveConfig.hpp"                             // for swerve configuration and constants
+#include "NeoSwerveModule.hpp"                          // for interacting with a Neo swerve module
 #include "TalonFxSwerveModule.hpp"                      // for interacting with a TalonFX swerve module
 #include "ctre/phoenix6/Pigeon2.hpp"                    // for PigeonIMU
 
@@ -101,7 +102,7 @@ private:
     wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> GetModulePositions();
 
     Pigeon2 * m_pPigeon;
-    TalonFxSwerveModule m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
+    SwerveConfig::SwerveModuleType m_SwerveModules[SwerveConfig::NUM_SWERVE_DRIVE_MODULES];
 
     // From https://docs.wpilib.org/en/stable/docs/software/kinematics-and-odometry/swerve-drive-odometry.html
     // 0 degrees / radians represents the robot angle when the robot is facing directly toward your opponent’s

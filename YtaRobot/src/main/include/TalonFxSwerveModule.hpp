@@ -90,12 +90,12 @@ private:
     SwerveConfig::ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;
     TalonFX * m_pAngleTalon;
-    CANcoder * m_pAngleCanCoder;
-    Rotation2d m_LastAngle;
-    SimpleMotorFeedforward<units::meters> * m_pFeedForward;
     DutyCycleOut m_DriveDutyCycleOut;
     VelocityVoltage m_DriveVelocityVoltage;
     PositionVoltage m_AnglePositionVoltage;
+    CANcoder * m_pAngleCanCoder;
+    Rotation2d m_LastAngle;
+    SimpleMotorFeedforward<units::meters> * m_pFeedForward;
     const Rotation2d CANCODER_REFERENCE_ABSOLUTE_OFFSET;
 
     // Divide by 12 on these constants to convert from volts to percent output for CTRE
