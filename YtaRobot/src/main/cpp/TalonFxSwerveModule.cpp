@@ -74,8 +74,8 @@ TalonFxSwerveModule::TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleI
     driveTalonConfig.Slot0.kI = 0.0;
     driveTalonConfig.Slot0.kD = 0.0;
 
-    driveTalonConfig.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.25_s;
-    driveTalonConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = 0.25_s;
+    driveTalonConfig.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.5_s;
+    driveTalonConfig.OpenLoopRamps.VoltageOpenLoopRampPeriod = 0.5_s;
 
     driveTalonConfig.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.0_s;
     driveTalonConfig.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.0_s;
