@@ -40,10 +40,36 @@ void YtaRobot::AutonomousRoutine2()
 
     // Drive towards the reef (remember that the robot is facing the opposite alliance wall)
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.0, 2.5_s, true);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.0, 2.0_s, true);
 
     // Turn towards the reef (forward is still the other alliance wall, thus clockwise)
-    AutonomousRotateByGyroSequence(RobotRotation::ROBOT_CLOCKWISE, 60.0, 0.2, true);
+    AutonomousRotateByGyroSequence(RobotRotation::ROBOT_CLOCKWISE, 50.0, 0.2, true);
+
+    // Manually (and slowly) move the arm to the L4 position
+    m_ArmPosition = ArmPosition::REEF_L4;
+    m_ArmTargetDegrees = ARM_REEF_L4_TARGET_DEGREES;
+    m_pArmPivotMotor->SetDutyCycle(-0.20);
+    while (units::angle::degree_t(m_pArmPivotMotor->m_pTalonFx->GetPosition().GetValue()) > ARM_REEF_L4_TARGET_DEGREES)
+    {
+        //SmartDashboard::PutNumber("Arm angle", units::angle::degree_t(m_pArmPivotMotor->m_pTalonFx->GetPosition().GetValue()).value());
+        AutonomousDelay(0.02_s);
+    }
+    m_pArmPivotMotor->SetDutyCycle(0.0);
+
+    // Manually (and slowly) move the wrist to the L4 position
+    m_WristTargetDegrees = WRIST_REEF_L4_TARGET_DEGREES;
+    m_pWristPivotMotor->SetDutyCycle(-0.10);
+    while (units::angle::degree_t(m_pWristPivotMotor->m_pTalonFx->GetPosition().GetValue()) > WRIST_REEF_L4_TARGET_DEGREES)
+    {
+        //SmartDashboard::PutNumber("Wrist angle", units::angle::degree_t(m_pWristPivotMotor->m_pTalonFx->GetPosition().GetValue()).value());
+        AutonomousDelay(0.02_s);
+    }
+    m_pWristPivotMotor->SetDutyCycle(0.0);
+
+    // Set the lift to L4 (using angle positioning seems to keep the coral in place)
+    m_LiftPosition = LiftPosition::LIFT_UP;
+    m_LiftTargetDegrees = LIFT_UP_ANGLE;
+    m_pLiftMotors->SetAngle(m_LiftTargetDegrees.value());
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 2 done.");
