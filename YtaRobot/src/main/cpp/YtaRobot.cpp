@@ -373,6 +373,8 @@ void YtaRobot::ConfigureMotorControllers()
 
     // Configure hang motor
     (void)m_pHangMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    (void)m_pHangMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(81.0 / 1.0);
+    (void)m_pHangMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
     m_pHangMotor->ApplyConfiguration();
 }
 
@@ -962,6 +964,15 @@ void YtaRobot::HangSequence()
     {
         m_pHangMotor->SetDutyCycle(0.0);
     }
+
+    units::angle::degree_t hangarRotations = m_pHangMotor->m_pTalonFx->GetPosition().GetValue();
+    bool bHangarInRange = false;
+    if ((hangarRotations >= 500.0_deg) && (hangarRotations <= 600.0_deg))
+    {
+        bHangarInRange = true;
+    }
+    SmartDashboard::PutNumber("Hangar motor degrees", hangarRotations.value());
+    SmartDashboard::PutBoolean("Hangar in range", bHangarInRange);
 }
 
 
@@ -1272,7 +1283,7 @@ void YtaRobot::BlinkMorseCodePattern()
     //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
     static const size_t MORSE_MSG_MAX_LENGTH = 128U;
     static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
-    static const char MORSE_STRING[] = "S.O.S.";
+    static const char MORSE_STRING[] = "120";
     static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
     static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
 

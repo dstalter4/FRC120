@@ -547,7 +547,7 @@ private:
     static constexpr const units::angle::degree_t ARM_WRIST_MANUAL_ADJUST_STEP_DEGREES  = 10.0_deg;
 
     static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_DEGREES       = 135.0_deg;
-    static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_ENCODER_VALUE = units::angle::degree_t(0.5203 * 360.0);
+    static constexpr const units::angle::degree_t WRIST_STARTING_POSITION_ENCODER_VALUE = units::angle::degree_t(0.6609 * 360.0);
     static constexpr const units::angle::degree_t WRIST_ENDING_POSITION_ENCODER_VALUE   = units::angle::degree_t(0.0000 * 360.0);
     static constexpr const units::angle::degree_t WRIST_LOADING_TARGET_DEGREES          = 55.0_deg;
     static constexpr const units::angle::degree_t WRIST_NEUTRAL_TARGET_DEGREES          = 135.0_deg;
@@ -576,7 +576,7 @@ private:
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = 91 + 8;
+    static const unsigned           NUMBER_OF_LEDS                          = 73 + 8;
 
     static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
     
