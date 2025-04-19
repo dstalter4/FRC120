@@ -58,6 +58,7 @@ public:
     static void TimeTest();
     static void ButtonChangeTest();
     static void SensorTest();
+    static void ManualPidTune();
     static void AccelerometerTest();
     static void CandleLedsTest();
     static void RelayLedsTest();
@@ -495,6 +496,53 @@ void YtaRobotTest::SensorTest()
 {
     static DutyCycleEncoder * pRevThroughBoreEncoder = new DutyCycleEncoder(YtaRobot::SENSOR_TEST_CODE_DIO_CHANNEL);
     (void)pRevThroughBoreEncoder->Get();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobotTest::ManualPidTune
+///
+/// Test code for quickly tuning a PID loop.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobotTest::ManualPidTune()
+{
+    static double loopP = 50.0;
+    static double loopD = 2.0;
+
+    bool bPidChanged = false;
+    if (m_pJoystick->GetRawButtonPressed(1))
+    {
+        loopP -= 1.0;
+        bPidChanged = true;
+    }
+    if (m_pJoystick->GetRawButtonPressed(2))
+    {
+        loopP += 1.0;
+        bPidChanged = true;
+    }
+    if (m_pJoystick->GetRawButtonPressed(3))
+    {
+        loopD -= 0.05;
+        bPidChanged = true;
+    }
+    if (m_pJoystick->GetRawButtonPressed(4))
+    {
+        loopD += 0.05;
+        bPidChanged = true;
+    }
+
+    static TalonFX * pTalonFx = new TalonFX(21);
+    static TalonFXConfiguration talonFxConfig;
+    if (bPidChanged)
+    {
+        talonFxConfig.Slot0.kP = loopP;
+        talonFxConfig.Slot0.kD = loopD;
+        (void)pTalonFx->GetConfigurator().Apply(talonFxConfig);
+    }
+    SmartDashboard::PutNumber("Tune kP", loopP);
+    SmartDashboard::PutNumber("Tune kD", loopD);
 }
 
 
