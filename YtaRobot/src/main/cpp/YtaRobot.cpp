@@ -965,14 +965,14 @@ void YtaRobot::HangSequence()
         m_pHangMotor->SetDutyCycle(0.0);
     }
 
-    units::angle::degree_t hangarRotations = m_pHangMotor->m_pTalonFx->GetPosition().GetValue();
-    bool bHangarInRange = false;
-    if ((hangarRotations >= 500.0_deg) && (hangarRotations <= 600.0_deg))
+    units::angle::degree_t hangerRotations = m_pHangMotor->m_pTalonFx->GetPosition().GetValue();
+    bool bHangerInRange = false;
+    if ((hangerRotations >= 500.0_deg) && (hangerRotations <= 600.0_deg))
     {
-        bHangarInRange = true;
+        bHangerInRange = true;
     }
-    SmartDashboard::PutNumber("Hangar motor degrees", hangarRotations.value());
-    SmartDashboard::PutBoolean("Hangar in range", bHangarInRange);
+    SmartDashboard::PutNumber("Hanger motor degrees", hangerRotations.value());
+    SmartDashboard::PutBoolean("Hanger in range", bHangerInRange);
 }
 
 
