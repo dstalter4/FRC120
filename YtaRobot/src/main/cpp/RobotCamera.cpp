@@ -5,14 +5,13 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
 // <none>
 
 // C INCLUDES
-#include "cameraserver/CameraServer.h"          // for CameraServer instance
 #include "networktables/NetworkTable.h"         // for network tables
 #include "networktables/NetworkTableInstance.h" // for network table instance
 #include "wpinet/PortForwarder.h"               // for port forwarding
@@ -216,8 +215,8 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
 ///
 ////////////////////////////////////////////////////////////////
 RobotCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, const int xRes, const int yRes, const int fps) :
-    m_UsbCam(),
-    m_CamSink(),
+    m_UsbCam(CameraServer::StartAutomaticCapture()),
+    m_CamSink(CameraServer::GetVideo(m_UsbCam)),
     m_bIsPresent(true),
     m_DeviceNum(devNum),
     CAM_TYPE(camType),
@@ -228,10 +227,8 @@ RobotCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, 
     RobotUtils::DisplayFormattedMessage("Creating camera %d.\n", devNum);
 
     // Start image capture, set the resolution and connect the sink
-    m_UsbCam = CameraServer::StartAutomaticCapture();
     m_UsbCam.SetResolution(xRes, yRes);
     m_UsbCam.SetFPS(fps);
-    m_CamSink = CameraServer::GetVideo(m_UsbCam);
 }
 
 

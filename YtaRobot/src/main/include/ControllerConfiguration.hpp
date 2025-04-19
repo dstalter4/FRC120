@@ -7,7 +7,7 @@
 /// mappings.
 ///
 ///
-/// Copyright (c) 2022 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef CONTROLLERCONFIGURATION_HPP
@@ -44,7 +44,8 @@ namespace Config
         CUSTOM_LOGITECH,
         CUSTOM_LOGITECH_EXTREME,
         CUSTOM_PLAY_STATION,
-        CUSTOM_XBOX
+        CUSTOM_XBOX,
+        CUSTOM_BUTTON_BOX
     };
 
     ////////////////////////////////////////////////////////////////
@@ -186,7 +187,7 @@ namespace Config
 
 
     ////////////////////////////////////////////////////////////////
-    /// Constant expressions mapping the controller styles.
+    /// Constant expressions mapping the controller models.
     ////////////////////////////////////////////////////////////////
     static constexpr const Mappings LOGITECH_CONTROLLER_MAPPINGS =
     {
@@ -264,6 +265,14 @@ namespace Config
             Xbox::RawButtons::RIGHT_STICK_CLICK
         }
     };
+
+    // Constant expression mapping a custom button box
+    static constexpr const Mappings BUTTON_BOX_MAPPINGS =
+    {
+        // Button boxes cannot use the typical controller mappings
+        { 0U, 0U, 0U, 0U, 0U, 0U },
+        { 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U }
+    };
     
     // Constant expression function to retrieve the mapping for a controller at compile time
     static constexpr const Mappings * GetControllerMapping(Models controllerModel)
@@ -285,6 +294,10 @@ namespace Config
             case CUSTOM_XBOX:
             {
                 return &XBOX_CONTROLLER_MAPPINGS;
+            }
+            case CUSTOM_BUTTON_BOX:
+            {
+                return &BUTTON_BOX_MAPPINGS;
             }
             default:
             {

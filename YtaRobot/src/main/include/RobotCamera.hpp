@@ -5,7 +5,7 @@
 /// @details
 /// A class designed to support camera functionality on the robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef ROBOTCAMERA_HPP
@@ -18,17 +18,20 @@
 #include "frc/smartdashboard/SmartDashboard.h"  // for smart dashboard support
 #include "frc/Timer.h"                          // for creating a Timer
 #include "networktables/NetworkTable.h"         // for interacting with network tables
-#include "cameraserver/CameraServer.h"          // for camera support
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                       // for DisplayMessage()
 
-// gcc 11.1 introduced this warning and no one cleaned up opencv yet
+// gcc 11.1 introduced this warning and mat.hpp hasn't been fully cleaned up yet
 DISABLE_WARNING("-Wdeprecated-enum-enum-conversion")
-#include "opencv2/imgproc/imgproc.hpp"          // for vision structures and routines
+#include "opencv2/core/mat.hpp"
+ENABLE_WARNING("-Wdeprecated-enum-enum-conversion")
+#include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/types.hpp"
-ENABLE_WARNING("-Wdeprecated-enum-enum-conversion")
+
+// Indirectly includes opencv stuff, must happen after the warning disable/enable
+#include "cameraserver/CameraServer.h"
 
 using namespace frc;
 

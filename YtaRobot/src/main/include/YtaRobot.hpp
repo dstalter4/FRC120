@@ -9,7 +9,7 @@
 /// right time as controlled by the switches on the driver station or the field
 /// controls.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOT_HPP
@@ -25,12 +25,14 @@
 #include "frc/DigitalOutput.h"                  // for DigitalOutput type
 #include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
 #include "frc/DriverStation.h"                  // for interacting with the driver station
+#include "frc/DutyCycleEncoder.h"               // for interacting with PWM based encoders
 #include "frc/Relay.h"                          // for Relay type
 #include "frc/Solenoid.h"                       // for Solenoid type
 #include "frc/TimedRobot.h"                     // for base class decalartion
 #include "frc/livewindow/LiveWindow.h"          // for controlling the LiveWindow
 #include "frc/smartdashboard/SendableChooser.h" // for using the smart dashboard sendable chooser functionality
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
+#include "frc2/command/CommandPtr.h"            // for CommandPtr
 
 // C++ INCLUDES
 #include "DriveConfiguration.hpp"               // for information on the drive config
@@ -44,6 +46,7 @@
 #include "ctre/phoenix6/controls/MusicTone.hpp" // for creating music tones
 
 using namespace frc;
+using namespace frc2;
 using namespace ctre::phoenix6::controls;
 using namespace ctre::phoenix6::hardware;
 using namespace ctre::phoenix::led;
@@ -201,6 +204,9 @@ private:
     // Autonomous drive for a specified time
     inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+
+    // Autonomous drive for a specified angle
+    inline void AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
     
     // Autonomous routines to back drive the motors to abruptly stop
     inline void AutonomousBackDrive(RobotDirection currentDirection);
@@ -208,21 +214,28 @@ private:
     
     // Autonomous routines
     // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this)!
+    void AutonomousPeriodicTimed();
+    void AutonomousPeriodicCommand();
+    void AutonomousCommon();
+    void AutonomousCommonRed();
+    void AutonomousCommonBlue();
     void AutonomousRoutine1();
     void AutonomousRoutine2();
     void AutonomousRoutine3();
     void AutonomousTestRoutine();
     void AutonomousTestSwerveRoutine();
-    void AutonomousTestTrajectoryRoutine();
-    void AutonomousCommon();
-    void AutonomousCommonRed();
-    void AutonomousCommonBlue();
+    CommandPtr AutonomousTestCommandDashboardRoutine();
+    CommandPtr AutonomousTestCommandMotionRoutine();
+    CommandPtr AutonomousTestTrajectoryRoutine();
 
     // Resets member variables
     void ResetMemberData();
 
     // Routine to put things in a known state
     void InitialStateSetup();
+
+    // Checks for the RIO pin readings to stabilize
+    void CheckIfRioPinsAreStable();
 
     // Configure motor controller parameters
     void ConfigureMotorControllers();
@@ -254,7 +267,10 @@ private:
     
     // Main sequence for vision processing
     void CameraSequence();
-    
+
+    // Superstructure sequences
+    // (none)
+
     // MEMBER VARIABLES
     
     // Autonomous
@@ -293,14 +309,12 @@ private:
     // Solenoids
     // (none)
     
-    // Servos
-    // (none)
-    
     // Encoders
     // (none)
     
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
+    Timer *                         m_pRobotProgramTimer;                   // Starts at robot program entry, free runs for program life time
     Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
@@ -319,6 +333,7 @@ private:
     RobotDriveState                 m_RobotDriveState;                      // Keep track of how the drive sequence flows
     std::optional
     <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
+    bool                            m_bRioPinsStable;                       // Indicates whether the RIO pin measurements (e.g. PWM) are stable
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progres
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
@@ -337,6 +352,7 @@ private:
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
     // Driver inputs
+    // Note: The primary drive axes are in the controller headers.
     static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
     static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
 
@@ -357,8 +373,8 @@ private:
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_RIGHT_POV              = Yta::Controller::PovDirections::POV_INVALID_RIGHT;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV  = Yta::Controller::PovDirections::POV_LEFT;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV   = Yta::Controller::PovDirections::POV_RIGHT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV = Yta::Controller::PovDirections::POV_RIGHT;
 
     // Aux inputs
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
@@ -367,9 +383,10 @@ private:
     // Note: The use of high CAN values if swerve drive is in use is
     //       to prevent instantiating multiple motor controllers with
     //       the same IDs, but still allow code for both drive base
-    //       types to be present.  When using swerve drive, IDs 1-8
+    //       types to be present.  When using swerve drive, IDs 11-18
     //       are used by the swerve modules (see the SwerveModuleConfigs
     //       in SwerveDrive.hpp).
+    // Superstructure uses IDs starting at 21
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 
@@ -395,7 +412,7 @@ private:
     // Solenoid Signals
     // (none)
 
-    // Motor speeds
+    // Motor speeds and angles
     // (none)
 
     // Misc

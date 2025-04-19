@@ -6,20 +6,20 @@
 /// Contains the declarations for the autonomous portions of code ran in an FRC
 /// robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOTAUTONOMOUS_HPP
 #define YTAROBOTAUTONOMOUS_HPP
 
 // SYSTEM INCLUDES
-// <none>
+#include <frc2/command/CommandPtr.h>    // for CommandPtr type
 
 // C INCLUDES
 // (none)
 
 // C++ INCLUDES
-#include "YtaRobot.hpp"             // for inline autonomous function declarations
+#include "YtaRobot.hpp"                 // for inline autonomous function declarations
 
 using namespace frc;
 
@@ -43,6 +43,7 @@ namespace YtaRobotAutonomous
     
     // VARIABLES
     extern bool bAutonomousExecutionComplete;
+    extern std::optional<CommandPtr> AutonomousCommand;
     
     // CONSTS
     
@@ -56,6 +57,7 @@ namespace YtaRobotAutonomous
     //static const bool       ROUTINE_2                           = false;
     //static const bool       ROUTINE_3                           = false;
     //static const bool       TEST_ENABLED                        = false;
+    static const bool       USE_COMMAND_BASED_AUTONOMOUS        = false;
 
     // Autonomous drive speed constants
     static constexpr double DRIVE_SPEED_SLOW                    =  0.30;
@@ -241,6 +243,37 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwe
     // Clear the swerve directions to prevent the caller from
     // accidentally reusing them without explicitly setting them again.
     rSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_NO_TRANSLATION, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::AutonomousRotateByGyroSequence
+///
+/// Turns the robot by the gyro.
+///
+////////////////////////////////////////////////////////////////
+inline void YtaRobot::AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative)
+{
+    double startingGyroAngle = m_pPigeon->GetYaw().GetValueAsDouble();
+
+    while (std::abs(m_pPigeon->GetYaw().GetValueAsDouble() - startingGyroAngle) <= rotateDegrees)
+    {
+        if (robotRotation == RobotRotation::ROBOT_CLOCKWISE)
+        {
+            m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, rotateSpeed, bFieldRelative, true);
+        }
+        else if (robotRotation == RobotRotation::ROBOT_COUNTER_CLOCKWISE)
+        {
+            m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, -rotateSpeed, bFieldRelative, true);
+        }
+        else
+        {
+        }
+    }
+
+    // Stop motion
+    m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
 }
 
 
