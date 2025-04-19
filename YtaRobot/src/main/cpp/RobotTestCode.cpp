@@ -176,40 +176,115 @@ void YtaRobotTest::QuickTestCode()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::SuperstructureTest()
 {
-    static TalonFX * pTalonFx9 = new TalonFX(9);
-    static TalonFX * pTalonFx10 = new TalonFX(10);
-    static TalonFX * pTalonFx11 = new TalonFX(11);
-    static TalonFX * pTalonFx12 = new TalonFX(12);
-    static DutyCycleOut dutyCycleOut9(0.0);
-    static DutyCycleOut dutyCycleOut10(0.0);
-    static DutyCycleOut dutyCycleOut11(0.0);
-    static DutyCycleOut dutyCycleOut12(0.0);
+    static TalonFX * pTalonFx21 = new TalonFX(21);
+    static TalonFX * pTalonFx22 = new TalonFX(22);
+    static TalonFX * pTalonFx23 = new TalonFX(23);
+    static TalonFX * pTalonFx24 = new TalonFX(24);
+    static DutyCycleOut dutyCycleOut21(0.0);
+    static DutyCycleOut dutyCycleOut22(0.0);
+    static DutyCycleOut dutyCycleOut23(0.0);
+    static DutyCycleOut dutyCycleOut24(0.0);
+    //static Follower follower(21, true);
 
-    dutyCycleOut9.Output = 0.0;
-    dutyCycleOut10.Output = 0.0;
-    dutyCycleOut11.Output = 0.0;
-    dutyCycleOut12.Output = 0.0;
+    static bool bDoConfig = true;
+    if (bDoConfig)
+    {
+        // Other config option examples:
+        // talonXxConfig.MotorOutput.Inverted = true;
+        // (void)pTalonFxXx->SetControl(follower);
+
+        TalonFXConfiguration talon21Config;
+        talon21Config.MotorOutput.NeutralMode = NeutralModeValue::Brake;
+        (void)pTalonFx21->GetConfigurator().Apply(talon21Config);
+
+        TalonFXConfiguration talon22Config;
+        talon22Config.MotorOutput.NeutralMode = NeutralModeValue::Brake;
+        (void)pTalonFx22->GetConfigurator().Apply(talon22Config);
+
+        TalonFXConfiguration talon23Config;
+        talon23Config.MotorOutput.NeutralMode = NeutralModeValue::Brake;
+        (void)pTalonFx23->GetConfigurator().Apply(talon23Config);
+
+        TalonFXConfiguration talon24Config;
+        talon24Config.MotorOutput.NeutralMode = NeutralModeValue::Brake;
+        (void)pTalonFx24->GetConfigurator().Apply(talon24Config);
+
+        bDoConfig = false;
+    }
+
+    // These enable quickly changing output speeds
+    static bool bInvert = false;
+    static double motorOutputSpeed = 0.1;
+    static int clickCount = 1;
+    static int multiplier = 1;
+
+    // Start with all outputs off unless a button is pressed
+    dutyCycleOut21.Output = 0.0;
+    dutyCycleOut22.Output = 0.0;
+    dutyCycleOut23.Output = 0.0;
+    dutyCycleOut24.Output = 0.0;
 
     if (m_pJoystick->GetRawButton(1))
     {
-        dutyCycleOut9.Output = 0.1;
+        dutyCycleOut21.Output = 0.1 * multiplier;
     }
     if (m_pJoystick->GetRawButton(2))
     {
-        dutyCycleOut10.Output = 0.1;
+        dutyCycleOut22.Output = 0.1 * multiplier;
     }
     if (m_pJoystick->GetRawButton(3))
     {
-        dutyCycleOut11.Output = 0.1;
+        dutyCycleOut23.Output = 0.1 * multiplier;
     }
     if (m_pJoystick->GetRawButton(4))
     {
-        dutyCycleOut12.Output = 0.1;
+        dutyCycleOut24.Output = 0.1 * multiplier;
     }
-    pTalonFx9->SetControl(dutyCycleOut9);
-    pTalonFx10->SetControl(dutyCycleOut10);
-    pTalonFx11->SetControl(dutyCycleOut11);
-    pTalonFx12->SetControl(dutyCycleOut12);
+
+    // Start button reverses test direction
+    if (m_pJoystick->GetRawButtonPressed(8))
+    {
+        bInvert = !bInvert;
+        motorOutputSpeed *= -1.0;
+    }
+    SmartDashboard::PutBoolean("Test mode motor is positive", !bInvert);
+
+    // Check for negative motor speed step
+    if (m_pJoystick->GetRawButtonPressed(9))
+    {
+        // Could let this go to -10
+        if (clickCount > 0)
+        {
+            clickCount--;
+        }
+        multiplier = std::abs(clickCount);
+        motorOutputSpeed = clickCount * 0.1;
+        if (bInvert)
+        {
+            motorOutputSpeed *= -1.0;
+        }
+    }
+    // Check for positive motor speed step
+    if (m_pJoystick->GetRawButtonPressed(10))
+    {
+        if (clickCount < 10)
+        {
+            clickCount++;
+        }
+        multiplier = std::abs(clickCount);
+        motorOutputSpeed = clickCount * 0.1;
+        if (bInvert)
+        {
+            motorOutputSpeed *= -1.0;
+        }
+    }
+    SmartDashboard::PutNumber("Test mode motor speed", motorOutputSpeed);
+    SmartDashboard::PutNumber("Test mode multiplier", multiplier);
+
+    pTalonFx21->SetControl(dutyCycleOut21);
+    pTalonFx22->SetControl(dutyCycleOut22);
+    pTalonFx23->SetControl(dutyCycleOut23);
+    pTalonFx24->SetControl(dutyCycleOut24);
 }
 
 
