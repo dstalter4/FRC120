@@ -1,15 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file   SwerveModule.hpp
+/// @file   TalonFxSwerveModule.hpp
 /// @author David Stalter
 ///
 /// @details
-/// Implements functionality for a swerve module on a swerve drive robot.
+/// Implements functionality for a TalonFX swerve module on a swerve drive
+/// robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef SWERVEMODULE_HPP
-#define SWERVEMODULE_HPP
+#ifndef TALONFXSWERVEMODULE_HPP
+#define TALONFXSWERVEMODULE_HPP
 
 // SYSTEM INCLUDES
 #include <cmath>                                        // for M_PI
@@ -23,6 +24,7 @@
 #include "units/voltage.h"                              // for voltage unit user defined literals
 
 // C++ INCLUDES
+#include "SwerveConfig.hpp"                             // for ModuleInformation structure
 #include "ctre/phoenix6/CANcoder.hpp"                   // for CTRE CANcoder API
 #include "ctre/phoenix6/TalonFX.hpp"                    // for CTRE TalonFX API
 
@@ -34,36 +36,18 @@ using namespace ctre::phoenix6::signals;
 
 
 ////////////////////////////////////////////////////////////////
-/// @class SwerveModule
+/// @class TalonFxSwerveModule
 ///
-/// Declarations for a swerve module object.
+/// Declarations for a TalonFX swerve module object.
 ///
 ////////////////////////////////////////////////////////////////
-class SwerveModule
+class TalonFxSwerveModule
 {
     friend class SwerveDrive;
 
 private:
-    enum ModulePosition
-    {
-        FRONT_LEFT,
-        FRONT_RIGHT,
-        BACK_LEFT,
-        BACK_RIGHT
-    };
-
-    struct SwerveModuleConfig
-    {
-        const char * m_pModuleName;
-        ModulePosition m_Position;
-        int m_DriveMotorCanId;
-        int m_AngleMotorCanId;
-        int m_CanCoderId;
-        const Rotation2d m_CancoderReferenceAbsoluteOffset;
-    };
-
     // Constructor
-    SwerveModule(SwerveModuleConfig config);
+    TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleInfo);
 
     // Points the module to zero degrees, which should be straight forward
     inline void HomeModule()
@@ -74,6 +58,9 @@ private:
 
     // Point the module wheel in the correct direciton to form an X to prevent movement
     void LockWheel();
+
+    // Align the swerve module to the absolute encoder
+    void RecalibrateModules();
 
     // Update a swerve module to the desired state
     void SetDesiredState(SwerveModuleState desiredState, bool bIsOpenLoop);
@@ -100,15 +87,15 @@ private:
     DisplayStrings m_DisplayStrings;
     static uint32_t m_DetailedModuleDisplayIndex;
 
-    ModulePosition m_MotorGroupPosition;
+    SwerveConfig::ModulePosition m_MotorGroupPosition;
     TalonFX * m_pDriveTalon;
     TalonFX * m_pAngleTalon;
-    CANcoder * m_pAngleCanCoder;
-    Rotation2d m_LastAngle;
-    SimpleMotorFeedforward<units::meters> * m_pFeedForward;
     DutyCycleOut m_DriveDutyCycleOut;
     VelocityVoltage m_DriveVelocityVoltage;
     PositionVoltage m_AnglePositionVoltage;
+    CANcoder * m_pAngleCanCoder;
+    Rotation2d m_LastAngle;
+    SimpleMotorFeedforward<units::meters> * m_pFeedForward;
     const Rotation2d CANCODER_REFERENCE_ABSOLUTE_OFFSET;
 
     // Divide by 12 on these constants to convert from volts to percent output for CTRE
@@ -121,8 +108,8 @@ private:
     static constexpr units::unit_t<kv_unit> KV = units::unit_t<kv_unit>(1.51 / 12.0);
     static constexpr units::unit_t<ka_unit> KA = units::unit_t<ka_unit>(0.27 / 12.0);
 
-    SwerveModule(const SwerveModule &) = delete;
-    SwerveModule & operator=(const SwerveModule &) = delete;
+    TalonFxSwerveModule(const TalonFxSwerveModule &) = delete;
+    TalonFxSwerveModule & operator=(const TalonFxSwerveModule &) = delete;
 };
 
-#endif // SWERVEMODULE_HPP
+#endif // TALONFXSWERVEMODULE_HPP

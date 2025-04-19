@@ -20,7 +20,7 @@
 #include "frc/GenericHID.h"             // for base class declaration
 
 // C++ INCLUDES
-#include "ControllerConfiguration.hpp"  // for Yta::Controller::Config::Styles
+#include "ControllerConfiguration.hpp"  // for Yta::Controller::Config::Models
 
 using namespace frc;
 

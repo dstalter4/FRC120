@@ -8,7 +8,7 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2024 Youth Technology Academy
+/// Copyright (c) 2025 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -48,11 +48,13 @@ YtaRobot::YtaRobot() :
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pMatchModeTimer                   (new Timer()),
+    m_pRobotProgramTimer                (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
+    m_bRioPinsStable                    (false),
     m_bDriveSwap                        (false),
     m_bCameraAlignInProgress            (false),
     m_HeartBeat                         (0U)
@@ -86,6 +88,10 @@ YtaRobot::YtaRobot() :
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
     m_CameraThread.detach();
+
+    // Start the free running timer
+    m_pRobotProgramTimer->Reset();
+    m_pRobotProgramTimer->Start();
 }
 
 
@@ -139,6 +145,79 @@ void YtaRobot::RobotPeriodic()
         RobotUtils::DisplayMessage("RobotPeriodic called.");
         bRobotPeriodicStarted = true;
     }
+
+    // @todo: Read and display sensor values for calibration when not enabled
+    // @note: From testing, smart dashboard prints of sensor values do give real time data.
+    CheckIfRioPinsAreStable();
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::CheckIfRioPinsAreStable
+///
+/// Waits for any sensors on the robot that route to the RIO
+/// to stabilize for accurate readings.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::CheckIfRioPinsAreStable()
+{
+    // This is the logic to wait to take PWM based sensor readings until the RIO is ready.
+    // The behavior of the RIO is that it measures how many microseconds the signal is high
+    // every second.  This requires waiting to get stable readings.
+    // See https://github.com/wpilibsuite/allwpilib/issues/5284 for some related info.
+    static units::time::second_t enabledTimeStamp = 0.0_s;
+    units::time::second_t currentTimeStamp = m_pRobotProgramTimer->Get();
+    if (DriverStation::IsEnabled() && (!m_bRioPinsStable))
+    {
+        // If the robot was just enabled (in any mode)
+        if (enabledTimeStamp == 0.0_s)
+        {
+            // Set the start time stamp
+            enabledTimeStamp = currentTimeStamp;
+        }
+
+        // Now check if enough time has passed for the RIO pins to have stabilized
+        static constexpr const units::time::second_t RIO_DUTY_CYCLE_ENCODER_STARTUP_DELAY = 2.0_s;
+        if ((currentTimeStamp - enabledTimeStamp) > RIO_DUTY_CYCLE_ENCODER_STARTUP_DELAY)
+        {
+            // Example encoder configuration algorithm
+
+            //double encoderValue = m_pEncoder->Get();
+            //units::angle::degree_t encoderValueDegrees(encoderValue * ANGLE_360_DEGREES);
+
+            // This is the delta between the current mechanism position and the desired starting position (or zero point)
+            //units::angle::degree_t startingOffsetDegrees = encoderValueDegrees - STARTING_POSITION_ENCODER_VALUE;
+            //std::printf("startingOffsetDegrees (start): %f\n", startingOffsetDegrees.value());
+
+            // If the starting offset is negative, we crossed over the absolute encoder boundary
+            // We give a tolerance of five degrees in case the mechanism is near where we want to start
+            // @todo: Does this need to check for very small readings below zero?
+            // @todo: Boundary conditions here will be difficult
+            //if (startingOffsetDegrees < ENCODER_BOUNDARY_TOLERANCE_DEGREES)
+            //{
+                // the 0/1 boundary is 360, so subtract the starting position to see how many degrees were up to that point
+                // Add in the absolute value of the overage, which was negative
+                //startingOffsetDegrees = (units::angle::degree_t(ANGLE_360_DEGREES) - STARTING_POSITION_ENCODER_VALUE) + encoderValueDegrees;
+            //}
+
+            // At this point we have the angle we want relative to zero
+            //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(startingOffsetDegrees);
+            //std::printf("encoderValue: %f\n", encoderValue);
+            //std::printf("encoderValueDegrees: %f\n", encoderValueDegrees.value());
+            //std::printf("startingOffsetDegrees (final): %f\n", startingOffsetDegrees.value());
+
+            m_bRioPinsStable = true;
+        }
+    }
+    else
+    {
+        // Set the enabled time stamp back to zero until the robot is enabled again
+        enabledTimeStamp = 0.0_s;
+
+        // m_bRioPinsStable exists for the life of the program.  Once we have a stable
+        // reading acquired, we don't need to do it again until the robot program restarts.
+    }
 }
 
 
@@ -181,6 +260,48 @@ void YtaRobot::ConfigureMotorControllers()
     const StatorCurrentLimitConfiguration INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG = {true, 5.0, 50.0, 5.0};
     pTalon->ConfigStatorCurrentLimit(INTAKE_MOTOR_STATOR_CURRENT_LIMIT_CONFIG);
     */
+
+    // Some notes about applying motor configurations:
+    // - The classes/structs in YtaTalon.hpp have motor configuration objects in them.
+    // - Declaring stack local or class scope configuration objects are *separate and
+    //   distinct* from the configuration objects in the YtaTalon.hpp classes/structs.
+    // - If a stack local or class scope configuration is applied, it will overwrite
+    //   the configuration stored in the device.
+    // - Calling the methods provided by YtaTalon.hpp *never* update the configuration
+    //   objects in the classes/structs.  To update those objects, retrieve the objects
+    //   via things like m_MotorConfiguration (for individual motors) or
+    //   GetMotorConfiguration() (for motor groups).
+    // - The classes/structs in YtaTalon.hpp provide ApplyConfiguration() routines.
+    //   These can be used to directly apply a stack local or class scope configuration,
+    //   or to apply an updated configuration when the configuration objects were directly
+    //   modified.  Keep the notes above in mind when calling them.
+    // - The ApplyConfiguration() method for motor groups will default to applying the
+    //   configuration to all motors unless a specific CAN ID is given.  The configuration
+    //   applied to each motor in the group is the *saved configuration* for that specific
+    //   motor.  It may be different for each motor, depending on the robot code.
+    // - Configurations can be applied to the whole configuration object type, or to
+    //   sub-types only (e.g. TalonFXConfiguration vs. CurrentLimitsConfigs), as
+    //   ApplyConfiguration() is overloaded.  The template version only applies stack
+    //   local or class scope configs, so remember the notes above.  Right now the
+    //   template version is disabled, so don't call it.
+    // - Thank CTRE for all this.  Instead of letting the config be a member of the motor
+    //   object class with simple getter/setters, it's separate and overly complex.
+
+    // Example configurations
+
+    // Configure a motor group (only needs to be applied to the lead motor of the group)
+    // Brake mode was set when the motor group was constructed
+    //(void)m_pMotors->GetMotorConfiguration(MOTORS_CAN_START_ID)->Feedback.WithSensorToMechanismRatio(12.0 / 1.0);
+    //(void)m_pMotors->GetMotorConfiguration(MOTORS_CAN_START_ID)->Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    //m_pMotors->ApplyConfiguration(MOTORS_CAN_START_ID);
+    //(void)m_pMotors->GetMotorObject(MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
+
+    // Configure a single motor
+    //(void)m_pMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    //(void)m_pMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(135.0 / 1.0);
+    //(void)m_pMotor->m_MotorConfiguration.Slot0.WithKP(50.0).WithKI(0.0).WithKD(2.0);
+    //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
+    //m_pMotor->ApplyConfiguration();
 }
 
 
@@ -222,6 +343,9 @@ void YtaRobot::InitialStateSetup()
 
     // Reset the heartbeat
     m_HeartBeat = 0U;
+
+    // Point the swerve modules straight
+    m_pSwerveDrive->HomeModules();
 }
 
 
@@ -237,8 +361,8 @@ void YtaRobot::TeleopInit()
 {
     RobotUtils::DisplayMessage("TeleopInit called.");
     
-    // Autonomous should have left things in a known state, but
-    // just in case clear everything.
+    // Autonomous should have left things in a known state, but just in case, clear everything.
+    CommandScheduler::GetInstance().CancelAll();
     InitialStateSetup();
 
     // Tele-op won't do detailed processing of the images unless instructed to
@@ -301,7 +425,7 @@ void YtaRobot::UpdateSmartDashboard()
 {
     // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
-    // Nothing to send yet
+    SmartDashboard::PutBoolean("RIO pins stable", m_bRioPinsStable);
 }
 
 
@@ -562,7 +686,7 @@ void YtaRobot::BlinkMorseCodePattern()
     //static const MorseCodeSignal * const MORSE_MESSAGE[] = {MORSE_S, MORSE_O, MORSE_S, MORSE_WORD_BREAK, MORSE_MESSAGE_END};
     static const size_t MORSE_MSG_MAX_LENGTH = 128U;
     static const MorseCodeSignal * MORSE_MESSAGE[MORSE_MSG_MAX_LENGTH] = {};
-    static const char MORSE_STRING[] = "S.O.S.";
+    static const char MORSE_STRING[] = "120";
     static const size_t MORSE_STRING_SIZE = (sizeof(MORSE_STRING) / sizeof(MORSE_STRING[0]));
     static_assert((MORSE_STRING_SIZE <= MORSE_MSG_MAX_LENGTH), "Morse message is too long!");
 
@@ -886,6 +1010,7 @@ void YtaRobot::SwerveDriveSequence()
     if (m_pDriveController->DetectButtonChange(REZERO_SWERVE_BUTTON))
     {
         m_pSwerveDrive->ZeroGyroYaw();
+        m_pSwerveDrive->RecalibrateModules();
         m_pSwerveDrive->HomeModules();
     }
 
@@ -894,7 +1019,7 @@ void YtaRobot::SwerveDriveSequence()
         m_pSwerveDrive->LockWheels();
     }
 
-    // The GetDriveX() and GetDriveYInput() functions refer to ***controller joystick***
+    // The GetDriveX() and GetDriveY() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
     double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
@@ -917,18 +1042,20 @@ void YtaRobot::SwerveDriveSequence()
             rotationAxis = 0.0;
             break;
         }
-        case DRIVE_CONTROLS_SWERVE_ROTATE_CCW_SLOW_POV:
+        case DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV:
         {
+            // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;
-            strafeAxis = 0.0;
-            rotationAxis = SWERVE_ROTATE_SLOW_SPEED;
+            strafeAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (0.0) : (SWERVE_DRIVE_SLOW_SPEED);
+            rotationAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (SWERVE_ROTATE_SLOW_SPEED) : (0.0);
             break;
         }
-        case DRIVE_CONTROLS_SWERVE_ROTATE_CW_SLOW_POV:
+        case DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV:
         {
+            // Left/right POV control can either toggle strafe or rotation
             translationAxis = 0.0;
-            strafeAxis = 0.0;
-            rotationAxis = -SWERVE_ROTATE_SLOW_SPEED;
+            strafeAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (0.0) : (-SWERVE_DRIVE_SLOW_SPEED);
+            rotationAxis = (Yta::Drive::Config::SWERVE_SLOW_USE_ROTATION_AXIS) ? (-SWERVE_ROTATE_SLOW_SPEED) : (0.0);
             break;
         }
         default:
@@ -951,6 +1078,9 @@ void YtaRobot::SwerveDriveSequence()
 
     // Update the swerve module states
     m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+
+    // Update the odometry
+    m_pSwerveDrive->UpdateOdometry();
 
     // Pretend to Mario Kart drift
     //MarioKartLights(translationAxis, strafeAxis, rotationAxis);
