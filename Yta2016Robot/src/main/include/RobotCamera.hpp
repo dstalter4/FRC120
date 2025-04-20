@@ -14,10 +14,21 @@
 // <none>
 
 // C INCLUDES
-#include "WPILib.h"         // For FRC library
+// (none)
 
 // C++ INCLUDES
 // (none)
+
+// gcc 11.1 introduced this warning and mat.hpp hasn't been fully cleaned up yet
+#pragma GCC diagnostic push "-Wdeprecated-enum-enum-conversion"
+#include "opencv2/core/mat.hpp"
+#pragma GCC diagnostic pop "-Wdeprecated-enum-enum-conversion"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/core/core.hpp"
+#include "opencv2/core/types.hpp"
+
+// Indirectly includes opencv stuff, must happen after the warning disable/enable
+#include "cameraserver/CameraServer.h"
 
 ////////////////////////////////////////////////////////////////
 // @class RobotCamera
@@ -64,8 +75,8 @@ private:
     ~RobotCamera()
     {
         //IMAQdxStopAcquisition(m_ImaqSession);
-        m_pUsbCamera->StopCapture();
-        m_pUsbCamera->CloseCamera();
+        //m_pUsbCamera->StopCapture();
+        //m_pUsbCamera->CloseCamera();
     }
 
     RobotCamera(const RobotCamera &);
@@ -85,22 +96,22 @@ private:
     };
     
     Camera m_Camera;                                    // Keep track of the current camera to process information from
-    std::unique_ptr<AxisCamera> m_pAxisCamera;          // Axis camera pointer
-    USBCamera * m_pUsbCamera;                           // USB camera pointer
-    IMAQdxSession m_ImaqSession;                        // Session for the USB camera
-    IMAQdxSession m_BackImaqSession;                    // Session for the back USB camera
-    Image * m_pFrame;                                   // Image frame from the camera
-    Image * m_pBinaryFrame;                             // Binary processed version of the camera image frame
+    //std::unique_ptr<AxisCamera> m_pAxisCamera;          // Axis camera pointer
+    //USBCamera * m_pUsbCamera;                           // USB camera pointer
+    //IMAQdxSession m_ImaqSession;                        // Session for the USB camera
+    //IMAQdxSession m_BackImaqSession;                    // Session for the back USB camera
+    //Image * m_pFrame;                                   // Image frame from the camera
+    //Image * m_pBinaryFrame;                             // Binary processed version of the camera image frame
     ParticleReport m_TargetReport;                      // Information about the best target particle we've found
     ParticleReport m_IteratorParicleReport;             // An object to iterate over objects when identifying a target
     std::vector<ParticleReport> m_ParticleReports;      // The list of particle reports
 
-    Range m_ReflectRedRange;
-    Range m_ReflectGreenRange;
-    Range m_ReflectBlueRange;
+    //Range m_ReflectRedRange;
+    //Range m_ReflectGreenRange;
+    //Range m_ReflectBlueRange;
 
-    const ParticleFilterOptions2 FILTER_OPTIONS = {IMAQ_FILTER_REJECT_MATCHES, IMAQ_FILTER_REJECT_BORDERS, IMAQ_FILTER_FILL_HOLES, IMAQ_FILTER_USE_CONNECTIVITY_8};
-    const ParticleFilterCriteria2 FILTER_CRITERIA = {IMAQ_MT_AREA_BY_IMAGE_AREA, TARGET_MIN_AREA_PERCENT, TARGET_MAX_AREA_PERCENT, false, false};
+    //const ParticleFilterOptions2 FILTER_OPTIONS = {IMAQ_FILTER_REJECT_MATCHES, IMAQ_FILTER_REJECT_BORDERS, IMAQ_FILTER_FILL_HOLES, IMAQ_FILTER_USE_CONNECTIVITY_8};
+    //const ParticleFilterCriteria2 FILTER_CRITERIA = {IMAQ_MT_AREA_BY_IMAGE_AREA, TARGET_MIN_AREA_PERCENT, TARGET_MAX_AREA_PERCENT, false, false};
 
     int m_HeartBeat;                // Keep alive with the C++ dashboard
     int m_NumMaskedParticles;       // Number of masked particles found

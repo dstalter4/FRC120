@@ -34,29 +34,27 @@
 ///
 ////////////////////////////////////////////////////////////////
 CmsdRobot::CmsdRobot()
-: m_pDriverStation              (&DriverStation::GetInstance())
-, m_pDriveJoystick              (new Joystick(DRIVE_JOYSTICK))
-, m_pControlJoystick            (new Joystick(CONTROL_JOYSTICK))
-, m_pLeftDriveMotor             (new TalonMotorGroup(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_MOTORS_CAN_START_ID, NeutralMode::kNeutralMode_Coast, ControlMode::FOLLOW))
-, m_pRightDriveMotor            (new TalonMotorGroup(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_MOTORS_CAN_START_ID, NeutralMode::kNeutralMode_Coast, ControlMode::FOLLOW))
-, m_pBallLiftMotor              (new TalonMotorGroup(NUMBER_OF_BALL_LIFT_MOTORS, BALL_LIFT_CAN_START_ID, NeutralMode::kNeutralMode_Brake, ControlMode::INVERSE))
-, m_pRobotClimbMotor            (new TalonMotorGroup(NUMBER_OF_ROBOT_CLIMB_MOTORS, ROBOT_CLIMB_CAN_START_ID, NeutralMode::kNeutralMode_Brake, ControlMode::INVERSE))
-, m_pBallIntakeMotor            (new CANTalon(BALL_INTAKE_CAN_ID))
+: m_pDriveJoystick              (new XboxController(DRIVE_JOYSTICK))
+, m_pControlJoystick            (new XboxController(CONTROL_JOYSTICK))
+, m_pLeftDriveMotor             (new TalonMotorGroup(NUMBER_OF_LEFT_DRIVE_MOTORS, LEFT_MOTORS_CAN_START_ID, NeutralMode::Coast, MotorGroupControlMode::FOLLOW))
+, m_pRightDriveMotor            (new TalonMotorGroup(NUMBER_OF_RIGHT_DRIVE_MOTORS, RIGHT_MOTORS_CAN_START_ID, NeutralMode::Coast, MotorGroupControlMode::FOLLOW))
+, m_pBallLiftMotor              (new TalonMotorGroup(NUMBER_OF_BALL_LIFT_MOTORS, BALL_LIFT_CAN_START_ID, NeutralMode::Brake, MotorGroupControlMode::INVERSE))
+, m_pRobotClimbMotor            (new TalonMotorGroup(NUMBER_OF_ROBOT_CLIMB_MOTORS, ROBOT_CLIMB_CAN_START_ID, NeutralMode::Brake, MotorGroupControlMode::INVERSE))
+, m_pBallIntakeMotor            (new TalonSRX(BALL_INTAKE_CAN_ID))
 , m_pLedRelay                   (new Relay(LED_RELAY_ID))
 , m_pAutonomousRoutine1Switch   (new DigitalInput(AUTONOMOUS_ROUTINE_1_SWITCH))
 , m_pAutonomousRoutine2Switch   (new DigitalInput(AUTONOMOUS_ROUTINE_2_SWITCH))
 , m_pAutonomousRoutine3Switch   (new DigitalInput(AUTONOMOUS_ROUTINE_3_SWITCH))
 , m_pLiftLowerLimitSwitch       (new DigitalInput(BALL_LIFT_LOWER_LIMIT_SWITCH))
 , m_pLiftUpperLimitSwitch       (new DigitalInput(BALL_LIFT_UPPER_LIMIT_SWITCH))
-, m_pBallLaunchSolenoid         (new DoubleSolenoid(BALL_LAUNCH_FORWARD_SOLENOID, BALL_LAUNCH_REVERSE_SOLENOID))
-, m_pExtraBallLaunchSolenoid    (new DoubleSolenoid(EXTRA_BALL_LAUNCH_FORWARD_SOLENOID,EXTRA_BALL_LAUNCH_REVERSE_SOLENOID))
-, m_pClimbPoleRaiseSolenoid     (new DoubleSolenoid(CLIMB_POLE_RAISE_FORWARD_SOLENOID, CLIMB_POLE_RAISE_REVERSE_SOLENOID))
-, m_pClimbPoleHookSolenoid      (new DoubleSolenoid(CLIMB_POLE_HOOK_FORWARD_SOLENOID, CLIMB_POLE_HOOK_REVERSE_SOLENOID))
+, m_pBallLaunchSolenoid         (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, BALL_LAUNCH_FORWARD_SOLENOID, BALL_LAUNCH_REVERSE_SOLENOID))
+, m_pExtraBallLaunchSolenoid    (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, EXTRA_BALL_LAUNCH_FORWARD_SOLENOID,EXTRA_BALL_LAUNCH_REVERSE_SOLENOID))
+, m_pClimbPoleRaiseSolenoid     (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, CLIMB_POLE_RAISE_FORWARD_SOLENOID, CLIMB_POLE_RAISE_REVERSE_SOLENOID))
+, m_pClimbPoleHookSolenoid      (new DoubleSolenoid(PneumaticsModuleType::CTREPCM, CLIMB_POLE_HOOK_FORWARD_SOLENOID, CLIMB_POLE_HOOK_REVERSE_SOLENOID))
 , m_pAutonomousTimer            (new Timer())
 , m_pSafetyTimer                (new Timer())
 , m_pCameraRunTimer             (new Timer())
 , m_pSolenoidRetractTimer       (new Timer())
-, m_pAccelerometer              (new BuiltInAccelerometer())
 , m_pCameras                    (new RobotCamera(CameraType::USB))
 , m_serialPortBuffer            ()
 , m_pSerialPort                 (new SerialPort(SERIAL_PORT_BAUD_RATE, SerialPort::kMXP, SERIAL_PORT_NUM_DATA_BITS, SerialPort::kParity_None, SerialPort::kStopBits_One))
@@ -76,7 +74,7 @@ CmsdRobot::CmsdRobot()
     m_pSerialPort->Reset();
     
     // Reset the position on the ball lift encoders
-    m_pBallLiftMotor->CreateEncoderFeedbackDevice(FeedbackDevice::CtreMagEncoder_Absolute);
+    m_pBallLiftMotor->CreateEncoderFeedbackDevice(FeedbackDevice::CTRE_MagEncoder_Absolute);
 }
 
 
@@ -95,7 +93,7 @@ void CmsdRobot::InitialStateSetup()
     m_pLeftDriveMotor->Set(OFF);
     m_pRightDriveMotor->Set(OFF);
     m_pBallLiftMotor->Set(OFF);
-    m_pBallIntakeMotor->Set(OFF);
+    m_pBallIntakeMotor->Set(ControlMode::PercentOutput, OFF);
     m_pRobotClimbMotor->Set(OFF);
 
     // Put solenoids in a known state
@@ -111,17 +109,59 @@ void CmsdRobot::InitialStateSetup()
 
 
 ////////////////////////////////////////////////////////////////
-// @method CmsdRobot::Autonomous
+// @method CmsdRobot::RobotInit
 ///
-/// The autonomous control method.  This method is called once
-/// each time the robot enters autonomous control.
+/// This method is called once when the robot program starts.
 ///
 ////////////////////////////////////////////////////////////////
-void CmsdRobot::Autonomous()
+void CmsdRobot::RobotInit()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::RobotPeriodic
+///
+/// This method is run periodically by the robot program.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::RobotPeriodic()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::AutonomousInit
+///
+/// This method is called once each time the robot enters
+/// autonomous control.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::AutonomousInit()
 {
     // Put everything in a stable state
     InitialStateSetup();
-    
+}
+
+
+
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::AutonomousPeriodic
+///
+/// The autonomous control method.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::AutonomousPeriodic()
+{
+    // Post 2016: No more auto support
+    static bool bAutonomousComplete = true;
+    if (bAutonomousComplete)
+    {
+        return;
+    }
+
     // Change values in the header to control having an
     // autonomous routine and which is selected
 
@@ -200,29 +240,29 @@ void CmsdRobot::Autonomous()
             //m_pBallLaunchSolenoid->Set(SolenoidState::kReverse);
         }
 
-        // Done, just loop
-        while ( m_pDriverStation->IsAutonomous() ) {}
+        // Done
+        bAutonomousComplete = true;
     }   // Autonomous routine 1
     
     // Auto routine 3
     else if ( m_pAutonomousRoutine3Switch->Get() )
     {
-        // Done, do nothing until autonomous ends
-        while (m_pDriverStation->IsAutonomous()) {}
+        // Nothing to do
+        bAutonomousComplete = true;
     }
 
     /* !!! ONLY ENABLE TEST AUTONOMOUS CODE WHEN TESTING
            SELECT A FUNCTIONING ROUTINE FOR ACTUAL MATCHES !!! */
     else if ( AUTONOMOUS_TEST_ENABLED )
     {
-        // This code will never return
         AutonomousTestCode();
+        bAutonomousComplete = true;
     }
 
     else
     {
-        // No option was selected; ensure known behavior to avoid issues
-        while ( m_pDriverStation->IsAutonomous() ) {}
+        // Nothing to do
+        bAutonomousComplete = true;
     }
 
 }   // End Autonomous
@@ -230,13 +270,13 @@ void CmsdRobot::Autonomous()
 
 
 ////////////////////////////////////////////////////////////////
-// @method CmsdRobot::OperatorControl
+// @method CmsdRobot::TeleopInit
 ///
-/// The user control method.  This method is called once each
-/// time the robot enters operator control.
+/// This method is called once each time the robot enters
+/// teleop control.
 ///
 ////////////////////////////////////////////////////////////////
-void CmsdRobot::OperatorControl()
+void CmsdRobot::TeleopInit()
 {
     // Autonomous should have left things in a known state, but
     // just in case clear everything.  Timers were reset in the
@@ -249,37 +289,43 @@ void CmsdRobot::OperatorControl()
     // Set camera quality
     //CameraServer::GetInstance()->SetQuality(50);
     //CameraServer::GetInstance()->StartAutomaticCapture("cam0");
+}
 
-    // Main tele op loop
-    while ( m_pDriverStation->IsOperatorControl() )
-    {
-        CheckForDriveSwap();
 
-        DriveControlSequence();
-        
-        BallIntakeSequence();
-        
-        RobotClimbSequence();
 
-        //LedSequence();
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::TeleopPeriodic
+///
+/// The teleop control method.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::TeleopPeriodic()
+{
+    CheckForDriveSwap();
 
-        SolenoidSequence();
+    DriveControlSequence();
+    
+    BallIntakeSequence();
+    
+    RobotClimbSequence();
 
-        //SonarSensorSequence();
+    //LedSequence();
 
-        //SerialPortSequence();
-        
-        CameraSequence();
+    SolenoidSequence();
 
-        // TEST CODE
-        // Recommended to only enable this in test scenarios
-        // to not impact matches
-        //OperatorTestCode();
-        //MotorTest();
-        // END TEST CODE
-        
-    } // End main OperatorControl loop
-} // End OperatorControl
+    //SonarSensorSequence();
+
+    //SerialPortSequence();
+    
+    //CameraSequence();
+
+    // TEST CODE
+    // Recommended to only enable this in test scenarios
+    // to not impact matches
+    //QuickTestCode();
+    //MotorTest();
+    // END TEST CODE
+}
 
 
 
@@ -297,15 +343,15 @@ void CmsdRobot::BallIntakeSequence()
     // First check for ball intake
     if (m_pControlJoystick->GetRawButton(BALL_INTAKE_FORWARD_BUTTON))
     {
-        m_pBallIntakeMotor->Set(ON * throttleControl);
+        m_pBallIntakeMotor->Set(ControlMode::PercentOutput, (ON * throttleControl));
     }
     else if (m_pControlJoystick->GetRawButton(BALL_INTAKE_REVERSE_BUTTON))
     {
-        m_pBallIntakeMotor->Set(-ON * throttleControl);
+        m_pBallIntakeMotor->Set(ControlMode::PercentOutput, (-ON * throttleControl));
     }
     else
     {
-        m_pBallIntakeMotor->Set(OFF);
+        m_pBallIntakeMotor->Set(ControlMode::PercentOutput, OFF);
     }
     
     // Now check the ball lift mechanism
@@ -460,7 +506,7 @@ void CmsdRobot::SolenoidSequence()
     }
     else if (m_bShotInProgress)
     {
-        if (m_pSolenoidRetractTimer->Get() >= SOLENOID_RETRACT_TIME)
+        if (m_pSolenoidRetractTimer->Get() >= units::time::second_t(SOLENOID_RETRACT_TIME))
         {
             m_pBallLaunchSolenoid->Set(SolenoidState::kReverse);
             m_pExtraBallLaunchSolenoid->Set(SolenoidState::kReverse);
@@ -485,7 +531,8 @@ void CmsdRobot::SolenoidSequence()
 /// individually.
 ///
 ////////////////////////////////////////////////////////////////
-/*void CmsdRobot::SonarSensorSequence()
+/*
+void CmsdRobot::SonarSensorSequence()
 {
 }
 */
@@ -526,7 +573,7 @@ void CmsdRobot::SerialPortSequence()
             }
         }
 
-        printf(m_serialPortBuffer);
+        //printf(m_serialPortBuffer);
     }
     m_serialPortBuffer[0] = NULL_CHARACTER;
 }
@@ -547,7 +594,7 @@ void CmsdRobot::CameraSequence()
     
     // To not kill the CPU/hog this thread, only do full
     // vision processing (particle analysis) periodically.
-    if (m_pCameraRunTimer->Get() >= CAMERA_RUN_INTERVAL_S)
+    if (m_pCameraRunTimer->Get() >= units::time::second_t(CAMERA_RUN_INTERVAL_S))
     {
         //bDoFullVisionProcessing = true;
         m_pCameraRunTimer->Reset();
@@ -575,8 +622,15 @@ void CmsdRobot::DriveControlSequence()
 
     // Get joystick inputs and make sure they clear a certain threshold.
     // This will help to drive straight.
-    float xAxisDrive = Trim((m_pDriveJoystick->GetX() * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    float yAxisDrive = Trim((m_pDriveJoystick->GetY() * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double leftTriggerValue = m_pDriveJoystick->GetRawAxis(DRIVE_INPUT_REVERSE_AXIS);
+    double rightTriggerValue = m_pDriveJoystick->GetRawAxis(DRIVE_INPUT_FORWARD_AXIS);
+
+    // GTA style controls
+    double xAxisDrive = m_pDriveJoystick->GetLeftX();
+    double yAxisDrive = (-leftTriggerValue) + rightTriggerValue;
+
+    xAxisDrive = Trim((xAxisDrive * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    yAxisDrive = Trim((yAxisDrive * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
 
     // If the swap direction button was pressed, negate y value
     if ( m_bDriveSwap )
@@ -596,19 +650,62 @@ void CmsdRobot::DriveControlSequence()
 
 
 ////////////////////////////////////////////////////////////////
-// @method CmsdRobot::Test
+// @method CmsdRobot::TestInit
 ///
-/// This method is run when entering test mode.
+/// This method is run once when entering test mode.
 ///
 ////////////////////////////////////////////////////////////////
-void CmsdRobot::Test()
+void CmsdRobot::TestInit()
 {
-    while (true)
-    {
-    }
 }
 
 
 
-// EXECUTION START
-START_ROBOT_CLASS(CmsdRobot);   // Macro to instantiate and run the class
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::TestPeriodic
+///
+/// This method is run periodically when in test mode.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::TestPeriodic()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::DisabledInit
+///
+/// This method is called on entry to the disabled state.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::DisabledInit()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+// @method CmsdRobot::DisabledPeriodic
+///
+/// This method is run periodically in the disabled state.
+///
+////////////////////////////////////////////////////////////////
+void CmsdRobot::DisabledPeriodic()
+{
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method main
+///
+/// Execution start for the robt.
+///
+////////////////////////////////////////////////////////////////
+#ifndef RUNNING_FRC_TESTS
+int main()
+{
+    return frc::StartRobot<CmsdRobot>();
+}
+#endif

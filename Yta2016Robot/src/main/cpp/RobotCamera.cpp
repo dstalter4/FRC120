@@ -14,12 +14,12 @@
 // <none>
 
 // C INCLUDES
-// (none)
+#include "frc/smartdashboard/SmartDashboard.h"  // for smart dashboard support
 
 // C++ INCLUDES
 #include "RobotCamera.hpp"          // For class declaration
-#include "CameraServer.h"           // For (actually) patched CameraServer instance
 
+using namespace frc;
 
 
 ////////////////////////////////////////////////////////////////
@@ -30,18 +30,18 @@
 ////////////////////////////////////////////////////////////////
 RobotCamera::RobotCamera(Camera camera)
 : m_Camera(camera)
-, m_pAxisCamera()
-, m_pUsbCamera()
-, m_ImaqSession()
-, m_BackImaqSession()
-, m_pFrame(imaqCreateImage(IMAQ_IMAGE_RGB, 0))
-, m_pBinaryFrame(imaqCreateImage(IMAQ_IMAGE_U8, 0))
+//, m_pAxisCamera()
+//, m_pUsbCamera()
+//, m_ImaqSession()
+//, m_BackImaqSession()
+//, m_pFrame(imaqCreateImage(IMAQ_IMAGE_RGB, 0))
+//, m_pBinaryFrame(imaqCreateImage(IMAQ_IMAGE_U8, 0))
 , m_TargetReport()
 , m_IteratorParicleReport()
 , m_ParticleReports()
-, m_ReflectRedRange()
-, m_ReflectGreenRange()
-, m_ReflectBlueRange()
+//, m_ReflectRedRange()
+//, m_ReflectGreenRange()
+//, m_ReflectBlueRange()
 , m_HeartBeat(0)
 , m_NumMaskedParticles(0)
 , m_NumFilteredParticles(0)
@@ -64,7 +64,8 @@ RobotCamera::RobotCamera(Camera camera)
     //m_pUsbCamera->UpdateSettings();
     //m_pUsbCamera->StartCapture();
     //m_bUsbCameraPresent = true;
-    
+
+/*
     // Make sure there is actually a USB camera present at the specified port
     if (IMAQdxOpenCamera(USB_CAMERA_STRING, IMAQdxCameraControlModeController, &m_ImaqSession) == IMAQdxErrorSuccess)
     {
@@ -84,6 +85,7 @@ RobotCamera::RobotCamera(Camera camera)
     m_ReflectRedRange = {RED_REFLECT_MIN, RED_REFLECT_MAX};
     m_ReflectGreenRange = {GREEN_REFLECT_MIN, GREEN_REFLECT_MAX};
     m_ReflectBlueRange = {BLUE_REFLECT_MIN, BLUE_REFLECT_MAX};
+*/
 }
 
 
@@ -96,12 +98,12 @@ RobotCamera::RobotCamera(Camera camera)
 ////////////////////////////////////////////////////////////////
 void RobotCamera::UpdateSmartDashboard()
 {
-    SmartDashboard::PutNumber("Reflect red min",    m_ReflectRedRange.minValue);
-    SmartDashboard::PutNumber("Reflect red max",    m_ReflectRedRange.maxValue);
-    SmartDashboard::PutNumber("Reflect green min",  m_ReflectGreenRange.minValue);
-    SmartDashboard::PutNumber("Reflect green max",  m_ReflectGreenRange.maxValue);
-    SmartDashboard::PutNumber("Reflect blue min",   m_ReflectBlueRange.minValue);
-    SmartDashboard::PutNumber("Reflect blue max",   m_ReflectBlueRange.maxValue);
+    //SmartDashboard::PutNumber("Reflect red min",    m_ReflectRedRange.minValue);
+    //SmartDashboard::PutNumber("Reflect red max",    m_ReflectRedRange.maxValue);
+    //SmartDashboard::PutNumber("Reflect green min",  m_ReflectGreenRange.minValue);
+    //SmartDashboard::PutNumber("Reflect green max",  m_ReflectGreenRange.maxValue);
+    //SmartDashboard::PutNumber("Reflect blue min",   m_ReflectBlueRange.minValue);
+    //SmartDashboard::PutNumber("Reflect blue max",   m_ReflectBlueRange.maxValue);
     SmartDashboard::PutNumber("Masked particles",   m_NumMaskedParticles);
     SmartDashboard::PutNumber("Filtered particles", m_NumFilteredParticles);
     SmartDashboard::PutNumber("HeartBeat",          m_HeartBeat++);
@@ -117,12 +119,12 @@ void RobotCamera::UpdateSmartDashboard()
     SmartDashboard::PutNumber("Camera distance",    m_CameraDistance);
     SmartDashboard::PutNumber("Ground distance",    m_GroundDistance);
 
-    m_ReflectRedRange.minValue      = SmartDashboard::GetNumber("Reflect red min",      m_ReflectRedRange.minValue);
-    m_ReflectRedRange.maxValue      = SmartDashboard::GetNumber("Reflect red max",      m_ReflectRedRange.maxValue);
-    m_ReflectGreenRange.minValue    = SmartDashboard::GetNumber("Reflect green min",    m_ReflectGreenRange.minValue);
-    m_ReflectGreenRange.maxValue    = SmartDashboard::GetNumber("Reflect green max",    m_ReflectGreenRange.maxValue);
-    m_ReflectBlueRange.minValue     = SmartDashboard::GetNumber("Reflect blue min",     m_ReflectBlueRange.minValue);
-    m_ReflectBlueRange.maxValue     = SmartDashboard::GetNumber("Reflect blue max",     m_ReflectBlueRange.maxValue);
+    //m_ReflectRedRange.minValue      = SmartDashboard::GetNumber("Reflect red min",      m_ReflectRedRange.minValue);
+    //m_ReflectRedRange.maxValue      = SmartDashboard::GetNumber("Reflect red max",      m_ReflectRedRange.maxValue);
+    //m_ReflectGreenRange.minValue    = SmartDashboard::GetNumber("Reflect green min",    m_ReflectGreenRange.minValue);
+    //m_ReflectGreenRange.maxValue    = SmartDashboard::GetNumber("Reflect green max",    m_ReflectGreenRange.maxValue);
+    //m_ReflectBlueRange.minValue     = SmartDashboard::GetNumber("Reflect blue min",     m_ReflectBlueRange.minValue);
+    //m_ReflectBlueRange.maxValue     = SmartDashboard::GetNumber("Reflect blue max",     m_ReflectBlueRange.maxValue);
 }
 
 
@@ -178,6 +180,7 @@ bool RobotCamera::ProcessTarget(bool bDoFullProcessing)
 ////////////////////////////////////////////////////////////////
 void RobotCamera::GetAndDisplayImage()
 {
+/*
     // Grab an image from the camera
     if (m_Camera == AXIS)
     {
@@ -199,6 +202,7 @@ void RobotCamera::GetAndDisplayImage()
     // Send the image to the driver station
     //CameraServer::GetInstance()->SetImage(m_pFrame);
     CameraServer::GetInstance()->SetImage(m_pFrame);
+*/
 }
 
     
@@ -212,6 +216,7 @@ void RobotCamera::GetAndDisplayImage()
 ////////////////////////////////////////////////////////////////
 void RobotCamera::FilterImage()
 {
+/*
     // Threshold the image looking for the illuminated green reflective tape
     static_cast<void>(imaqColorThreshold(m_pBinaryFrame, m_pFrame, IMAQ_REPLACE_VALUE, IMAQ_HSV, &m_ReflectRedRange, &m_ReflectGreenRange, &m_ReflectBlueRange));
 
@@ -226,6 +231,7 @@ void RobotCamera::FilterImage()
 
     // Send particle count after filtering to dashboard
     static_cast<void>(imaqCountParticles(m_pBinaryFrame, 1, &m_NumFilteredParticles));
+*/
 }
 
 
@@ -240,6 +246,7 @@ void RobotCamera::FilterImage()
 ////////////////////////////////////////////////////////////////
 void RobotCamera::GenerateParticleReport()
 {
+/*
     if (m_NumFilteredParticles > 0)
     {
         double currentMaxArea = 0;
@@ -269,6 +276,7 @@ void RobotCamera::GenerateParticleReport()
 
     // Concerns about using too much of the heap and frequent dynamic garbage collection?
     m_ParticleReports.erase(m_ParticleReports.begin(), m_ParticleReports.end());
+*/
 }
 
 
@@ -284,6 +292,7 @@ void RobotCamera::GenerateParticleReport()
 ////////////////////////////////////////////////////////////////
 void RobotCamera::CalculateTargetParticleValues()
 {
+/*
     int32_t xRes = 0;
     int32_t yRes = 0;
     imaqGetImageSize(m_pBinaryFrame, &xRes, &yRes);
@@ -316,4 +325,5 @@ void RobotCamera::CalculateTargetParticleValues()
     {
         m_bTargetInRange = false;
     }
+*/
 }

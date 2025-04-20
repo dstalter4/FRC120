@@ -19,20 +19,24 @@
 // <none>
 
 // C INCLUDES
-#include "WPILib.h"     // For FRC library declarations
+#include "ctre/Phoenix.h"               // for CTRE APIs
 
 // C++ INCLUDES
 // (none)
+
+using namespace ctre::phoenix::motorcontrol;
 
 class TalonMotorGroup
 {
 public:
 
-    typedef CANTalon::NeutralMode NeutralMode;
-    typedef CANTalon::FeedbackDevice FeedbackDevice;
-    typedef CANTalon::FeedbackDeviceStatus FeedbackDeviceStatus;
+    //typedef CANTalon::NeutralMode NeutralMode;
+    //typedef CANTalon::FeedbackDevice FeedbackDevice;
+    //typedef CANTalon::FeedbackDeviceStatus FeedbackDeviceStatus;
+    // ctre::phoenix::motorcontrol::NeutralMode
+    // ctre::phoenix::motorcontrol::TalonSRXFeedbackDevice
 
-    enum ControlMode
+    enum MotorGroupControlMode
     {
         INVERSE,
         FOLLOW,
@@ -46,7 +50,7 @@ public:
     };
 
     // Constructor
-    TalonMotorGroup( int numInstances, int firstCANId, NeutralMode neutralMode, ControlMode controlMode );
+    TalonMotorGroup( int numInstances, int firstCANId, NeutralMode neutralModeValue, MotorGroupControlMode controlMode );
     
     // Function to set the speed of each motor in the group
     void Set( float value );
@@ -69,8 +73,8 @@ private:
     static constexpr float  ENCODER_AUTO_MOVE_SPEED = .25F;
 
     // Member variables
-    CANTalon *  m_pMotors[MAX_NUMBER_OF_MOTORS];        // The motor objects
-    ControlMode m_ControlMode;                          // Keep track of the configuration of this Talon group
+    TalonSRX * m_pMotors[MAX_NUMBER_OF_MOTORS];         // The motor objects
+    MotorGroupControlMode m_ControlMode;                // Keep track of the configuration of this Talon group
     FeedbackDevice * m_pFeedbackDev;                    // Any sensor potentially connected to a Talon
     int m_NumMotors;                                    // Number of motors in the group
     int m_EncoderCreationValues[MAX_NUMBER_OF_MOTORS];  // The original value of an encoder

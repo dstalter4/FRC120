@@ -31,29 +31,18 @@ void CmsdRobot::AutonomousTestCode()
     // Motors off
     m_pLeftDriveMotor->Set(OFF);
     m_pRightDriveMotor->Set(OFF);
-    
-    // Done, just loop
-    while ( m_pDriverStation->IsAutonomous() )
-    {
-    }
 }
 
 
 
 ////////////////////////////////////////////////////////////////
-// @method CmsdRobot::OperatorTestCode
+// @method CmsdRobot::QuickTestCode
 ///
 /// Test code to try out for operator control mode.
 ///
 ////////////////////////////////////////////////////////////////
-void CmsdRobot::OperatorTestCode()
+void CmsdRobot::QuickTestCode()
 {
-    // Test code for reading the built in accelerometer
-    double x = m_pAccelerometer->GetX();
-    double y = m_pAccelerometer->GetY();
-    double z = m_pAccelerometer->GetZ();
-    printf("x: %f, y: %f, z: %f\n", x, y, z);
-
     // Sample code for testing the detect trigger change code
     TriggerChangeValues testValues;
     testValues.bCurrentValue = m_pControlJoystick->GetRawButton(10);
@@ -72,75 +61,78 @@ void CmsdRobot::OperatorTestCode()
 /// each other.
 ///
 ////////////////////////////////////////////////////////////////
-Joystick * pDriveJoystick;
-Joystick * pControlJoystick;
-CANTalon * pLeft1;
-CANTalon * pLeft2;
-CANTalon * pRight1;
-CANTalon * pRight2;
 void CmsdRobot::MotorTest()
 {
+    static XboxController * pDriveJoystick;
+    static XboxController * pControlJoystick;
+    static TalonSRX * pLeft1;
+    static TalonSRX * pLeft2;
+    static TalonSRX * pRight1;
+    static TalonSRX * pRight2;
     static bool bInitialized = false;
     if (!bInitialized)
     {
-        pDriveJoystick = new Joystick(DRIVE_JOYSTICK);
-        pControlJoystick = new Joystick(CONTROL_JOYSTICK);
+        pDriveJoystick = new XboxController(DRIVE_JOYSTICK);
+        pControlJoystick = new XboxController(CONTROL_JOYSTICK);
         
-        pLeft1 = new CANTalon(LEFT_MOTORS_CAN_START_ID);
-        pLeft2 = new CANTalon(LEFT_MOTORS_CAN_START_ID + 1);
-        pRight1 = new CANTalon(RIGHT_MOTORS_CAN_START_ID);
-        pRight2 = new CANTalon(RIGHT_MOTORS_CAN_START_ID + 1);
+        pLeft1 = new TalonSRX(LEFT_MOTORS_CAN_START_ID);
+        pLeft2 = new TalonSRX(LEFT_MOTORS_CAN_START_ID + 1);
+        pRight1 = new TalonSRX(RIGHT_MOTORS_CAN_START_ID);
+        pRight2 = new TalonSRX(RIGHT_MOTORS_CAN_START_ID + 1);
         
-        pLeft1->SetControlMode(CANSpeedController::kPercentVbus);
-        pLeft2->SetControlMode(CANSpeedController::kPercentVbus);
-        pRight1->SetControlMode(CANSpeedController::kPercentVbus);
-        pRight2->SetControlMode(CANSpeedController::kPercentVbus);
-        
-        pLeft1->ConfigNeutralMode(CANSpeedController::kNeutralMode_Coast);
-        pLeft2->ConfigNeutralMode(CANSpeedController::kNeutralMode_Coast);
-        pRight1->ConfigNeutralMode(CANSpeedController::kNeutralMode_Coast);
-        pRight2->ConfigNeutralMode(CANSpeedController::kNeutralMode_Coast);
+        pLeft1->SetNeutralMode(NeutralMode::Coast);
+        pLeft2->SetNeutralMode(NeutralMode::Coast);
+        pRight1->SetNeutralMode(NeutralMode::Coast);
+        pRight2->SetNeutralMode(NeutralMode::Coast);
         
         bInitialized = true;
     }
     
     while (pDriveJoystick->GetRawButton(6))
     {
-        pLeft1->Set(1);
+        pLeft1->Set(ControlMode::PercentOutput, 1);
+        DriverStation::RefreshData();
     }
     while (pDriveJoystick->GetRawButton(7))
     {
-        pLeft1->Set(-1);
+        pLeft1->Set(ControlMode::PercentOutput, -1);
+        DriverStation::RefreshData();
     }
     while (pDriveJoystick->GetRawButton(8))
     {
-        pLeft2->Set(1);
+        pLeft2->Set(ControlMode::PercentOutput, 1);
+        DriverStation::RefreshData();
     }
     while (pDriveJoystick->GetRawButton(9))
     {
-        pLeft2->Set(-1);
+        pLeft2->Set(ControlMode::PercentOutput, -1);
+        DriverStation::RefreshData();
     }
     while (pControlJoystick->GetRawButton(6))
     {
-        pRight1->Set(1);
+        pRight1->Set(ControlMode::PercentOutput, 1);
+        DriverStation::RefreshData();
     }
     while (pControlJoystick->GetRawButton(7))
     {
-        pRight1->Set(-1);
+        pRight1->Set(ControlMode::PercentOutput, -1);
+        DriverStation::RefreshData();
     }
     while (pControlJoystick->GetRawButton(8))
     {
-        pRight2->Set(1);
+        pRight2->Set(ControlMode::PercentOutput, 1);
+        DriverStation::RefreshData();
     }
     while (pControlJoystick->GetRawButton(9))
     {
-        pRight2->Set(-1);
+        pRight2->Set(ControlMode::PercentOutput, -1);
+        DriverStation::RefreshData();
     }
     
-    pLeft1->Set(0);
-    pLeft2->Set(0);
-    pRight1->Set(0);
-    pRight2->Set(0);
+    pLeft1->Set(ControlMode::PercentOutput, 0);
+    pLeft2->Set(ControlMode::PercentOutput, 0);
+    pRight1->Set(ControlMode::PercentOutput, 0);
+    pRight2->Set(ControlMode::PercentOutput, 0);
 }
 
 
@@ -153,6 +145,6 @@ void CmsdRobot::MotorTest()
 ////////////////////////////////////////////////////////////////
 void CmsdRobot::TankDrive()
 {
-    m_pLeftDriveMotor->Set(-m_pDriveJoystick->GetY());
-    m_pRightDriveMotor->Set(m_pControlJoystick->GetY());
+    m_pLeftDriveMotor->Set(-m_pDriveJoystick->GetLeftY());
+    m_pRightDriveMotor->Set(m_pControlJoystick->GetRightY());
 }

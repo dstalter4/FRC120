@@ -21,33 +21,55 @@
 // <none>
 
 // C INCLUDES
-#include "WPILib.h"                 // For FRC library
+#include "ctre/Phoenix.h"                       // for CTRE APIs
+#include "frc/DigitalInput.h"                   // for DigitalInput type
+#include "frc/DoubleSolenoid.h"                 // for DoubleSolenoid type
+#include "frc/DriverStation.h"                  // for driver station APIs
+#include "frc/Relay.h"                          // for Relay type
+#include "frc/SerialPort.h"                     // for interacting with the serial port
+#include "frc/TimedRobot.h"                     // for base class decalartion
+#include "frc/XboxController.h"                 // for creating built-in XBox controller objects
+#include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
-#include "TalonMotorGroup.hpp"      // For Talon group motor control
-#include "RobotCamera.hpp"          // For interaction with the cameras
+#include "TalonMotorGroup.hpp"                  // for Talon group motor control
+#include "RobotCamera.hpp"                      // for interaction with the cameras
+
+using namespace frc;
+using namespace ctre::phoenix::motorcontrol;
 
 ////////////////////////////////////////////////////////////////
 // @class CmsdRobot
 ///
-/// Derived class from SampleRobot.  The object that will
+/// Derived class from TimedRobot.  The object that will
 /// control all robot functionality.
 ///
 ////////////////////////////////////////////////////////////////
-class CmsdRobot : public SampleRobot
+class CmsdRobot : public TimedRobot
 {
 public:
 
     // MEMBER FUNCTIONS
     
-    // Autonomous routine
-    void Autonomous();
+    // Base robot routines
+    virtual void RobotInit() override;
+    virtual void RobotPeriodic() override;
     
-    // Main operator drive control routine
-    void OperatorControl();
+    // Autonomous routines
+    virtual void AutonomousInit() override;
+    virtual void AutonomousPeriodic() override;
     
-    // Test mode routine
-    void Test();
+    // Teleop routines
+    virtual void TeleopInit() override;
+    virtual void TeleopPeriodic() override;
+    
+    // Test mode routines
+    virtual void TestInit() override;
+    virtual void TestPeriodic() override;
+    
+    // Robot disabled routines
+    virtual void DisabledInit() override;
+    virtual void DisabledPeriodic() override;
     
     // Constructor, destructor
     CmsdRobot();
@@ -63,10 +85,7 @@ private:
     typedef Relay::Value RelayValue;
     typedef Relay::Direction RelayDirection;
     typedef DoubleSolenoid::Value SolenoidState;
-    typedef CANTalon::NeutralMode NeutralMode;
-    typedef CANTalon::FeedbackDevice FeedbackDevice;
-    typedef CANTalon::FeedbackDeviceStatus FeedbackDeviceStatus;
-    typedef TalonMotorGroup::ControlMode ControlMode;
+    typedef TalonMotorGroup::MotorGroupControlMode MotorGroupControlMode;
     typedef RobotCamera::Camera CameraType;
     
     // ENUMS
@@ -75,6 +94,7 @@ private:
     // STRUCTS
     struct TriggerChangeValues
     {
+        TriggerChangeValues() : bCurrentValue(false), bOldValue(false) {}
         bool bCurrentValue;
         bool bOldValue;
     };
@@ -92,7 +112,7 @@ private:
     inline void CheckForDriveSwap();
     
     // Get a throttle control value from a joystick
-    inline float GetThrottleControl(Joystick * pJoystick);
+    inline float GetThrottleControl(XboxController * pJoystick);
 
     // Grabs a value from a sonar sensor individually
    // inline float UpdateSonarSensor(Ultrasonic * pSensor);
@@ -132,23 +152,22 @@ private:
 
     // Test routines for trying out experimental code
     void AutonomousTestCode();
-    void OperatorTestCode();
+    void QuickTestCode();
     void MotorTest();
     void TankDrive();
     
     // MEMBER VARIABLES
     
     // User Controls
-    DriverStation       *m_pDriverStation;              // Driver station object for getting selections
-    Joystick            *m_pDriveJoystick;              // Drive control
-    Joystick            *m_pControlJoystick;            // Robot functional control
+    XboxController      *m_pDriveJoystick;              // Drive control
+    XboxController      *m_pControlJoystick;            // Robot functional control
     
     // Motors
     TalonMotorGroup     *m_pLeftDriveMotor;             // Left drive motor control
     TalonMotorGroup     *m_pRightDriveMotor;            // Right drive motor control
     TalonMotorGroup     *m_pBallLiftMotor;              // Motor to move the ball into the shooter
     TalonMotorGroup     *m_pRobotClimbMotor;            // Motor to scale the tower with
-    CANTalon            *m_pBallIntakeMotor;            // Ball pickup motor
+    TalonSRX            *m_pBallIntakeMotor;            // Ball pickup motor
     
     // Spike Relays
     Relay               *m_pLedRelay;                   // Controls whether or not the LEDs are lit up
@@ -181,7 +200,7 @@ private:
     Timer               *m_pSolenoidRetractTimer;       // Timer to automatically retract the ball shooter
     
     // Accelerometer
-    BuiltInAccelerometer*m_pAccelerometer;              // Built in roborio accelerometer
+    // (none)
 
     // Camera
     RobotCamera         *m_pCameras;                    // Camera object
@@ -236,6 +255,8 @@ private:
     static const int        CONTROL_JOYSTICK                    = 1;
 
     // Driver buttons
+    static const int        DRIVE_INPUT_REVERSE_AXIS            = 2;
+    static const int        DRIVE_INPUT_FORWARD_AXIS            = 3;
     static const int        BALL_SHOOT_BUTTON                   = 1;
     static const int        CAMERA_UP_BUTTON                    = 2;
     static const int        CAMERA_DOWN_BUTTON                  = 4;
@@ -326,7 +347,7 @@ private:
 inline void CmsdRobot::AutonomousDelay(float time)
 {
     m_pAutonomousTimer->Start();
-    while (m_pAutonomousTimer->Get() < time) {}
+    while (m_pAutonomousTimer->Get() < units::time::second_t(time)) {}
     m_pAutonomousTimer->Stop();
     m_pAutonomousTimer->Reset();
 }
@@ -392,7 +413,7 @@ inline void CmsdRobot::CheckForDriveSwap()
 /// Returns a throttle value based on input from the joystick.
 ///
 ////////////////////////////////////////////////////////////////
-inline float CmsdRobot::GetThrottleControl(Joystick * pJoystick)
+inline float CmsdRobot::GetThrottleControl(XboxController * pJoystick)
 {
     // Get throttle control
     // The z axis goes from -1 to 1, so it needs to be normalized.
@@ -400,7 +421,8 @@ inline float CmsdRobot::GetThrottleControl(Joystick * pJoystick)
     // between zero and two.  This will be used to scale the voltage
     // to the motors.  It essentially computes the max speed value
     // that can be reached.    
-    return ((pJoystick->GetThrottle() - 1.0F) / -2.0F) * THROTTLE_VALUE_RANGE + THROTTLE_VALUE_BASE;
+    //return ((pJoystick->GetThrottle() - 1.0F) / -2.0F) * THROTTLE_VALUE_RANGE + THROTTLE_VALUE_BASE;
+    return 1.0;
 }
 
 

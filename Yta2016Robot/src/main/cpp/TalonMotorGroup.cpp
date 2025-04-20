@@ -30,7 +30,7 @@
 /// port numbers passed in.
 ///
 ////////////////////////////////////////////////////////////////
-TalonMotorGroup::TalonMotorGroup( int numInstances, int firstCANId, NeutralMode neutralMode, ControlMode controlMode )
+TalonMotorGroup::TalonMotorGroup( int numInstances, int firstCANId, NeutralMode neutralMode, MotorGroupControlMode controlMode )
 : m_pMotors()
 , m_ControlMode(controlMode)
 , m_pFeedbackDev(NULL)
@@ -52,7 +52,7 @@ TalonMotorGroup::TalonMotorGroup( int numInstances, int firstCANId, NeutralMode 
     for ( int i = 0; i < numInstances; i++ )
     {
         // Create it
-        m_pMotors[i] = new CANTalon(firstCANId++);
+        m_pMotors[i] = new TalonSRX(firstCANId++);
 
         // Only set follow for Talon groups that will be configured
         // as such.  Otherwise just set everything to kPercentVbus.
@@ -60,67 +60,51 @@ TalonMotorGroup::TalonMotorGroup( int numInstances, int firstCANId, NeutralMode 
         // percent voltage bus.
         if ((i == 0) || (controlMode != FOLLOW))
         {
-            m_pMotors[i]->SetControlMode(CANSpeedController::kPercentVbus);
+            // No need to set control mode in latest CTRE APIs
+            //m_pMotors[i]->SetControlMode(CANSpeedController::kPercentVbus);
         }
         // Otherwise set to follow
         else
         {
-            m_pMotors[i]->SetControlMode(CANSpeedController::kFollower);
-            m_pMotors[i]->Set(masterId);
+            // No need to set control mode in latest CTRE APIs
+            //m_pMotors[i]->SetControlMode(CANSpeedController::kFollower);
+            m_pMotors[i]->Set(ControlMode::Follower, masterId);
         }
 
-        m_pMotors[i]->ConfigNeutralMode(neutralMode);
+        m_pMotors[i]->SetNeutralMode(neutralMode);
     }
 }
 
 
 
+// Post 2016 porting note: these probably aren't needed/called
+
 void TalonMotorGroup::CreateEncoderFeedbackDevice(FeedbackDevice feedbackDev)
-{    
-    FeedbackDeviceStatus status = FeedbackDeviceStatus::FeedbackStatusUnknown;
+{
+    // Assume only the first motor in a group has a sensor
+    m_pFeedbackDev = new FeedbackDevice(feedbackDev);
+
+    // Save off its original position
+    m_EncoderCreationValues[0] = m_pMotors[0]->GetSelectedSensorPosition();
     
-    for ( int i = 0; i < m_NumMotors; i++ )
-    {
-        // Make sure the sensor is present
-        status = m_pMotors[i]->IsSensorPresent(feedbackDev);
-        
-        if (status != FeedbackDeviceStatus::FeedbackStatusPresent)
-        {
-            break;
-        }
-        
-        // Save off its original position
-        m_EncoderCreationValues[i] = m_pMotors[i]->GetPulseWidthPosition();
-        
-        // Set the sensor type and start it at zero
-        m_pMotors[i]->SetFeedbackDevice(feedbackDev);
-        m_pMotors[i]->SetPulseWidthPosition(0);
-    }
-    
-    // Only create the pointer if all the expected sensors are present.
-    // The loop will exit early if one fails.
-    if (status == FeedbackDeviceStatus::FeedbackStatusPresent)
-    {
-        m_pFeedbackDev = new FeedbackDevice(feedbackDev);
-    }
+    // Set the sensor type and start it at zero
+    m_pMotors[0]->ConfigSelectedFeedbackSensor(feedbackDev, 0, 0);
+    m_pMotors[0]->SetSelectedSensorPosition(0.0);
 }
 
 void TalonMotorGroup::TareEncoder()
 {
-    if (m_pFeedbackDev == NULL)
+    if (m_pFeedbackDev == nullptr)
     {
         return;
     }
-    
-    for ( int i = 0; i < m_NumMotors; i++ )
-    {
-        m_pMotors[i]->SetPulseWidthPosition(0);
-    }
+
+    m_pMotors[0]->SetSelectedSensorPosition(0.0);
 }
 
+/*
 void TalonMotorGroup::StartEncoderMove(int targetValue)//, Direction direction)
 {
-    /*
     Timer * pTimer = new Timer();
     pTimer->Reset();
     pTimer->Start();
@@ -166,12 +150,12 @@ void TalonMotorGroup::StartEncoderMove(int targetValue)//, Direction direction)
     }
     
     m_bActionInProgress = true;
-    */
 }
+*/
 
+/*
 void TalonMotorGroup::EncoderSequence(bool bCancelMove)
 {
-    /*
     // A device needs to be registered
     if (m_pFeedbackDev == NULL)
     {
@@ -229,9 +213,8 @@ void TalonMotorGroup::EncoderSequence(bool bCancelMove)
         default:
             break;
     };
-    */
 }
-
+*/
 
 
 
@@ -252,7 +235,7 @@ void TalonMotorGroup::Set( float value )
         // Typical case, just update the master
         case FOLLOW:
         {
-            m_pMotors[0]->Set(value);
+            m_pMotors[0]->Set(ControlMode::PercentOutput, value);
             break;
         }
         // Motors are attached to drive in
@@ -263,11 +246,11 @@ void TalonMotorGroup::Set( float value )
             // (i.e. 1:n motors, 1:n/2 forward, n/2:n reverse
             for (int i = 0; i < m_NumMotors / 2; i++)
             {
-               m_pMotors[i]->Set(value);
+               m_pMotors[i]->Set(ControlMode::PercentOutput, value);
             }
             for (int i = m_NumMotors / 2; i < m_NumMotors; i++)
             {
-                   m_pMotors[i]->Set(-value);
+                   m_pMotors[i]->Set(ControlMode::PercentOutput, -value);
             }
             break;
         }
@@ -275,7 +258,7 @@ void TalonMotorGroup::Set( float value )
         {
             for (int i = 0; i < m_NumMotors; i++)
             {
-                m_pMotors[i]->Set(value);
+                m_pMotors[i]->Set(ControlMode::PercentOutput, value);
             }
         }
         default:
