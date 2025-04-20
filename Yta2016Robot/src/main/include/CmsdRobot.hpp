@@ -255,29 +255,28 @@ private:
     static const int        CONTROL_JOYSTICK                    = 1;
 
     // Driver buttons
-    static const int        DRIVE_INPUT_REVERSE_AXIS            = 2;
-    static const int        DRIVE_INPUT_FORWARD_AXIS            = 3;
-    static const int        BALL_SHOOT_BUTTON                   = 1;
-    static const int        CAMERA_UP_BUTTON                    = 2;
-    static const int        CAMERA_DOWN_BUTTON                  = 4;
-    static const int        DRIVE_CONTROLS_FORWARD_BUTTON       = 6;
-    static const int        DRIVE_CONTROLS_REVERSE_BUTTON       = 7;
-    //static const int        BALL_INTAKE_LIFT_AUTO_DOWN_BUTTON   = 8;
-    //static const int        BALL_INTAKE_LIFT_AUTO_DRIVE_BUTTON  = 9;
-    //static const int        BALL_INTAKE_LIFT_AUTO_UP_BUTTON     = 10;
+    static const int        DRIVE_INPUT_REVERSE_AXIS            = 2;    // Left trigger
+    static const int        DRIVE_INPUT_FORWARD_AXIS            = 3;    // Right trigger
+    static const int        BALL_SHOOT_BUTTON                   = 5;    // Right bumper
+    static const int        TOGGLE_DRIVE_SWAP_BUTTON            = 8;    // Start
+    static const int        CAMERA_UP_BUTTON                    = 9;    // Left stick click
+    static const int        CAMERA_DOWN_BUTTON                  = 10;   // Right stick click
+    //static const int        BALL_INTAKE_LIFT_AUTO_DOWN_BUTTON   = 0;
+    //static const int        BALL_INTAKE_LIFT_AUTO_DRIVE_BUTTON  = 0;
+    //static const int        BALL_INTAKE_LIFT_AUTO_UP_BUTTON     = 0;
     
     // Control buttons
-    static const int        BALL_INTAKE_FORWARD_BUTTON          = 1;
-    static const int        BALL_INTAKE_REVERSE_BUTTON          = 2;
-    static const int        BALL_INTAKE_LIFT_DOWN_BUTTON        = 3;
-    static const int        BALL_INTAKE_LIFT_UP_BUTTON          = 5;
-    static const int        ROBOT_CLIMB_POLE_RAISE_BUTTON       = 6;
-    static const int        ROBOT_CLIMB_POLE_LOWER_BUTTON       = 7;
-    static const int        ROBOT_CLIMB_HOOK_OUT_BUTTON         = 8;
-    static const int        ROBOT_CLIMB_HOOK_IN_BUTTON          = 9;
-    static const int        ROBOT_CLIMB_UP_BUTTON               = 12;
-    static const int        ROBOT_CLIMB_DOWN_BUTTON             = 11;
-    static const int        ESTOP_BUTTON                        = 14;
+    static const int        BALL_INTAKE_FORWARD_BUTTON          = 5;    // Left bumper
+    static const int        BALL_INTAKE_REVERSE_BUTTON          = 6;    // Right bumper
+    static const int        BALL_INTAKE_LIFT_DOWN_AXIS          = 3;    // Right trigger
+    static const int        BALL_INTAKE_LIFT_UP_AXIS            = 2;    // Left trigger
+    static const int        ROBOT_CLIMB_POLE_RAISE_BUTTON       = 1;    // A
+    static const int        ROBOT_CLIMB_POLE_LOWER_BUTTON       = 2;    // B
+    static const int        ROBOT_CLIMB_HOOK_OUT_BUTTON         = 3;    // X
+    static const int        ROBOT_CLIMB_HOOK_IN_BUTTON          = 4;    // Y
+    static const int        ROBOT_CLIMB_UP_POV                  = 0;
+    static const int        ROBOT_CLIMB_DOWN_POV                = 180;
+    static const int        ESTOP_BUTTON                        = 0;
 
     // CAN Signals
     static const int        LEFT_MOTORS_CAN_START_ID            = 1;
@@ -386,22 +385,19 @@ inline void CmsdRobot::CheckForDriveSwap()
 {
     // Check if the driver pushed the button to have
     // forward be reverse and vice versa
-    if ( m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_FORWARD_BUTTON) )
+    if ( m_pDriveJoystick->GetStartButtonPressed() )
     {
-        m_bDriveSwap = false;
+        m_bDriveSwap = !m_bDriveSwap;
         
-        // Switch to the forward cam
-        //m_pCameras->SetCamera(CameraType::AXIS);
-    }
-    else if ( m_pDriveJoystick->GetRawButton(DRIVE_CONTROLS_REVERSE_BUTTON) )
-    {
-        m_bDriveSwap = true;
-        
-        // Switch to the reverse cam
-        //m_pCameras->SetCamera(CameraType::USB);
-    }
-    else
-    {
+        // Switch the camera
+        if (!m_bDriveSwap)
+        {
+            //m_pCameras->SetCamera(CameraType::AXIS);
+        }
+        else
+        {
+            //m_pCameras->SetCamera(CameraType::USB);
+        }
     }
 }
 

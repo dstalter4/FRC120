@@ -364,11 +364,11 @@ void CmsdRobot::BallIntakeSequence()
         m_pBallLiftMotor->TareEncoder();
     }
     //For Cincinattin this has been changed (Reveresed!both limit Switches and Ball_InTAKE!!)
-    if (m_pControlJoystick->GetRawButton(BALL_INTAKE_LIFT_UP_BUTTON) && bUpperLimitSwitchState)
+    if ((m_pControlJoystick->GetRawAxis(BALL_INTAKE_LIFT_UP_AXIS) > 0.10) && bUpperLimitSwitchState)
     {
         m_pBallLiftMotor->Set(BALL_LIFT_MAX_OUTPUT);
     }
-    else if (m_pControlJoystick->GetRawButton(BALL_INTAKE_LIFT_DOWN_BUTTON) && bLowerLimitSwitchState)
+    else if ((m_pControlJoystick->GetRawAxis(BALL_INTAKE_LIFT_DOWN_AXIS) > 0.10) && bLowerLimitSwitchState)
     {
         m_pBallLiftMotor->Set(-BALL_LIFT_MAX_OUTPUT);
     }
@@ -448,11 +448,12 @@ void CmsdRobot::RobotClimbSequence()
     }
     
     // Last check the motor climb inputs
-    if (m_pControlJoystick->GetRawButton(ROBOT_CLIMB_UP_BUTTON))
+    int povValue = m_pControlJoystick->GetPOV();
+    if (((povValue >= 0) && (povValue <= 45)) || (povValue >= 315))
     {
         m_pRobotClimbMotor->Set(ON);
     }
-    else if (m_pControlJoystick->GetRawButton(ROBOT_CLIMB_DOWN_BUTTON))
+    else if ((povValue >= 135) && (povValue <= 225))
     {
         m_pRobotClimbMotor->Set(-ON);
     }
