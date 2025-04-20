@@ -117,11 +117,11 @@ private:
     int m_NumMaskedParticles;       // Number of masked particles found
     int m_NumFilteredParticles;     // Number of filtered particles found
 
-    float m_CameraDistance;         // Distance to the target from the camera
-    float m_GroundDistance;         // Actual ground distance to the target
-    float m_BoundingArea;           // Area of the target based on its bounding coordinates
-    float m_ShapeAreaPercent;       // Percentage of the bounding area the shape occupies
-    float m_TrapezoidPercent;       // Likelihood that this is a true rectangle
+    double m_CameraDistance;        // Distance to the target from the camera
+    double m_GroundDistance;        // Actual ground distance to the target
+    double m_BoundingArea;          // Area of the target based on its bounding coordinates
+    double m_ShapeAreaPercent;      // Percentage of the bounding area the shape occupies
+    double m_TrapezoidPercent;      // Likelihood that this is a true rectangle
 
     bool m_bUsbCameraPresent;       // Remember if the USB camera startup was successful
     bool m_bBackUsbCameraPresent;   // Remember if the back USB camera startup was successful
@@ -144,17 +144,17 @@ private:
     static const int IMAQ_FILTER_USE_CONNECTIVITY_8     = 1;
     static const unsigned int CAMERA_WIDTH              = 320;
     static const unsigned int CAMERA_HEIGHT             = 240;
-    static constexpr float CAMERA_FPS                   = 10.0F;
-    static constexpr float TARGET_MIN_AREA_PERCENT      = 0.0F;
-    static constexpr float TARGET_MAX_AREA_PERCENT      = 100.0F;
-    static constexpr float TARGET_SIZE                  = 20.0F;
-    static constexpr float TARGET_REFLECTOR_HEIGHT      = 84.0F;
-    static constexpr float TARGET_RANGE_MIN             = 132.0F;
-    static constexpr float TARGET_RANGE_MAX             = 192.0F;
-    static constexpr float GROUND_DISTANCE_TOLERANCE    = 6.0F;
-    static constexpr float CALIBRATED_CAMERA_ANGLE      = 21.5778173F;
-    static constexpr float RADIANS_TO_DEGREES           = M_PI / 180.0F;
-    static constexpr float DECIMAL_TO_PERCENT           = 100.0F;
+    static constexpr double CAMERA_FPS                  = 10.0;
+    static constexpr double TARGET_MIN_AREA_PERCENT     = 0.0;
+    static constexpr double TARGET_MAX_AREA_PERCENT     = 100.0;
+    static constexpr double TARGET_SIZE                 = 20.0;
+    static constexpr double TARGET_REFLECTOR_HEIGHT     = 84.0;
+    static constexpr double TARGET_RANGE_MIN            = 132.0;
+    static constexpr double TARGET_RANGE_MAX            = 192.0;
+    static constexpr double GROUND_DISTANCE_TOLERANCE   = 6.0;
+    static constexpr double CALIBRATED_CAMERA_ANGLE     = 21.5778173;
+    static constexpr double RADIANS_TO_DEGREES          = M_PI / 180.0;
+    static constexpr double DECIMAL_TO_PERCENT          = 100.0;
 };
 
 

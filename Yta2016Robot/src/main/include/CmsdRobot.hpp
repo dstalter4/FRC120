@@ -100,10 +100,10 @@ private:
     };
     
     // Ensures a number is between the upper and lower bounds
-    inline float Limit( float num, float upper, float lower );
+    inline double Limit( double num, double upper, double lower );
     
     // Trims a number to be in between the upper and lower bounds
-    inline float Trim( float num, float upper, float lower );
+    inline double Trim( double num, double upper, double lower );
 
     // Detect that a button has been pressed (rather than released)
     inline bool DetectTriggerChange(TriggerChangeValues * pTriggerVals);
@@ -112,16 +112,16 @@ private:
     inline void CheckForDriveSwap();
     
     // Get a throttle control value from a joystick
-    inline float GetThrottleControl(XboxController * pJoystick);
+    inline double GetThrottleControl(XboxController * pJoystick);
 
     // Grabs a value from a sonar sensor individually
-   // inline float UpdateSonarSensor(Ultrasonic * pSensor);
+   // inline double UpdateSonarSensor(Ultrasonic * pSensor);
 
     // Autonomous wait for something to complete delay routine
-    inline void AutonomousDelay(float time);
+    inline void AutonomousDelay(double time);
 
     // Autonomous drive for a specified time
-    inline void AutonomousDriveSequence(float speed, float time);
+    inline void AutonomousDriveSequence(double speed, double time);
 
     // Routine to put things in a known state
     void InitialStateSetup();
@@ -236,19 +236,19 @@ private:
     static const bool       AUTONOMOUS_TEST_ENABLED             = false;
 
     // Autonomous routine 1/2 constants
-    static constexpr float  AUTO_DRIVE_SPEED_SLOW               = -.5F;
-    static constexpr float  AUTO_DRIVE_SPEED_FAST               = -.75F;
-    static constexpr float  AUTO_DRIVE_TO_SHOOT_SPEED           = .5F;
-    static constexpr float  AUTO_DRIVE_DELAY_TIME_SLOW          = 3.5F;
-    static constexpr float  AUTO_DRIVE_DELAY_TIME_FAST          = 5.0F;
-    static constexpr float  AUTO_DRIVE_TO_SHOOT_DELAY           = 1.0F;
-    static constexpr float  AUTO_INCH_FORWARD_SPEED             = -.3F;
-    static constexpr float  AUTO_INCH_FORWARD_DELAY             = 1.0F;
-    static constexpr float  AUTO_BALL_LIFT_SPEED                = .5F;
-    static constexpr float  AUTO_CLIMB_ARM_LOWER_DELAY          = .5F;
-    static constexpr float  AUTO_1_RIGHT_TURN_SPEED             = .65F;
-    static constexpr float  AUTO_1_RIGHT_TURN_DELAY             = .25F;
-    static constexpr float  AUTO_2_START_DELAY                  = 5.0F;
+    static constexpr double  AUTO_DRIVE_SPEED_SLOW               = -0.5;
+    static constexpr double  AUTO_DRIVE_SPEED_FAST               = -0.75;
+    static constexpr double  AUTO_DRIVE_TO_SHOOT_SPEED           = 0.5;
+    static constexpr double  AUTO_DRIVE_DELAY_TIME_SLOW          = 3.5;
+    static constexpr double  AUTO_DRIVE_DELAY_TIME_FAST          = 5.0;
+    static constexpr double  AUTO_DRIVE_TO_SHOOT_DELAY           = 1.0;
+    static constexpr double  AUTO_INCH_FORWARD_SPEED             = -0.3;
+    static constexpr double  AUTO_INCH_FORWARD_DELAY             = 1.0;
+    static constexpr double  AUTO_BALL_LIFT_SPEED                = 0.5;
+    static constexpr double  AUTO_CLIMB_ARM_LOWER_DELAY          = 0.5;
+    static constexpr double  AUTO_1_RIGHT_TURN_SPEED             = 0.65;
+    static constexpr double  AUTO_1_RIGHT_TURN_DELAY             = 0.25;
+    static constexpr double  AUTO_2_START_DELAY                  = 5.0;
     
     // Joysticks/Buttons
     static const int        DRIVE_JOYSTICK                      = 0;
@@ -320,17 +320,17 @@ private:
     static const int        BALL_LIFT_DRIVE_POSITION            = 1500;
     static const int        BALL_LIFT_DOWN_POSITION             = 3000;
     static const char       NULL_CHARACTER                      = '\0';
-    static constexpr float  DRIVE_MOTOR_UPPER_LIMIT             = 1.0F;
-    static constexpr float  DRIVE_MOTOR_LOWER_LIMIT             = -1.0F;
-    static constexpr float  JOYSTICK_TRIM_UPPER_LIMIT           = .1F;
-    static constexpr float  JOYSTICK_TRIM_LOWER_LIMIT           = -.1F;
-    static constexpr float  THROTTLE_VALUE_RANGE                = .65F;
-    static constexpr float  THROTTLE_VALUE_BASE                 = .35F;
-    static constexpr float  SAFETY_TIMER_MAX_VALUE              = 5.0F;
-    static constexpr float  CAMERA_RUN_INTERVAL_S               = 1.0F;
-    static constexpr float  SOLENOID_RETRACT_TIME               = 1.0F;
-    static constexpr float  CLIMB_SOLENOID_DELAY_TIME           = .5F;
-    static constexpr float  BALL_LIFT_MAX_OUTPUT                = 0.55F;//0.70F;
+    static constexpr double DRIVE_MOTOR_UPPER_LIMIT             = 1.0;
+    static constexpr double DRIVE_MOTOR_LOWER_LIMIT             = -1.0;
+    static constexpr double JOYSTICK_TRIM_UPPER_LIMIT           = 0.1;
+    static constexpr double JOYSTICK_TRIM_LOWER_LIMIT           = -0.1;
+    static constexpr double THROTTLE_VALUE_RANGE                = 0.65;
+    static constexpr double THROTTLE_VALUE_BASE                 = 0.35;
+    static constexpr double SAFETY_TIMER_MAX_VALUE              = 5.0;
+    static constexpr double CAMERA_RUN_INTERVAL_S               = 1.0;
+    static constexpr double SOLENOID_RETRACT_TIME               = 1.0;
+    static constexpr double CLIMB_SOLENOID_DELAY_TIME           = 0.5;
+    static constexpr double BALL_LIFT_MAX_OUTPUT                = 0.55;//0.70;
     
 };  // End class
 
@@ -344,7 +344,7 @@ private:
 /// nothing else needs to occur.
 ///
 ////////////////////////////////////////////////////////////////
-inline void CmsdRobot::AutonomousDelay(float time)
+inline void CmsdRobot::AutonomousDelay(double time)
 {
     m_pAutonomousTimer->Start();
     while (m_pAutonomousTimer->Get() < units::time::second_t(time)) {}
@@ -360,7 +360,7 @@ inline void CmsdRobot::AutonomousDelay(float time)
 /// Drives during autonomous for a specified amount of time.
 ///
 ////////////////////////////////////////////////////////////////
-inline void CmsdRobot::AutonomousDriveSequence(float speed, float time)
+inline void CmsdRobot::AutonomousDriveSequence(double speed, double time)
 {
     // First turn the motors on
     m_pLeftDriveMotor->Set(speed);
@@ -413,7 +413,7 @@ inline void CmsdRobot::CheckForDriveSwap()
 /// Returns a throttle value based on input from the joystick.
 ///
 ////////////////////////////////////////////////////////////////
-inline float CmsdRobot::GetThrottleControl(XboxController * pJoystick)
+inline double CmsdRobot::GetThrottleControl(XboxController * pJoystick)
 {
     // Get throttle control
     // The z axis goes from -1 to 1, so it needs to be normalized.
@@ -421,7 +421,7 @@ inline float CmsdRobot::GetThrottleControl(XboxController * pJoystick)
     // between zero and two.  This will be used to scale the voltage
     // to the motors.  It essentially computes the max speed value
     // that can be reached.    
-    //return ((pJoystick->GetThrottle() - 1.0F) / -2.0F) * THROTTLE_VALUE_RANGE + THROTTLE_VALUE_BASE;
+    //return ((pJoystick->GetThrottle() - 1.0) / -2.0) * THROTTLE_VALUE_RANGE + THROTTLE_VALUE_BASE;
     return 1.0;
 }
 
@@ -436,10 +436,10 @@ inline float CmsdRobot::GetThrottleControl(XboxController * pJoystick)
 /// sensors that may need to get readings.
 ///
 ////////////////////////////////////////////////////////////////
-/*inline float CmsdRobot::UpdateSonarSensor(Ultrasonic * pSensor)
+/*inline double CmsdRobot::UpdateSonarSensor(Ultrasonic * pSensor)
 {
     pSensor->SetEnabled(true);
-    float sensorValue = pSensor->GetRangeInches();
+    double sensorValue = pSensor->GetRangeInches();
     pSensor->SetEnabled(false);
     return sensorValue;
 }
@@ -454,7 +454,7 @@ inline float CmsdRobot::GetThrottleControl(XboxController * pJoystick)
 /// devices.
 ///
 ////////////////////////////////////////////////////////////////
-inline float CmsdRobot::Limit( float num, float upper, float lower )
+inline double CmsdRobot::Limit( double num, double upper, double lower )
 {
     if ( num > upper )
     {
@@ -478,7 +478,7 @@ inline float CmsdRobot::Limit( float num, float upper, float lower )
 /// device and not just noise/jitter.
 ///
 ////////////////////////////////////////////////////////////////
-inline float CmsdRobot::Trim( float num, float upper, float lower )
+inline double CmsdRobot::Trim( double num, double upper, double lower )
 {
     if ( (num < upper) && (num > lower) )
     {

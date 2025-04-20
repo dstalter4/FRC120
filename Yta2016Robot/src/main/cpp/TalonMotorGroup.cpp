@@ -113,19 +113,19 @@ void TalonMotorGroup::StartEncoderMove(int targetValue)//, Direction direction)
     // Down is positive
     if (currentPosition < targetValue)
     {
-        Set(.5F);
-        while (m_pMotors[0]->GetPulseWidthPosition() < targetValue && pTimer->Get() < 3.0F) {}
+        Set(.5);
+        while (m_pMotors[0]->GetPulseWidthPosition() < targetValue && pTimer->Get() < 3.0) {}
     }
     else if (currentPosition > targetValue)
     {
-        Set(-.5F);
-        while (m_pMotors[0]->GetPulseWidthPosition() > targetValue && pTimer->Get() < 3.0F) {}
+        Set(-.5);
+        while (m_pMotors[0]->GetPulseWidthPosition() > targetValue && pTimer->Get() < 3.0) {}
     }
     else
     {
     }
     
-    Set(0.0F);
+    Set(0.0);
     pTimer->Stop();
     delete pTimer;
     */
@@ -183,13 +183,13 @@ void TalonMotorGroup::EncoderSequence(bool bCancelMove)
                 if (  m_EncoderDirection == FORWARD
                    && (sensorVals[0] >= m_EncoderTargetValue || sensorVals[1] >= m_EncoderTargetValue))
                 {
-                    Set(0.0F);
+                    Set(0.0);
                     m_bActionInProgress = false;
                 }
                 else if (  m_EncoderDirection == REVERSE
                         && (sensorVals[0] <= m_EncoderTargetValue || sensorVals[1] <= m_EncoderTargetValue))
                 {
-                    Set(0.0F);
+                    Set(0.0);
                     m_bActionInProgress = false;
                 }
                 else
@@ -204,7 +204,7 @@ void TalonMotorGroup::EncoderSequence(bool bCancelMove)
                 
                 if (encoderDifference >= ENCODER_SLOP_VALUE || bCancelMove)
                 {
-                    Set(0.0F);
+                    Set(0.0);
                     m_bActionInProgress = false;
                 }
             }
@@ -224,7 +224,7 @@ void TalonMotorGroup::EncoderSequence(bool bCancelMove)
 /// Method to set the speed of each motor in the group.
 ///
 ////////////////////////////////////////////////////////////////
-void TalonMotorGroup::Set( float value )
+void TalonMotorGroup::Set( double value )
 {
     // Check what kind of group this is.  Most
     // CAN Talons will be set to follow, but some

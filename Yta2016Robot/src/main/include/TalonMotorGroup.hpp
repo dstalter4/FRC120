@@ -53,7 +53,7 @@ public:
     TalonMotorGroup( int numInstances, int firstCANId, NeutralMode neutralModeValue, MotorGroupControlMode controlMode );
     
     // Function to set the speed of each motor in the group
-    void Set( float value );
+    void Set( double value );
     
     // Register a sensor type for this motor group
     void CreateEncoderFeedbackDevice(FeedbackDevice feedbackDev);
@@ -70,7 +70,7 @@ public:
 private:
     static const int        MAX_NUMBER_OF_MOTORS    = 10;
     static const int        ENCODER_SLOP_VALUE      = 100;
-    static constexpr float  ENCODER_AUTO_MOVE_SPEED = .25F;
+    static constexpr double ENCODER_AUTO_MOVE_SPEED = 0.25;
 
     // Member variables
     TalonSRX * m_pMotors[MAX_NUMBER_OF_MOTORS];         // The motor objects

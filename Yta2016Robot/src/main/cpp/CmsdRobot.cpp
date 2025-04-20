@@ -171,8 +171,8 @@ void CmsdRobot::AutonomousPeriodic()
         // Bar is all the way up, tare it out
         m_pBallLiftMotor->TareEncoder();
         
-        float driveSpeed = 0.0F;
-        float driveTime = 0.0F;
+        double driveSpeed = 0.0;
+        double driveTime = 0.0;
         
         // Routine 1 only, lower the rear bar
         if (m_pAutonomousRoutine1Switch->Get())
@@ -214,22 +214,22 @@ void CmsdRobot::AutonomousPeriodic()
         if (m_pAutonomousRoutine1Switch->Get())
         {
             // Motors are named backward this year, this will veer right
-            m_pRightDriveMotor->Set(0.4F);
-            AutonomousDelay(1.25F);
+            m_pRightDriveMotor->Set(0.4);
+            AutonomousDelay(1.25);
             m_pRightDriveMotor->Set(OFF);
             
             // Stabalize
             AutonomousDelay(AUTO_DRIVE_TO_SHOOT_DELAY);
             
             // Right turn, Clyde
-            m_pRightDriveMotor->Set(.5F);
-            m_pLeftDriveMotor->Set(.5F);
-            AutonomousDelay(1.35F);
+            m_pRightDriveMotor->Set(.5);
+            m_pLeftDriveMotor->Set(.5);
+            AutonomousDelay(1.35);
             m_pRightDriveMotor->Set(OFF);
             m_pLeftDriveMotor->Set(OFF);
             
             // Inch forward
-            AutonomousDriveSequence(-.3F, 1.25F);
+            AutonomousDriveSequence(-.3, 1.25);
             
             // Stabalize
             AutonomousDelay(AUTO_DRIVE_TO_SHOOT_DELAY);
@@ -338,7 +338,7 @@ void CmsdRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void CmsdRobot::BallIntakeSequence()
 {
-    float throttleControl = GetThrottleControl(m_pControlJoystick);
+    double throttleControl = GetThrottleControl(m_pControlJoystick);
     
     // First check for ball intake
     if (m_pControlJoystick->GetRawButton(BALL_INTAKE_FORWARD_BUTTON))
@@ -399,7 +399,7 @@ void CmsdRobot::BallIntakeSequence()
     
     /*
     // Now for raising or lowering it
-    float yAxisControl = Trim((m_pControlJoystick->GetY() * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double yAxisControl = Trim((m_pControlJoystick->GetY() * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
         
     // Negate the input since the controller y-axis input is in the range [-1:1]
     m_pBallLiftMotor->Set(-yAxisControl);   
@@ -618,7 +618,7 @@ void CmsdRobot::CameraSequence()
 void CmsdRobot::DriveControlSequence()
 {
     // Computes what the maximum drive speed could be
-    float throttleControl = GetThrottleControl(m_pDriveJoystick);
+    double throttleControl = GetThrottleControl(m_pDriveJoystick);
 
     // Get joystick inputs and make sure they clear a certain threshold.
     // This will help to drive straight.
@@ -639,8 +639,8 @@ void CmsdRobot::DriveControlSequence()
     }
 
     // Filter motor speeds
-    float leftSpeed = Limit((xAxisDrive - yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
-    float rightSpeed = Limit((xAxisDrive + yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
+    double leftSpeed = Limit((xAxisDrive - yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
+    double rightSpeed = Limit((xAxisDrive + yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
 
     // Set motor speed
     m_pLeftDriveMotor->Set(leftSpeed);
