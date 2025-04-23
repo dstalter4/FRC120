@@ -307,7 +307,7 @@ void CmsdRobot::TeleopPeriodic()
     
     BallIntakeSequence();
     
-    RobotClimbSequence();
+    //RobotClimbSequence();
 
     //LedSequence();
 
@@ -338,14 +338,14 @@ void CmsdRobot::TeleopPeriodic()
 ////////////////////////////////////////////////////////////////
 void CmsdRobot::BallIntakeSequence()
 {
-    double throttleControl = GetThrottleControl(m_pControlJoystick);
+    double throttleControl = 1.0;//GetThrottleControl(m_pControlJoystick);
     
     // First check for ball intake
-    if (m_pControlJoystick->GetRawButton(BALL_INTAKE_FORWARD_BUTTON))
+    if (m_pDriveJoystick->GetRawButton(BALL_INTAKE_FORWARD_BUTTON))
     {
         m_pBallIntakeMotor->Set(ControlMode::PercentOutput, (ON * throttleControl));
     }
-    else if (m_pControlJoystick->GetRawButton(BALL_INTAKE_REVERSE_BUTTON))
+    else if (m_pDriveJoystick->GetRawButton(BALL_INTAKE_REVERSE_BUTTON))
     {
         m_pBallIntakeMotor->Set(ControlMode::PercentOutput, (-ON * throttleControl));
     }
@@ -353,6 +353,8 @@ void CmsdRobot::BallIntakeSequence()
     {
         m_pBallIntakeMotor->Set(ControlMode::PercentOutput, OFF);
     }
+
+    return;
     
     // Now check the ball lift mechanism
     bool bLowerLimitSwitchState = m_pLiftLowerLimitSwitch->Get();

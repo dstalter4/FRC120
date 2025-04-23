@@ -257,7 +257,7 @@ private:
     // Driver buttons
     static const int        DRIVE_INPUT_REVERSE_AXIS            = 2;    // Left trigger
     static const int        DRIVE_INPUT_FORWARD_AXIS            = 3;    // Right trigger
-    static const int        BALL_SHOOT_BUTTON                   = 5;    // Right bumper
+    static const int        BALL_SHOOT_BUTTON                   = 2;    // B button
     static const int        TOGGLE_DRIVE_SWAP_BUTTON            = 8;    // Start
     static const int        CAMERA_UP_BUTTON                    = 9;    // Left stick click
     static const int        CAMERA_DOWN_BUTTON                  = 10;   // Right stick click
@@ -266,8 +266,8 @@ private:
     //static const int        BALL_INTAKE_LIFT_AUTO_UP_BUTTON     = 0;
     
     // Control buttons
-    static const int        BALL_INTAKE_FORWARD_BUTTON          = 5;    // Left bumper
-    static const int        BALL_INTAKE_REVERSE_BUTTON          = 6;    // Right bumper
+    static const int        BALL_INTAKE_FORWARD_BUTTON          = 6;    // Right bumper
+    static const int        BALL_INTAKE_REVERSE_BUTTON          = 5;    // Left bumper
     static const int        BALL_INTAKE_LIFT_DOWN_AXIS          = 3;    // Right trigger
     static const int        BALL_INTAKE_LIFT_UP_AXIS            = 2;    // Left trigger
     static const int        ROBOT_CLIMB_POLE_RAISE_BUTTON       = 1;    // A
@@ -418,7 +418,7 @@ inline double CmsdRobot::GetThrottleControl(XboxController * pJoystick)
     // to the motors.  It essentially computes the max speed value
     // that can be reached.    
     //return ((pJoystick->GetThrottle() - 1.0) / -2.0) * THROTTLE_VALUE_RANGE + THROTTLE_VALUE_BASE;
-    return 1.0;
+    return 0.5;
 }
 
 
