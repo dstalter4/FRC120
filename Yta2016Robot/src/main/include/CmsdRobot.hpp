@@ -257,6 +257,7 @@ private:
     // Driver buttons
     static const int        DRIVE_INPUT_REVERSE_AXIS            = 2;    // Left trigger
     static const int        DRIVE_INPUT_FORWARD_AXIS            = 3;    // Right trigger
+    static const int        BALL_INTAKE_AXIS                    = 5;    // Right y-axis
     static const int        BALL_SHOOT_BUTTON                   = 2;    // B button
     static const int        TOGGLE_DRIVE_SWAP_BUTTON            = 8;    // Start
     static const int        CAMERA_UP_BUTTON                    = 9;    // Left stick click
@@ -329,7 +330,7 @@ private:
     static constexpr double CAMERA_RUN_INTERVAL_S               = 1.0;
     static constexpr double SOLENOID_RETRACT_TIME               = 1.0;
     static constexpr double CLIMB_SOLENOID_DELAY_TIME           = 0.5;
-    static constexpr double BALL_LIFT_MAX_OUTPUT                = 0.55;//0.70;
+    static constexpr double BALL_LIFT_MAX_OUTPUT                = 0.50;//0.70;
     
 };  // End class
 

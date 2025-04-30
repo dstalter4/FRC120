@@ -355,6 +355,68 @@ void CmsdRobot::BallIntakeSequence()
     }
 
     return;
+
+    // This logic will enable raising/lowering the intake and limit the
+    // max time the motor can run for to try and lower the mechanical
+    // forces on the hard stops.  There's lots of issues since the robot
+    // is missing one of the motors and some of the mods since 2016 put
+    // a lot of stress on the chain and bearings.
+
+    static bool bLifting = false;
+    static bool bLowering = false;
+    static Timer * pBallLiftTimer = new Timer();
+    static Timer * pBallLowerTimer = new Timer();
+
+    // Normalize the input since joystick axis is -1.0 for up input
+    double ballLiftAxisInput = -1.0 * m_pDriveJoystick->GetRawAxis(BALL_INTAKE_AXIS);
+    if (ballLiftAxisInput > 0.10)
+    {
+        if (!bLifting)
+        {
+            // Move up
+            m_pBallLiftMotor->Set(BALL_LIFT_MAX_OUTPUT);
+            pBallLiftTimer->Reset();
+            pBallLiftTimer->Start();
+            bLifting = true;
+        }
+        else
+        {
+            // Only allow motion for a small time
+            if (pBallLiftTimer->Get() > 1.25_s)
+            {
+                m_pBallLiftMotor->Set(OFF);
+                pBallLiftTimer->Stop();
+            }
+        }
+    }
+    else if (ballLiftAxisInput < -0.10)
+    {
+        if (!bLowering)
+        {
+            // Move down
+            m_pBallLiftMotor->Set(-BALL_LIFT_MAX_OUTPUT / 0.8);
+            pBallLowerTimer->Reset();
+            pBallLowerTimer->Start();
+            bLowering = true;
+        }
+        else
+        {
+            // Only allow motion for a small time
+            if (pBallLowerTimer->Get() > 0.25_s)
+            {
+                m_pBallLiftMotor->Set(OFF);
+                pBallLowerTimer->Stop();
+            }
+        }
+    }
+    else
+    {
+        m_pBallLiftMotor->Set(OFF);
+        bLifting = false;
+        bLowering = false;
+    }
+
+    return;
     
     // Now check the ball lift mechanism
     bool bLowerLimitSwitchState = m_pLiftLowerLimitSwitch->Get();
