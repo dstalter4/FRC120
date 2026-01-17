@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a Neo swerve module on a swerve drive robot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -14,6 +14,7 @@
 // C INCLUDES
 #include "frc/Timer.h"                              // for timers
 #include "frc/smartdashboard/SmartDashboard.h"      // for interacting with the smart dashboard
+#include "rev/ClosedLoopTypes.h"                    // for FeedbackSensor
 #include "rev/config/SparkMaxConfig.h"              // for creating and applying SparkMax configs
 #include "units/length.h"                           // for units::meters
 
@@ -67,7 +68,7 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo) :
     driveConfig.SetIdleMode(SparkMaxConfig::IdleMode::kBrake);
     driveConfig.encoder.PositionConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::SELECTED_SWERVE_MODULE_CONFIG.DRIVE_GEAR_RATIO);
     driveConfig.encoder.VelocityConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::SELECTED_SWERVE_MODULE_CONFIG.DRIVE_GEAR_RATIO / 60.0);
-    driveConfig.closedLoop.SetFeedbackSensor(ClosedLoopConfig::FeedbackSensor::kPrimaryEncoder);
+    driveConfig.closedLoop.SetFeedbackSensor(rev::spark::FeedbackSensor::kPrimaryEncoder);
     driveConfig.closedLoop.Pid(0.02, 0.0, 0.0);
     driveConfig.closedLoop.VelocityFF(0.0);
     driveConfig.VoltageCompensation(12.0);
@@ -88,7 +89,7 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo) :
     angleConfig.Inverted(false);
     angleConfig.SetIdleMode(SparkMaxConfig::IdleMode::kCoast);
     angleConfig.encoder.PositionConversionFactor(360.0 / SwerveConfig::SELECTED_SWERVE_MODULE_CONFIG.ANGLE_GEAR_RATIO);
-    angleConfig.closedLoop.SetFeedbackSensor(ClosedLoopConfig::FeedbackSensor::kPrimaryEncoder);
+    angleConfig.closedLoop.SetFeedbackSensor(rev::spark::FeedbackSensor::kPrimaryEncoder);
     angleConfig.closedLoop.Pid(0.028, 0.0, 0.0015);
     angleConfig.closedLoop.VelocityFF(0.000);
     angleConfig.VoltageCompensation(12.0);
