@@ -8,7 +8,7 @@
 /// control routines as well as all necessary support for interacting with all
 /// motors, sensors and input/outputs on the robot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -39,12 +39,15 @@ YtaRobot::YtaRobot() :
     m_AutoSwerveDirections              (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
-    m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, "canivore-120")),
+    m_RioCanBus                         ("rio"),
+    m_CanivoreBus                       ("canivore-120"),
+    m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, m_CanivoreBus)),
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
     m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
-    m_pCandle                           (new CANdle(CANDLE_CAN_ID, "canivore-120")),
-    m_RainbowAnimation                  ({1, 0.5, 308}),
+    m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
+    m_LedStripSolidColor                {0, NUMBER_OF_LEDS - 1},
+    m_RainbowAnimation                  (0, (NUMBER_OF_LEDS - 1)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pMatchModeTimer                   (new Timer()),
@@ -80,9 +83,9 @@ YtaRobot::YtaRobot() :
     ConfigureMotorControllers();
 
     CANdleConfiguration candleConfig;
-    candleConfig.stripType = LEDStripType::RGB;
-    m_pCandle->ConfigAllSettings(candleConfig);
-    m_pCandle->Animate(m_RainbowAnimation);
+    candleConfig.LED.StripType = StripTypeValue::RGBW;
+    m_pCandle->GetConfigurator().Apply(candleConfig);
+    m_pCandle->SetControl(m_RainbowAnimation);
 
     // Spawn the vision thread
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
@@ -329,9 +332,6 @@ void YtaRobot::InitialStateSetup()
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
 
-    // Disable the rainbow animation
-    m_pCandle->ClearAnimation(0);
-
     // Set the LEDs to the alliance color
     SetLedsToAllianceColor();
 
@@ -485,7 +485,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
             // Start the timer, clear the LEDs
             pDriftTimer->Start();
             lastTimeStamp = pDriftTimer->Get();
-            m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_OFF));
         }
         // Not drifting, previously were
         else
@@ -502,7 +502,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
     // B: {132, 132, 255}
     // Y: {255, 240, 0}
     // P: {240, 73, 241}
-    const LedColors MARIO_KART_LED_COLORS[NUM_DRIFT_STATES] =
+    const RGBWColor MARIO_KART_LED_COLORS[NUM_DRIFT_STATES] =
     {
         {   0,   0,   0,   0},
         { 132, 132, 255,   0},
@@ -522,11 +522,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
                 // Transition to blue (total time 0.5 seconds)
                 if ((currentTimeStamp - lastTimeStamp) > 0.5_s)
                 {
-                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Red,
-                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Green,
-                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_Blue,
-                                       MARIO_KART_LED_COLORS[DRIFT_BLUE].m_White,
-                                       0, NUMBER_OF_LEDS);
+                    m_pCandle->SetControl(m_LedStripSolidColor.WithColor(MARIO_KART_LED_COLORS[DRIFT_BLUE]));
                     driftState = DRIFT_BLUE;
                     lastTimeStamp = currentTimeStamp;
                 }
@@ -537,11 +533,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
                 // Transition to yellow (total time 1.5 seconds)
                 if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
                 {
-                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Red,
-                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Green,
-                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_Blue,
-                                       MARIO_KART_LED_COLORS[DRIFT_YELLOW].m_White,
-                                       0, NUMBER_OF_LEDS);
+                    m_pCandle->SetControl(m_LedStripSolidColor.WithColor(MARIO_KART_LED_COLORS[DRIFT_YELLOW]));
                     driftState = DRIFT_YELLOW;
                     lastTimeStamp = currentTimeStamp;
                 }
@@ -552,11 +544,7 @@ void YtaRobot::MarioKartLights(double translation, double strafe, double rotate)
                 // Transition to purple (total time 2.5 seconds)
                 if ((currentTimeStamp - lastTimeStamp) > 1.0_s)
                 {
-                    m_pCandle->SetLEDs(MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Red,
-                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Green,
-                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_Blue,
-                                       MARIO_KART_LED_COLORS[DRIFT_PURPLE].m_White,
-                                       0, NUMBER_OF_LEDS);
+                    m_pCandle->SetControl(m_LedStripSolidColor.WithColor(MARIO_KART_LED_COLORS[DRIFT_PURPLE]));
                     driftState = DRIFT_PURPLE;
                     lastTimeStamp = currentTimeStamp;
                 }
@@ -729,7 +717,7 @@ void YtaRobot::BlinkMorseCodePattern()
         }
 
         // Start with the LEDs off
-        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_OFF));
 
         // Start the timer
         pMorseTimer->Reset();
@@ -814,16 +802,18 @@ void YtaRobot::BlinkMorseCodePattern()
     {
         if (m_AllianceColor.value() == DriverStation::Alliance::kRed)
         {
-            m_pCandle->SetLEDs(255, 0, 0, 0, 0, NUMBER_OF_LEDS);
+            constexpr const RGBWColor RGBW_RED{255, 0, 0, 0};
+            m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_RED));
         }
         else
         {
-            m_pCandle->SetLEDs(0, 0, 255, 0, 0, NUMBER_OF_LEDS);
+            constexpr const RGBWColor RGBW_BLUE{0, 0, 255, 0};
+            m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_BLUE));
         }
     }
     else
     {
-        m_pCandle->SetLEDs(0, 0, 0, 0, 0, NUMBER_OF_LEDS);
+        m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_OFF));
     }
 }
 
@@ -1502,7 +1492,7 @@ void YtaRobot::DisabledInit()
     RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Turn the rainbow animation back on    
-    m_pCandle->Animate(m_RainbowAnimation);
+    m_pCandle->SetControl(m_RainbowAnimation);
 }
 
 
