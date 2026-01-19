@@ -70,9 +70,9 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo, CAN
     driveConfig.encoder.VelocityConversionFactor(SwerveConfig::WHEEL_CIRCUMFERENCE / SwerveConfig::SELECTED_SWERVE_MODULE_CONFIG.DRIVE_GEAR_RATIO / 60.0);
     driveConfig.closedLoop.SetFeedbackSensor(rev::spark::FeedbackSensor::kPrimaryEncoder);
     driveConfig.closedLoop.Pid(0.02, 0.0, 0.0);
-    driveConfig.closedLoop.VelocityFF(0.0);
+    driveConfig.closedLoop.feedForward.kV(0.0);
     driveConfig.VoltageCompensation(12.0);
-    m_pDriveSpark->Configure(driveConfig, SparkMax::ResetMode::kResetSafeParameters, SparkMax::PersistMode::kPersistParameters);
+    m_pDriveSpark->Configure(driveConfig, rev::ResetMode::kResetSafeParameters, rev::PersistMode::kPersistParameters);
 
     m_DriveSparkEncoder.SetPosition(0.0);     // countsPerRev = 42
 
@@ -91,10 +91,10 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo, CAN
     angleConfig.encoder.PositionConversionFactor(360.0 / SwerveConfig::SELECTED_SWERVE_MODULE_CONFIG.ANGLE_GEAR_RATIO);
     angleConfig.closedLoop.SetFeedbackSensor(rev::spark::FeedbackSensor::kPrimaryEncoder);
     angleConfig.closedLoop.Pid(0.028, 0.0, 0.0015);
-    angleConfig.closedLoop.VelocityFF(0.000);
+    angleConfig.closedLoop.feedForward.kV(0.000);
     angleConfig.VoltageCompensation(12.0);
 
-    m_pAngleSpark->Configure(angleConfig, SparkMax::ResetMode::kResetSafeParameters, SparkMax::PersistMode::kPersistParameters);
+    m_pAngleSpark->Configure(angleConfig, rev::ResetMode::kResetSafeParameters, rev::PersistMode::kPersistParameters);
 
     // The signals retrieved by each kStatusX periodic frame are listed in SparkLowLevel.h.
     // Set a specific signal frequency using configVariable.signals.Function(value).  The
@@ -141,7 +141,7 @@ void NeoSwerveModule::HomeModule()
     // @todo: This actually combines recalibrate and home functionality.
     double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition().GetValueAsDouble() - CANCODER_REFERENCE_ABSOLUTE_OFFSET.Degrees().value();
     m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
-    m_AnglePidController.SetReference(0.0, SparkMax::ControlType::kPosition);
+    m_AnglePidController.SetSetpoint(0.0, SparkMax::ControlType::kPosition);
     m_LastAngle = 0.0_deg;
 }
 
@@ -200,7 +200,7 @@ void NeoSwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOp
     }
     else
     {
-        m_DrivePidController.SetReference(desiredState.speed.value(), SparkMax::ControlType::kVelocity, ClosedLoopSlot::kSlot0, m_pFeedForward->Calculate(desiredState.speed).value());
+        m_DrivePidController.SetSetpoint(desiredState.speed.value(), SparkMax::ControlType::kVelocity, ClosedLoopSlot::kSlot0, m_pFeedForward->Calculate(desiredState.speed).value());
     }
 
     // Update the angle motor controller
@@ -215,7 +215,7 @@ void NeoSwerveModule::SetDesiredState(SwerveModuleState desiredState, bool bIsOp
     {
         angle = desiredState.angle;
     }
-    m_AnglePidController.SetReference(angle.Degrees().value(), SparkMax::ControlType::kPosition);
+    m_AnglePidController.SetSetpoint(angle.Degrees().value(), SparkMax::ControlType::kPosition);
 
     // Save off the updated last angle
     m_LastAngle = angle;
