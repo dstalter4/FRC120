@@ -112,6 +112,8 @@ private:
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
 
+    // Note: If using the RobotTestCode routines (for Neo swerve), these objects have to be disabled (or use different CAN IDs).
+
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
     static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 0.0_deg};

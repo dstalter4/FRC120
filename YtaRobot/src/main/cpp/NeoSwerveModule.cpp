@@ -120,7 +120,7 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo, CAN
     // to have an effect.  The robot startup has to call HomeModules() to
     // get a result.  The suspicion is that the SparkMax won't respond to
     // commands while the robot is not in an enabled, which is the case
-    // when constructors run.  Calling SetReference() here won't do anything.
+    // when constructors run.  Calling SetSetpoint() here won't do anything.
 
     double absolutePositionDelta = m_pAngleCanCoder->GetAbsolutePosition().GetValueAsDouble() - CANCODER_REFERENCE_ABSOLUTE_OFFSET.Degrees().value();
     m_AngleSparkEncoder.SetPosition(absolutePositionDelta);
