@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -35,9 +35,9 @@ using namespace frc;
 /// members.  Note that the IMU is on the canivore bus.
 ///
 ////////////////////////////////////////////////////////////////
-SwerveDrive::SwerveDrive(Pigeon2 * pPigeon) :
+SwerveDrive::SwerveDrive(Pigeon2 * pPigeon, CANBus & rEncoderCanBus) :
     m_pPigeon(pPigeon),
-    m_SwerveModules{FRONT_LEFT_MODULE_INFO, FRONT_RIGHT_MODULE_INFO, BACK_LEFT_MODULE_INFO, BACK_RIGHT_MODULE_INFO},
+    m_SwerveModules{{FRONT_LEFT_MODULE_INFO, rEncoderCanBus}, {FRONT_RIGHT_MODULE_INFO, rEncoderCanBus}, {BACK_LEFT_MODULE_INFO, rEncoderCanBus}, {BACK_RIGHT_MODULE_INFO, rEncoderCanBus}},
     m_Odometry(SwerveConfig::Kinematics, Rotation2d(units::degree_t(0)), GetModulePositions())
 {
     m_pPigeon->SetYaw(0.0_deg);

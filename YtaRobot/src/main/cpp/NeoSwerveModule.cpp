@@ -42,7 +42,7 @@ uint32_t NeoSwerveModule::m_DetailedModuleDisplayIndex = 0U;
 /// 2024: Bevels facing right is 1.0 forward on the Neos.
 ///
 ////////////////////////////////////////////////////////////////
-NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo) :
+NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo, CANBus & rEncoderCanBus) :
     m_MotorGroupPosition(moduleInfo.m_Position),
     m_pDriveSpark(new SparkMax(moduleInfo.m_DriveMotorCanId, SparkMax::MotorType::kBrushless)),
     m_pAngleSpark(new SparkMax(moduleInfo.m_AngleMotorCanId, SparkMax::MotorType::kBrushless)),
@@ -50,7 +50,7 @@ NeoSwerveModule::NeoSwerveModule(SwerveConfig::ModuleInformation moduleInfo) :
     m_AngleSparkEncoder(m_pAngleSpark->GetEncoder()),
     m_DrivePidController(m_pDriveSpark->GetClosedLoopController()),
     m_AnglePidController(m_pAngleSpark->GetClosedLoopController()),
-    m_pAngleCanCoder(new CANcoder(moduleInfo.m_CanCoderId, "canivore-120")),
+    m_pAngleCanCoder(new CANcoder(moduleInfo.m_CanCoderId, rEncoderCanBus)),
     m_LastAngle(),
     m_pFeedForward(new SimpleMotorFeedforward<units::meters>(KS, KV, KA)),
     CANCODER_REFERENCE_ABSOLUTE_OFFSET(moduleInfo.m_EncoderReferenceAbsoluteOffset)

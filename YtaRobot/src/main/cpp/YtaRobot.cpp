@@ -42,7 +42,7 @@ YtaRobot::YtaRobot() :
     m_RioCanBus                         ("rio"),
     m_CanivoreBus                       ("canivore-120"),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, m_CanivoreBus)),
-    m_pSwerveDrive                      (new SwerveDrive(m_pPigeon)),
+    m_pSwerveDrive                      (new SwerveDrive(m_pPigeon, m_CanivoreBus)),
     m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
