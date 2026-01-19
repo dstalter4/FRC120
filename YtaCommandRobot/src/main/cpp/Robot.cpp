@@ -5,7 +5,7 @@
 /// @details
 /// Robot class definitions.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // WPILIB INCLUDES
@@ -69,7 +69,7 @@ void Robot::AutonomousInit()
     m_AutonomousCommand = m_RobotContainer.GetAutonomousCommand();
     if (m_AutonomousCommand)
     {
-        m_AutonomousCommand->Schedule();
+        frc2::CommandScheduler::GetInstance().Schedule(m_AutonomousCommand.value());
     }
 }
 
@@ -97,7 +97,7 @@ void Robot::TeleopInit()
     m_TeleopCommand = m_RobotContainer.GetTeleopCommand();
     if (m_TeleopCommand)
     {
-        m_TeleopCommand->Schedule();
+        frc2::CommandScheduler::GetInstance().Schedule(m_TeleopCommand.value());
     }
 }
 
@@ -138,7 +138,7 @@ void Robot::TeleopPeriodic()
             }
             else
             {
-                m_TeleopCommand->Schedule();
+                frc2::CommandScheduler::GetInstance().Schedule(m_TeleopCommand.value());
             }
             bTeleopCommandScheduled = !bTeleopCommandScheduled;
         }
@@ -146,7 +146,7 @@ void Robot::TeleopPeriodic()
         // Every three seconds, schedule the instant command
         if ((iteration % 150) == 0U)
         {
-            instantCommand.Schedule();
+            frc2::CommandScheduler::GetInstance().Schedule(instantCommand);
         }
     }
 
