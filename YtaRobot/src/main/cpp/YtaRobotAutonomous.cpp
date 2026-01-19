@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous routines for YtaRobot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -64,7 +64,7 @@ void YtaRobot::AutonomousInit()
         if (AutonomousCommand.has_value())
         {
             RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
-            AutonomousCommand->Schedule();
+            CommandScheduler::GetInstance().Schedule(AutonomousCommand.value());
         }
         else
         {

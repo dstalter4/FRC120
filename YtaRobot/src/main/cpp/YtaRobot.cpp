@@ -46,7 +46,7 @@ YtaRobot::YtaRobot() :
     m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
-    m_LedStripSolidColor                {0, NUMBER_OF_LEDS - 1},
+    m_LedStripSolidColor                (0, (NUMBER_OF_LEDS - 1)),
     m_RainbowAnimation                  (0, (NUMBER_OF_LEDS - 1)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
