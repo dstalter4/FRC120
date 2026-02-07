@@ -15,5 +15,12 @@
     "**/*~": true
   },
   "C_Cpp.default.configurationProvider": "vscode-wpilib",
-  "wpilib.skipSelectSimulateExtension": true
+"wpilib.skipSelectSimulateExtension": true,
+"files.associations": {
+    "chrono": "cpp",
+    "expected": "cpp",
+    "optional": "cpp",
+    "regex": "cpp",
+    "system_error": "cpp"
+}
 }
