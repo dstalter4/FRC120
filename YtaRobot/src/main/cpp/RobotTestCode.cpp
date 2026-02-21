@@ -6,7 +6,7 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -419,8 +419,7 @@ void YtaRobotTest::SwerveDriveTest()
     // Tests returning modules to absolute reference angles
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(4))
     {
-        // Not available yet
-        //YTA_ROBOT_OBJ()->m_pSwerveDrive->HomeModules();
+        pSwerveDrive->HomeModules();
     }
 
     // Dynamically switch between field relative and robot centric

@@ -116,10 +116,11 @@ private:
 
     // Config information on each swerve module.
     // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
-    static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation FRONT_RIGHT_MODULE_INFO = {"Front right", SwerveConfig::ModulePosition::FRONT_RIGHT, 13, 14, 2, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation BACK_LEFT_MODULE_INFO = {"Back left", SwerveConfig::ModulePosition::BACK_LEFT, 15, 16, 3, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation BACK_RIGHT_MODULE_INFO = {"Back right", SwerveConfig::ModulePosition::BACK_RIGHT, 17, 18, 4, 0.0_deg};
+    // 2026: 0.658691, 0.282471, 0.304443, 0.228027
+    static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 237.12876_deg};
+    static constexpr const SwerveConfig::ModuleInformation FRONT_RIGHT_MODULE_INFO = {"Front right", SwerveConfig::ModulePosition::FRONT_RIGHT, 13, 14, 2, 101.68956_deg};
+    static constexpr const SwerveConfig::ModuleInformation BACK_LEFT_MODULE_INFO = {"Back left", SwerveConfig::ModulePosition::BACK_LEFT, 15, 16, 3, 109.59948_deg};
+    static constexpr const SwerveConfig::ModuleInformation BACK_RIGHT_MODULE_INFO = {"Back right", SwerveConfig::ModulePosition::BACK_RIGHT, 17, 18, 4, 82.08972_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;
