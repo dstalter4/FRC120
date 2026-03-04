@@ -5,7 +5,7 @@
 /// @details
 /// Swerve drive configuration and constants.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVECONFIG_HPP
@@ -54,6 +54,8 @@ namespace SwerveConfig
         int m_AngleMotorCanId;
         int m_CanCoderId;
         const Rotation2d m_EncoderReferenceAbsoluteOffset;
+        std::string_view m_MotorsCanBusName;
+        std::string_view m_CanCoderCanBusName;
     };
 
     // Represents the configurable parameters in a swerve module
@@ -87,6 +89,10 @@ namespace SwerveConfig
     // The swerve module configuration on the robot (change the typedef based on the motors on the module)
     typedef TalonFxSwerveModule SwerveModuleType;
     static constexpr const ModuleConfiguration & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK5N_R3_CONFIG;
+
+    // Names for the CAN buses that swerve can use
+    static constexpr const std::string_view RIO_CAN_BUS_NAME = "rio";
+    static constexpr const std::string_view CANIVORE_CAN_BUS_NAME = "canivore-120";
 
     static constexpr const size_t NUM_SWERVE_DRIVE_MODULES = 4U;
 
