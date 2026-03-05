@@ -15,6 +15,7 @@
 #include <cstdio>                               // for std::snprintf
 
 // C INCLUDES
+#include "ctre/phoenix6/CANBus.hpp"             // for working with CANBus objects
 #include "ctre/phoenix6/TalonFX.hpp"            // for CTRE TalonFX API
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
@@ -22,6 +23,7 @@
 #include "RobotUtils.hpp"                       // for ConvertCelsiusToFahrenheit
 
 using namespace frc;
+using namespace ctre::phoenix6;
 using namespace ctre::phoenix6::configs;
 using namespace ctre::phoenix6::controls;
 using namespace ctre::phoenix6::hardware;
@@ -64,8 +66,8 @@ namespace Talon
         TalonFXConfiguration m_MotorConfiguration;
 
         // Constructor
-        TalonFxMotorController(int canId) :
-            m_pTalonFx(new TalonFX(canId)),
+        TalonFxMotorController(int canId, CANBus & rCanBus) :
+            m_pTalonFx(new TalonFX(canId, rCanBus)),
             m_DutyCycleOut(0.0),
             m_PositionVoltage(0.0_tr),
             m_MotorConfiguration()

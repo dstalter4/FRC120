@@ -40,7 +40,7 @@
 #include "SwerveDrive.hpp"                                  // for using swerve drive
 #include "YtaController.hpp"                                // for controller interaction
 #include "YtaTalon.hpp"                                     // for custom Talon control
-#include "ctre/phoenix6/CANBus.hpp"                         // for creating CANBus bojects
+#include "ctre/phoenix6/CANBus.hpp"                         // for creating CANBus objects
 #include "ctre/phoenix6/CANdle.hpp"                         // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"                        // for PigeonIMU
 #include "ctre/phoenix6/controls/RainbowAnimation.hpp"      // for creating animations on the CANdle
