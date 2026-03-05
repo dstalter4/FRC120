@@ -112,16 +112,6 @@ private:
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
 
-    // Note: If using the RobotTestCode routines (for Neo swerve), these objects have to be disabled (or use different CAN IDs).
-
-    // Config information on each swerve module.
-    // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset, Motor CAN Bus Name, Encoder CAN Bus Name
-    // 2026: Angles measured with bevels facing right.  0.658691, 0.282471, 0.304443, 0.228027
-    static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 237.12876_deg, SwerveConfig::CANIVORE_CAN_BUS_NAME, SwerveConfig::CANIVORE_CAN_BUS_NAME};
-    static constexpr const SwerveConfig::ModuleInformation FRONT_RIGHT_MODULE_INFO = {"Front right", SwerveConfig::ModulePosition::FRONT_RIGHT, 13, 14, 2, 101.68956_deg, SwerveConfig::CANIVORE_CAN_BUS_NAME, SwerveConfig::CANIVORE_CAN_BUS_NAME};
-    static constexpr const SwerveConfig::ModuleInformation BACK_LEFT_MODULE_INFO = {"Back left", SwerveConfig::ModulePosition::BACK_LEFT, 15, 16, 3, 109.59948_deg, SwerveConfig::CANIVORE_CAN_BUS_NAME, SwerveConfig::CANIVORE_CAN_BUS_NAME};
-    static constexpr const SwerveConfig::ModuleInformation BACK_RIGHT_MODULE_INFO = {"Back right", SwerveConfig::ModulePosition::BACK_RIGHT, 17, 18, 4, 82.08972_deg, SwerveConfig::CANIVORE_CAN_BUS_NAME, SwerveConfig::CANIVORE_CAN_BUS_NAME};
-
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;
 };
