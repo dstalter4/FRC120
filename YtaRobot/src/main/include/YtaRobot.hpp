@@ -408,10 +408,10 @@ private:
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 
     // CANivore Signals
-    // Note: IDs 1-4 are used by the CANcoders (see the
-    //       SwerveModuleConfigs in SwerveDrive.hpp).
-    static const int                PIGEON_CAN_ID                           = 5;
-    static const int                CANDLE_CAN_ID                           = 6;
+    // Note: IDs 21-24 are used by the CANcoders (see the
+    //       SwerveModuleConfigs in SwerveConfig.hpp).
+    static const int                PIGEON_CAN_ID                           = 25;
+    static const int                CANDLE_CAN_ID                           = 26;
 
     // PWM Signals
     // (none)
