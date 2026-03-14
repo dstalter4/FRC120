@@ -5,7 +5,7 @@
 /// @details
 /// Custom functionality for easier robot programming of CTRE Talon controllers.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTATALON_HPP
@@ -169,6 +169,7 @@ public:
                      unsigned leaderCanId,
                      MotorGroupControlMode nonLeaderControlMode,
                      NeutralModeValue neutralMode,
+                     CANBus & rCanBus,
                      bool bIsDriveMotor = false
                    );
 
@@ -189,7 +190,7 @@ public:
     void ApplyConfiguration(ConfigType config, unsigned canId = APPLY_TO_ALL_PSEUDO_CAN_ID);
 
     // Adds a new motor to a group
-    bool AddMotorToGroup(MotorGroupControlMode controlMode, bool bIsDriveMotor = false);
+    bool AddMotorToGroup(MotorGroupControlMode controlMode, CANBus & rCanBus, bool bIsDriveMotor = false);
     
     // Function to set the speed of each motor in the group
     void Set(double value, double offset = 0.0);
@@ -239,8 +240,8 @@ private:
         bool m_bIsDriveMotor;
         DisplayStrings m_DisplayStrings;
         
-        MotorInfo(const char * pName, MotorGroupControlMode controlMode, NeutralModeValue neutralMode, unsigned canId, unsigned groupNumber, bool bIsDriveMotor = false) :
-            m_pTalon(new TalonType(static_cast<int>(canId))),
+        MotorInfo(const char * pName, MotorGroupControlMode controlMode, NeutralModeValue neutralMode, CANBus & rCanBus, unsigned canId, unsigned groupNumber, bool bIsDriveMotor = false) :
+            m_pTalon(new TalonType(static_cast<int>(canId), rCanBus)),
             m_DutyCycleOut(0.0),
             m_PositionVoltage(0.0_tr),
             m_MotorConfiguration(),
@@ -462,7 +463,7 @@ void TalonMotorGroup<TalonType>::ApplyConfiguration(ConfigType config, unsigned 
 ////////////////////////////////////////////////////////////////
 template <class TalonType>
 TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMotors, unsigned leaderCanId,
-                                            MotorGroupControlMode nonLeaderControlMode, NeutralModeValue neutralMode, bool bIsDriveMotor) :
+                                            MotorGroupControlMode nonLeaderControlMode, NeutralModeValue neutralMode, CANBus & rCanBus, bool bIsDriveMotor) :
     m_NumMotors(numMotors),
     m_LeaderCanId(leaderCanId)
 {
@@ -476,13 +477,13 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
         if (i == 0U)
         {
             // Create it
-            m_pMotorsInfo[i] = new MotorInfo(pName, Yta::Talon::LEADER, neutralMode, leaderCanId, groupId, bIsDriveMotor);
+            m_pMotorsInfo[i] = new MotorInfo(pName, Yta::Talon::LEADER, neutralMode, rCanBus, leaderCanId, groupId, bIsDriveMotor);
         }
         // Non-leader Talons
         else
         {
             // Create it
-            m_pMotorsInfo[i] = new MotorInfo(pName, nonLeaderControlMode, neutralMode, (leaderCanId + i), groupId, bIsDriveMotor);
+            m_pMotorsInfo[i] = new MotorInfo(pName, nonLeaderControlMode, neutralMode, rCanBus, (leaderCanId + i), groupId, bIsDriveMotor);
 
             // Only set follow for Talon groups that will be configured as
             // such.  The CTRE Phoenix library now passes the control mode in
@@ -505,7 +506,7 @@ TalonMotorGroup<TalonType>::TalonMotorGroup(const char * pName, unsigned numMoto
 ///
 ////////////////////////////////////////////////////////////////
 template <class TalonType>
-bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMode, bool bIsDriveMotor)
+bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMode, CANBus & rCanBus, bool bIsDriveMotor)
 {
     bool bResult = false;
 
@@ -517,7 +518,7 @@ bool TalonMotorGroup<TalonType>::AddMotorToGroup(MotorGroupControlMode controlMo
 
         // m_NumMotors can be leveraged as the index, as it represents the next unused array element
         // All motors in a group have the same name, so we use the existing one.  Group ID is computed from m_NumMotors.
-        m_pMotorsInfo[m_NumMotors] = new MotorInfo(m_pMotorsInfo[0]->m_pName, controlMode, newMotorCanId, (m_NumMotors + 1), bIsDriveMotor);
+        m_pMotorsInfo[m_NumMotors] = new MotorInfo(m_pMotorsInfo[0]->m_pName, controlMode, rCanBus, newMotorCanId, (m_NumMotors + 1), bIsDriveMotor);
         
         // If this Talon will be a follower, be sure to call Set() to enable it
         if ((controlMode == Yta::Talon::FOLLOW) || (controlMode == Yta::Talon::FOLLOW_INVERSE))
