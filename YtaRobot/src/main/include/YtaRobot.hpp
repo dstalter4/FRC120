@@ -26,6 +26,7 @@
 #include "frc/DoubleSolenoid.h"                             // for DoubleSolenoid type
 #include "frc/DriverStation.h"                              // for interacting with the driver station
 #include "frc/DutyCycleEncoder.h"                           // for interacting with PWM based encoders
+#include "frc/PWM.h"                                        // for interacting with PWM based sensors (e.g. actuators)
 #include "frc/Relay.h"                                      // for Relay type
 #include "frc/Solenoid.h"                                   // for Solenoid type
 #include "frc/TimedRobot.h"                                 // for base class decalartion
@@ -43,6 +44,7 @@
 #include "ctre/phoenix6/CANBus.hpp"                         // for creating CANBus objects
 #include "ctre/phoenix6/CANdle.hpp"                         // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"                        // for PigeonIMU
+#include "ctre/phoenix6/SignalLogger.hpp"                   // for disabling automatic signal logging
 #include "ctre/phoenix6/controls/RainbowAnimation.hpp"      // for creating animations on the CANdle
 
 
@@ -263,7 +265,12 @@ private:
     void CameraSequence();
 
     // Superstructure sequences
-    // (none)
+    void IntakeSequence();
+    void ShootSequence();
+    void ShootSequenceNoRamp();
+    void TurretSequence();
+    void HangSequence();
+    void CheckForManualAdjust();
 
     // MEMBER VARIABLES
     
@@ -304,6 +311,13 @@ private:
     typedef Yta::Talon::EmptyTalonFx ArcadeDriveTalonFxType;                // Switch to TalonMotorGroup<TalonFX> for real implementation
     ArcadeDriveTalonFxType *        m_pLeftDriveMotors;                     // Left drive motor control
     ArcadeDriveTalonFxType *        m_pRightDriveMotors;                    // Right drive motor control
+    TalonFxMotorController *        m_pIntakeRollersMotor;                  // Intake rollers motor control
+    TalonFxMotorController *        m_pIntakeAngleMotor;                    // Intake angle motor control
+    TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
+    TalonFxMotorController *        m_pInjectorMotor;                       // Injector motor control
+    TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
+    TalonFxMotorController *        m_pTurretMotor;                         // Turret motor control
+    TalonFxMotorController *        m_pHangMotor;                           // Hang motor control
     
     // LEDs
     CANdle *                        m_pCandle;                              // Controls an RGB LED strip
@@ -319,6 +333,10 @@ private:
     
     // Analog I/O
     // (none)
+
+    // PWM
+    PWM *                           m_pHoodLeftServoActuator;              // Object for controlling the hood servo actuator on the left
+    PWM *                           m_pHoodRightServoActuator;             // Object for controlling the hood servo actuator on the right
     
     // Pneumatics
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
@@ -327,7 +345,8 @@ private:
     // (none)
     
     // Encoders
-    // (none)
+    CANcoder *                      m_pIntakeCanCoder;                      // Absolute encoder to monitor intake position
+    CANcoder *                      m_pTurretCanCoder;                      // Absolute encoder to monitor turret position
     
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
@@ -346,10 +365,16 @@ private:
     std::thread                     m_CameraThread;
     
     // Misc
+    units::angle::degree_t          m_IntakeAngleDegrees;                   // Keep track of the intake angle
+    units::angle::degree_t          m_IntakeAngleOffsetDegrees;             // Keep track of the intake angle offset from manual adjustment
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
     RobotDriveState                 m_RobotDriveState;                      // Keep track of how the drive sequence flows
     std::optional
     <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
+    bool                            m_bIntakeLowered;                       // Keep track if the intake is lowered or raised
+    bool                            m_bIntakeSequenceActive;                // Keep track if the robot is actively intaking/ejecting
+    bool                            m_bShootSequenceActive;                 // Keep track if the robot is actively shooting/unclogging
+    bool                            m_bShotInProgress;                      // Keep track if the robot is shooting balls
     bool                            m_bRioPinsStable;                       // Indicates whether the RIO pin measurements (e.g. PWM) are stable
     bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progres
@@ -394,7 +419,20 @@ private:
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV = Yta::Controller::PovDirections::POV_RIGHT;
 
     // Aux inputs
+    static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
+    static const int                AUX_UNCLOG_AXIS                         = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
+    static const int                AUX_ROTATE_TURRET_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS;
+    static const int                AUX_INTAKE_UP_DOWN_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
+    static const int                AUX_HOOD_UP_BUTTON                      = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
+    static const int                AUX_HOOD_DOWN_BUTTON                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
+    static const int                AUX_INTAKE_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
+    static const int                AUX_EJECT_BUTTON                        = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
+    static const int                AUX_MANUAL_ADJUST_BUTTON                = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.START;
+    static const int                AUX_MANUAL_ADJUST_TOGGLE_BUTTON         = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.SELECT;
     static const int                ESTOP_BUTTON                            = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+
+    static const Yta::Controller::PovDirections  AUX_MANUAL_ADJUST_UP_POV_DIRECTION         = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  AUX_MANUAL_ADJUST_DOWN_POV_DIRECTION       = Yta::Controller::PovDirections::POV_DOWN;
 
     // CAN Signals
     // Note: The use of high CAN values if swerve drive is in use is
@@ -402,8 +440,17 @@ private:
     //       the same IDs, but still allow code for both drive base
     //       types to be present.  When using swerve drive, IDs 11-18
     //       are used by the swerve modules (see the SwerveModuleConfigs
-    //       in SwerveDrive.hpp).
-    // Superstructure uses IDs starting at 21
+    //       in SwerveConfig.hpp).
+    // Superstructure uses IDs starting at 31
+    static const unsigned           INTAKE_ROLLERS_MOTOR_CAN_ID             = 31;   // PDH 6
+    static const unsigned           INTAKE_ANGLE_MOTOR_CAN_ID               = 32;   // PDH 4
+    static const unsigned           FEEDER_MOTOR_CAN_ID                     = 33;   // PDH 16
+    static const unsigned           INJECTOR_MOTOR_CAN_ID                   = 34;   // PDH 5
+    static const unsigned           SHOOTER_MOTORS_CAN_START_ID             = 35;   // PDH 14, PDH 12
+    static const unsigned           TURRET_MOTOR_CAN_ID                     = 37;   // PDH 7
+    static const unsigned           HANG_MOTOR_CAN_ID                       = 38;
+    static const unsigned           INTAKE_CANCODER_CAN_ID                  = 41;
+    static const unsigned           TURRET_CANCODER_CAN_ID                  = 42;
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 
@@ -414,7 +461,8 @@ private:
     static const int                CANDLE_CAN_ID                           = 26;
 
     // PWM Signals
-    // (none)
+    static const int                HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL   = 0;
+    static const int                HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL    = 1;
     
     // Relays
     // (none)
@@ -430,7 +478,17 @@ private:
     // (none)
 
     // Motor speeds and angles
-    // (none)
+    static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.60;
+    static constexpr double         FEEDER_MOTOR_SPEED                      = 0.20;
+    static constexpr double         INJECTOR_MOTOR_SPEED                    = 0.90;
+    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.75;
+    static constexpr double         TURRET_ROTATE_MOTOR_SPEED               = 0.10;
+
+    static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = 0.0_deg;
+    static constexpr const units::angle::degree_t INTAKE_DOWN_ANGLE_DEGREES             = -120.0_deg;
+    static constexpr const units::angle::degree_t INTAKE_MANUAL_ADJUST_STEP_DEGREES     = 10.0_deg;
+
+    static constexpr const units::time::second_t    SHOOTER_RAMP_UP_TIME_S  = 0.25_s;
 
     // Misc
     const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";

@@ -45,18 +45,35 @@ YtaRobot::YtaRobot() :
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon, GetCanBusReferenceLambda)),
     m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
     m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pIntakeRollersMotor               (new TalonFxMotorController(INTAKE_ROLLERS_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pIntakeAngleMotor                 (new TalonFxMotorController(INTAKE_ANGLE_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pInjectorMotor                    (new TalonFxMotorController(INJECTOR_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter motors", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Coast, m_RioCanBus, false)),
+    m_pTurretMotor                      (new TalonFxMotorController(TURRET_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pHangMotor                        (new TalonFxMotorController(HANG_MOTOR_CAN_ID, m_RioCanBus)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
     m_LedStripSolidColor                (0, (NUMBER_OF_LEDS - 1)),
     m_RainbowAnimation                  (0, (NUMBER_OF_LEDS - 1)),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
+    m_pHoodLeftServoActuator            (new PWM(HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL)),
+    m_pHoodRightServoActuator           (new PWM(HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
+    m_pIntakeCanCoder                   (new CANcoder(INTAKE_CANCODER_CAN_ID, m_RioCanBus)),
+    m_pTurretCanCoder                   (new CANcoder(TURRET_CANCODER_CAN_ID, m_RioCanBus)),
     m_pMatchModeTimer                   (new Timer()),
     m_pRobotProgramTimer                (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
+    m_IntakeAngleDegrees                (INTAKE_UP_ANGLE_DEGREES),
+    m_IntakeAngleOffsetDegrees          (0.0_deg),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
+    m_bIntakeLowered                    (false),
+    m_bIntakeSequenceActive             (false),
+    m_bShootSequenceActive              (false),
+    m_bShotInProgress                   (false),
     m_bRioPinsStable                    (false),
     m_bDriveSwap                        (false),
     m_bCameraAlignInProgress            (false),
@@ -66,6 +83,9 @@ YtaRobot::YtaRobot() :
     
     // LiveWindow is not used
     LiveWindow::SetEnabled(false);
+
+    // Signal logger is not used
+    SignalLogger::EnableAutoLogging(false);
     
     // Set the autonomous options
     // @todo: Update these outside the constructor?
@@ -80,7 +100,10 @@ YtaRobot::YtaRobot() :
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive left/right axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_X_AXIS);
 
-    ConfigureMotorControllers();
+    // WCP Parameters for L16-R Actuonix Linear Actuators
+    // max, deadbandMax, center, deadbandMin, min (units are microseconds)
+    m_pHoodLeftServoActuator->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
+    m_pHoodRightServoActuator->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
 
     CANdleConfiguration candleConfig;
     candleConfig.LED.StripType = StripTypeValue::RGBW;
@@ -302,9 +325,57 @@ void YtaRobot::ConfigureMotorControllers()
     // Configure a single motor
     //(void)m_pMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
     //(void)m_pMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(135.0 / 1.0);
-    //(void)m_pMotor->m_MotorConfiguration.Slot0.WithKP(50.0).WithKI(0.0).WithKD(2.0);
+    //(void)m_pMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
     //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
     //m_pMotor->ApplyConfiguration();
+
+    // Configure CANCoder
+    // CANCoder: 0.835449 (300.76164_deg) is full up, 0.0.501221 (180.43956_deg) is full down, currently moving as CW+
+    // Starting position = 0.831299 (299.26764_deg)
+    // 120.32208_deg range of motion, FX is only showing ~110_deg range of motion?
+    constexpr const units::angle::degree_t INTAKE_STARTING_ANGLE_CANCODER_REF = 298.0_deg;
+    CANcoderConfiguration canCoderConfig;
+    canCoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0_tr;
+    //canCoderConfig.MagnetSensor.SensorDirection = InvertedValue::CounterClockwise_Positive;
+    (void)m_pIntakeCanCoder->GetConfigurator().Apply(canCoderConfig);
+    
+    // Configure the intake angle motor
+    // Ratio is 50:1
+    (void)m_pIntakeAngleMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    (void)m_pIntakeAngleMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(50.0 / 1.0);
+    (void)m_pIntakeAngleMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    //(void)m_pIntakeAngleMotor->m_MotorConfiguration.SoftwareLimitSwitch.WithForwardSoftLimitThreshold(10.0_deg).WithReverseSoftLimitThreshold(-120.0_deg);
+    //(void)m_pIntakeAngleMotor->m_MotorConfiguration.SoftwareLimitSwitch.WithForwardSoftLimitEnable(true).WithReverseSoftLimitEnable(true);
+    m_pIntakeAngleMotor->ApplyConfiguration();
+
+    units::angle::degree_t intakeCanCoderDegrees = m_pIntakeCanCoder->GetAbsolutePosition().GetValue();
+    units::angle::degree_t intakeAngleDelta = intakeCanCoderDegrees - INTAKE_STARTING_ANGLE_CANCODER_REF;
+    SmartDashboard::PutNumber("Intake delta", intakeAngleDelta.value());
+
+    // If the delta is negative, the intake is below where we want it (down further).
+    //    Down further means a negative angle position for the FX.
+    // If the delta is positive, the intake is above where we want it (up higher).
+    //    Up higher means a positive angle position for the FX.
+    units::angle::turn_t intakeSetPositionTurns = intakeAngleDelta;
+    (void)m_pIntakeAngleMotor->m_pTalonFx->GetConfigurator().SetPosition(intakeSetPositionTurns);
+    // Expected starting position is up, but in local testing, may sometimes be down
+    if (intakeAngleDelta < -50.0_deg)
+    {
+        m_bIntakeLowered = true;
+        m_IntakeAngleDegrees = intakeSetPositionTurns;
+    }
+
+
+
+
+
+    // Turret CANcoder: 0.937256 is facing forward, 90R is 0.191650, 90L is 0.693359
+    canCoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0_tr;
+    //canCoderConfig.MagnetSensor.SensorDirection = InvertedValue::CounterClockwise_Positive;
+    (void)m_pTurretCanCoder->GetConfigurator().Apply(canCoderConfig);
+
+    (void)m_pTurretMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    m_pTurretMotor->ApplyConfiguration();
 }
 
 
@@ -321,6 +392,9 @@ void YtaRobot::InitialStateSetup()
 {
     // First reset any member data
     ResetMemberData();
+
+    // Configure the motor controllers
+    ConfigureMotorControllers();
 
     // Stop/clear any timers, just in case
     // @todo: Make this a dedicated function.
@@ -402,6 +476,11 @@ void YtaRobot::TeleopPeriodic()
         DriveControlSequence();
     }
 
+    IntakeSequence();
+    ShootSequence();
+    TurretSequence();
+    //HangSequence();
+
     //PneumaticSequence();
     
     //CameraSequence();
@@ -410,6 +489,7 @@ void YtaRobot::TeleopPeriodic()
     //BlinkMorseCodePattern();
     //MusicSequence();
 
+    CheckForManualAdjust();
     UpdateSmartDashboard();
 }
 
@@ -426,6 +506,266 @@ void YtaRobot::UpdateSmartDashboard()
     // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
     // Give the drive team some state information
     SmartDashboard::PutBoolean("RIO pins stable", m_bRioPinsStable);
+    SmartDashboard::PutNumber("Match time", DriverStation::GetMatchTime().value());
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::CheckForManualAdjust
+///
+/// Checks for requests to manually adjust robot control values.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::CheckForManualAdjust()
+{
+    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Intake angle", "Turret angle", "Hood position"};
+    enum ManualAdjustState : uint32_t
+    {
+        INTAKE_ANGLE,
+        TURRET_ANGLE,
+        HOOD_POSITION,
+        INVALID_CHECK
+    };
+    static ManualAdjustState manualCheckState = INTAKE_ANGLE;
+    uint32_t stateAsUint = static_cast<uint32_t>(manualCheckState);
+
+    // Update the manual check state, if needed
+    if (m_pAuxController->DetectButtonChange(AUX_MANUAL_ADJUST_TOGGLE_BUTTON))
+    {
+        stateAsUint++;
+        if (stateAsUint == static_cast<uint32_t>(INVALID_CHECK))
+        {
+            stateAsUint = 0UL;
+        }
+        manualCheckState = static_cast<ManualAdjustState>(stateAsUint);
+    }
+
+    // Check for manual adjustment
+    if (m_pAuxController->GetButtonState(AUX_MANUAL_ADJUST_BUTTON))
+    {
+        switch (manualCheckState)
+        {
+            case INTAKE_ANGLE:
+            {
+                if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_UP_POV_DIRECTION))
+                {
+                    m_IntakeAngleOffsetDegrees += INTAKE_MANUAL_ADJUST_STEP_DEGREES;
+                }
+                else if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_DOWN_POV_DIRECTION))
+                {
+                    m_IntakeAngleOffsetDegrees -= INTAKE_MANUAL_ADJUST_STEP_DEGREES;
+                }
+                else
+                {
+                }
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+
+    // Display what we are manually adjusting
+    SmartDashboard::PutString("Manual adjust state", MANUAL_ADJUST_STATE_STRINGS[stateAsUint]);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::IntakeSequence
+///
+/// Main sequence for ball intake logic.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::IntakeSequence()
+{
+    if (m_pAuxController->DetectButtonChange(AUX_INTAKE_UP_DOWN_BUTTON))
+    {
+        m_bIntakeLowered = !m_bIntakeLowered;
+        if (m_bIntakeLowered)
+        {
+            m_IntakeAngleDegrees = INTAKE_DOWN_ANGLE_DEGREES;
+        }
+        else
+        {
+            m_IntakeAngleDegrees = INTAKE_UP_ANGLE_DEGREES;
+        }
+    }
+
+    // Check for intake in/out control
+    if (m_pAuxController->GetButtonState(AUX_INTAKE_BUTTON))
+    {
+        m_pIntakeRollersMotor->SetDutyCycle(-INTAKE_ROLLERS_MOTOR_SPEED);
+        m_bIntakeSequenceActive = false;
+    }
+    else if (m_pAuxController->GetButtonState(AUX_EJECT_BUTTON))
+    {
+        // Ejecting also moves the feeder and injector
+        m_pIntakeRollersMotor->SetDutyCycle(INTAKE_ROLLERS_MOTOR_SPEED);
+        m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
+        m_pInjectorMotor->SetDutyCycle(INJECTOR_MOTOR_SPEED);
+        m_bIntakeSequenceActive = true;
+    }
+    else
+    {
+        m_pIntakeRollersMotor->SetDutyCycle(0.0);
+        m_bIntakeSequenceActive = false;
+
+        // Only shut off the feeder/injector if not active
+        if (!m_bShootSequenceActive)
+        {
+            m_pFeederMotor->SetDutyCycle(0.0);
+            m_pInjectorMotor->SetDutyCycle(0.0);
+        }
+    }
+
+    m_pIntakeAngleMotor->SetPositionVoltage(m_IntakeAngleDegrees.value() + m_IntakeAngleOffsetDegrees.value());
+
+    // Display some information on the intake position
+    SmartDashboard::PutBoolean("Intake lowered", m_bIntakeLowered);
+    SmartDashboard::PutNumber("Intake angle", m_IntakeAngleDegrees.value());
+    SmartDashboard::PutNumber("Intake angle offset", m_IntakeAngleOffsetDegrees.value());
+    SmartDashboard::PutNumber("Intake FX", units::angle::degree_t(m_pIntakeAngleMotor->m_pTalonFx->GetPosition().GetValue()).value());
+    SmartDashboard::PutNumber("Intake CANcoder", units::angle::degree_t(m_pIntakeCanCoder->GetAbsolutePosition().GetValue()).value());
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::ShootSequence
+///
+/// Main sequence for ball shooting logic.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::ShootSequence()
+{
+    static Timer shootTimer;
+    static units::time::second_t shootTimeStamp = 0.0_s;
+
+    if (m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
+    {
+        if (!m_bShotInProgress)
+        {
+            shootTimer.Reset();
+            shootTimer.Start();
+            m_pShooterMotors->Set(-SHOOTER_MOTOR_SPEED);
+            shootTimeStamp = shootTimer.Get();
+            m_bShootSequenceActive = true;
+            m_bShotInProgress = true;
+        }
+        else if ((shootTimer.Get() - shootTimeStamp) > SHOOTER_RAMP_UP_TIME_S)
+        {
+            m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
+            m_pInjectorMotor->SetDutyCycle(-INJECTOR_MOTOR_SPEED);
+        }
+        else
+        {
+        }
+    }
+    else if (m_pAuxController->GetAxisValue(AUX_UNCLOG_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
+    {
+        // Not shooting, but communicate to the intake logic that the injector is in use.
+        m_bShootSequenceActive = true;
+        m_bShotInProgress = false;
+        m_pShooterMotors->Set(0.0);
+        m_pFeederMotor->SetDutyCycle(0.0);
+        m_pInjectorMotor->SetDutyCycle(INJECTOR_MOTOR_SPEED);
+    }
+    else
+    {
+        m_bShootSequenceActive = false;
+        m_bShotInProgress = false;
+        m_pShooterMotors->Set(0.0);
+
+        // Make sure the intake isn't active before shutting these off
+        if (!m_bIntakeSequenceActive)
+        {
+            m_pFeederMotor->SetDutyCycle(0.0);
+            m_pInjectorMotor->SetDutyCycle(0.0);
+        }
+    }
+
+    SmartDashboard::PutBoolean("Shooting", m_bShotInProgress);
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::TurretSequence
+///
+/// Main sequence for turret control logic.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::TurretSequence()
+{
+    // Turret CANcoder: 0.937256 is facing forward, 90R is 0.191650, 90L is 0.693359
+    units::angle::turn_t turretAngleTurns = m_pTurretCanCoder->GetAbsolutePosition().GetValue();
+
+    // Get a value from ~0.2 -> ~0.45 -> ~-0.3 (L -> C -> R)
+    turretAngleTurns -= 0.5_tr;
+
+    // Adjust to ~0.2 -> ~0.45 -> ~0.7 (L -> C -> R)
+    if (turretAngleTurns < 0.0_tr)
+    {
+        turretAngleTurns += 1.0_tr;
+    }
+
+    constexpr units::angle::turn_t TURRET_RIGHT_TURN_CANCODER_LIMIT_TURNS = 0.60_tr;
+    constexpr units::angle::turn_t TURRET_LEFT_TURN_CANCODER_LIMIT_TURNS = 0.25_tr;
+
+    if ((m_pAuxController->GetAxisValue(AUX_ROTATE_TURRET_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND) && (turretAngleTurns < TURRET_RIGHT_TURN_CANCODER_LIMIT_TURNS))
+    {
+        // This is turning right
+        m_pTurretMotor->SetDutyCycle(TURRET_ROTATE_MOTOR_SPEED);
+    }
+    else if ((m_pAuxController->GetAxisValue(AUX_ROTATE_TURRET_AXIS) < -JOYSTICK_AXIS_INPUT_DEAD_BAND) && (turretAngleTurns > TURRET_LEFT_TURN_CANCODER_LIMIT_TURNS))
+    {
+        // This is turning left
+        m_pTurretMotor->SetDutyCycle(-TURRET_ROTATE_MOTOR_SPEED);
+    }
+    else
+    {
+        m_pTurretMotor->SetDutyCycle(0.0);
+    }
+
+    static double hoodServoValue = 0.0;
+    constexpr const double HOOD_SERVO_STEP_VALUE = 0.1;
+    constexpr const double HOOD_SERVO_UPPER_LIMIT = 1.0;
+    constexpr const double HOOD_SERVO_LOWER_LIMIT = 0.0;
+
+    if (m_pAuxController->DetectButtonChange(AUX_HOOD_UP_BUTTON))
+    {
+        hoodServoValue += HOOD_SERVO_STEP_VALUE;
+    }
+    else if (m_pAuxController->DetectButtonChange(AUX_HOOD_DOWN_BUTTON))
+    {
+        hoodServoValue -= HOOD_SERVO_STEP_VALUE;
+    }
+    else
+    {
+    }
+
+    hoodServoValue = RobotUtils::Limit(hoodServoValue, HOOD_SERVO_UPPER_LIMIT, HOOD_SERVO_LOWER_LIMIT);
+    m_pHoodLeftServoActuator->SetPosition(hoodServoValue);
+    m_pHoodRightServoActuator->SetPosition(hoodServoValue);
+
+    SmartDashboard::PutNumber("Hood servo", hoodServoValue);
+    SmartDashboard::PutNumber("Turret CANcoder", turretAngleTurns.value());
+}
+
+
+
+////////////////////////////////////////////////////////////////
+/// @method YtaRobot::HangSequence
+///
+/// Main sequence for hanging logic.
+///
+////////////////////////////////////////////////////////////////
+void YtaRobot::HangSequence()
+{
 }
 
 
