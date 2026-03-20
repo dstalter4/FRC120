@@ -1440,6 +1440,44 @@ void YtaRobot::SwerveDriveSequence()
         m_pSwerveDrive->LockWheels();
     }
 
+    static Timer swerveJogTimer;
+    static units::time::second_t lastJogTimeStamp = 0.0_s;
+    static bool bJogInit = false;
+    static bool bJogFirstDirection = false;
+
+    if (!bJogInit)
+    {
+        swerveJogTimer.Reset();
+        swerveJogTimer.Start();
+        bJogInit = true;
+    }
+
+    if (m_pDriveController->GetButtonState(JOG_SWERVE_BUTTON))
+    {
+        constexpr const double JOG_SWERVE_ROTATE_SPEED = 0.10;
+        constexpr const units::time::second_t JOG_CHANGE_DIRECTION_TIME_S = 0.25_s;
+
+        units::time::second_t currentTimeStamp = swerveJogTimer.Get();
+        if ((currentTimeStamp - lastJogTimeStamp) > JOG_CHANGE_DIRECTION_TIME_S)
+        {
+            bJogFirstDirection = !bJogFirstDirection;
+            lastJogTimeStamp = currentTimeStamp;
+        }
+
+        if (bJogFirstDirection)
+        {
+            Translation2d translation = {units::meter_t(0.0), units::meter_t(0.0)};
+            m_pSwerveDrive->SetModuleStates(translation, JOG_SWERVE_ROTATE_SPEED, bFieldRelative, true);
+        }
+        else
+        {
+            Translation2d translation = {units::meter_t(0.0), units::meter_t(0.0)};
+            m_pSwerveDrive->SetModuleStates(translation, -JOG_SWERVE_ROTATE_SPEED, bFieldRelative, true);
+        }
+
+        return;
+    }
+
     // The GetDriveX() and GetDriveY() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
     double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
