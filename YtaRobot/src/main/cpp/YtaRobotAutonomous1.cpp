@@ -28,9 +28,30 @@
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine1()
 {
+    /*
+    struct Auto1Controls
+    {
+        RobotTranslation m_Translate1;
+        RobotRotation m_Rotation1;
+    };
+    constexpr const Auto1Controls AUTO1_CONTROLS[] =
+    {
+        {RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotRotation::ROBOT_CLOCKWISE},          // Hub Left
+        {RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotRotation::ROBOT_COUNTER_CLOCKWISE}   // Hub right
+    };
+    */
+
+    bool bIsLeftOfHub = false;
+    std::string selectedAutoPositionString = m_AutonomousPositionChooser.GetSelected();
+    if (selectedAutoPositionString == "Hub left")
+    {
+        bIsLeftOfHub = true;
+    }
+
     // The robot faces the driver station, so it is off by 180 degrees
     m_pPigeon->SetYaw(units::angle::degree_t(ANGLE_180_DEGREES));
-    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_COUNTER_CLOCKWISE);
+    m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE,
+                                                (bIsLeftOfHub) ? RobotRotation::ROBOT_CLOCKWISE : RobotRotation::ROBOT_COUNTER_CLOCKWISE);
     AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.02, 2.0_s, true);
 
     // Ramp up the shooter
@@ -52,11 +73,16 @@ void YtaRobot::AutonomousRoutine1()
         AutonomousDelay(0.35_s);
         m_pFeederMotor->SetDutyCycle(0.0);
         AutonomousDelay(0.15_s);
+        if (i == 2U)
+        {
+            m_pIntakeRollersMotor->SetDutyCycle(-INTAKE_ROLLERS_MOTOR_SPEED);
+        }
     }
 
     m_pShooterMotors->Set(0.0);
     m_pInjectorMotor->SetDutyCycle(0.0);
     m_pFeederMotor->SetDutyCycle(0.0);
+    m_pIntakeRollersMotor->SetDutyCycle(0.0);
 
     // Returning from here will enter the idle state until autonomous is over
     RobotUtils::DisplayMessage("Auto routine 1 done.");

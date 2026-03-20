@@ -276,6 +276,7 @@ private:
     
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
+    SendableChooser<std::string>    m_AutonomousPositionChooser;            // Selects from the dashboard where the robot is located
     RobotSwerveDirections           m_AutoSwerveDirections;                 // Used by autonomous routines to control swerve drive movements
     
     // User Controls
@@ -492,8 +493,8 @@ private:
 
     // Misc
     const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
-    const std::string               AUTO_ROUTINE_1_STRING                   = "Autonomous Routine 1";
-    const std::string               AUTO_ROUTINE_2_STRING                   = "Autonomous Routine 2";
+    const std::string               AUTO_ROUTINE_1_STRING                   = "Bump";
+    const std::string               AUTO_ROUTINE_2_STRING                   = "Center";
     const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
 
