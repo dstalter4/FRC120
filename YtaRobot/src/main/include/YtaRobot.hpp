@@ -366,6 +366,7 @@ private:
     std::thread                     m_CameraThread;
     
     // Misc
+    double                          m_ShooterMotorSpeed;                    // Keep track of the shooter motor speed
     units::angle::degree_t          m_IntakeAngleDegrees;                   // Keep track of the intake angle
     units::angle::degree_t          m_IntakeAngleOffsetDegrees;             // Keep track of the intake angle offset from manual adjustment
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
@@ -422,9 +423,10 @@ private:
 
     // Aux inputs
     static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
-    static const int                AUX_UNCLOG_AXIS                         = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
+    static const int                AUX_RAMP_UP_AXIS                        = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
     static const int                AUX_ROTATE_TURRET_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS;
     static const int                AUX_INTAKE_UP_DOWN_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
+    static const int                AUX_UNCLOG_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
     static const int                AUX_HOOD_UP_BUTTON                      = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
     static const int                AUX_HOOD_DOWN_BUTTON                    = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.DOWN_BUTTON;
     static const int                AUX_INTAKE_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
@@ -483,8 +485,9 @@ private:
     static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.60;
     static constexpr double         FEEDER_MOTOR_SPEED                      = 0.20;
     static constexpr double         INJECTOR_MOTOR_SPEED                    = 0.90;
-    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.75;
-    static constexpr double         TURRET_ROTATE_MOTOR_SPEED               = 0.10;
+    static constexpr double         SHOOTER_MOTOR_SPEED                     = -0.85;
+    static constexpr double         SHOOTER_MOTOR_SPEED_STEP                = -0.05;
+    static constexpr double         TURRET_ROTATE_MOTOR_SPEED               = 0.05;
 
     static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = 0.0_deg;
     static constexpr const units::angle::degree_t INTAKE_DOWN_ANGLE_DEGREES             = -120.0_deg;

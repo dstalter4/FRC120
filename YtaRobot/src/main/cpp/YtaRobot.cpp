@@ -66,6 +66,7 @@ YtaRobot::YtaRobot() :
     m_pRobotProgramTimer                (new Timer()),
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
+    m_ShooterMotorSpeed                 (SHOOTER_MOTOR_SPEED),
     m_IntakeAngleDegrees                (INTAKE_UP_ANGLE_DEGREES),
     m_IntakeAngleOffsetDegrees          (0.0_deg),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
@@ -333,6 +334,9 @@ void YtaRobot::ConfigureMotorControllers()
     //(void)m_pMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
     //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
     //m_pMotor->ApplyConfiguration();
+
+    (void)m_pTurretMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    m_pTurretMotor->ApplyConfiguration();
 
     // Configure CANCoder
     // CANCoder: 0.835449 (300.76164_deg) is full up, 0.0.501221 (180.43956_deg) is full down, currently moving as CW+
@@ -610,15 +614,16 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CheckForManualAdjust()
 {
-    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Intake angle", "Turret angle", "Hood position"};
+    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Shooter speed", "Intake angle", "Turret angle", "Hood position"};
     enum ManualAdjustState : uint32_t
     {
+        SHOOTER_SPEED,
         INTAKE_ANGLE,
         TURRET_ANGLE,
         HOOD_POSITION,
         INVALID_CHECK
     };
-    static ManualAdjustState manualCheckState = INTAKE_ANGLE;
+    static ManualAdjustState manualCheckState = SHOOTER_SPEED;
     uint32_t stateAsUint = static_cast<uint32_t>(manualCheckState);
 
     // Update the manual check state, if needed
@@ -637,6 +642,22 @@ void YtaRobot::CheckForManualAdjust()
     {
         switch (manualCheckState)
         {
+            case SHOOTER_SPEED:
+            {
+                if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_UP_POV_DIRECTION))
+                {
+                    m_ShooterMotorSpeed += SHOOTER_MOTOR_SPEED_STEP;
+                }
+                else if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_DOWN_POV_DIRECTION))
+                {
+                    m_ShooterMotorSpeed -= SHOOTER_MOTOR_SPEED_STEP;
+                }
+                else
+                {
+                }
+                break;
+                break;
+            }
             case INTAKE_ANGLE:
             {
                 if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_UP_POV_DIRECTION))
@@ -735,6 +756,21 @@ void YtaRobot::ShootSequence()
 {
     static Timer shootTimer;
     static units::time::second_t shootTimeStamp = 0.0_s;
+    static bool bManualRamp = false;
+
+    // First check for a manual ramp up request
+    if (m_pAuxController->GetAxisValue(AUX_RAMP_UP_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
+    {
+        // Not shooting, but communicate to the intake logic that the injector is in use.
+        m_bShootSequenceActive = true;
+        m_bShotInProgress = true;
+        bManualRamp = true;
+        m_pShooterMotors->Set(m_ShooterMotorSpeed);
+    }
+    else
+    {
+        bManualRamp = false;
+    }
 
     if (m_pAuxController->GetAxisValue(AUX_SHOOT_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
     {
@@ -742,12 +778,12 @@ void YtaRobot::ShootSequence()
         {
             shootTimer.Reset();
             shootTimer.Start();
-            m_pShooterMotors->Set(-SHOOTER_MOTOR_SPEED);
+            m_pShooterMotors->Set(m_ShooterMotorSpeed);
             shootTimeStamp = shootTimer.Get();
             m_bShootSequenceActive = true;
             m_bShotInProgress = true;
         }
-        else if ((shootTimer.Get() - shootTimeStamp) > SHOOTER_RAMP_UP_TIME_S)
+        else if (bManualRamp || ((shootTimer.Get() - shootTimeStamp) > SHOOTER_RAMP_UP_TIME_S))
         {
             m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
             m_pInjectorMotor->SetDutyCycle(-INJECTOR_MOTOR_SPEED);
@@ -756,7 +792,7 @@ void YtaRobot::ShootSequence()
         {
         }
     }
-    else if (m_pAuxController->GetAxisValue(AUX_UNCLOG_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
+    else if (m_pAuxController->GetButtonState(AUX_UNCLOG_BUTTON))
     {
         // Not shooting, but communicate to the intake logic that the injector is in use.
         m_bShootSequenceActive = true;
@@ -767,9 +803,12 @@ void YtaRobot::ShootSequence()
     }
     else
     {
-        m_bShootSequenceActive = false;
-        m_bShotInProgress = false;
-        m_pShooterMotors->Set(0.0);
+        if (!bManualRamp)
+        {
+            m_bShootSequenceActive = false;
+            m_bShotInProgress = false;
+            m_pShooterMotors->Set(0.0);
+        }
 
         // Make sure the intake isn't active before shutting these off
         if (!m_bIntakeSequenceActive)
@@ -780,6 +819,7 @@ void YtaRobot::ShootSequence()
     }
 
     SmartDashboard::PutBoolean("Shooting", m_bShotInProgress);
+    SmartDashboard::PutNumber("Shooter speed", m_ShooterMotorSpeed);
 }
 
 
