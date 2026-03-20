@@ -504,9 +504,95 @@ void YtaRobot::TeleopPeriodic()
 void YtaRobot::UpdateSmartDashboard()
 {
     // @todo: Check if RobotPeriodic() is called every 20ms and use static counter.
+    units::time::second_t matchTime = 0.0_s;
+    double batteryVoltage = DriverStation::GetBatteryVoltage();
+    std::string gameData = DriverStation::GetGameSpecificMessage();
+
+    if (DriverStation::IsFMSAttached())
+    {
+        matchTime = DriverStation::GetMatchTime();
+    }
+    else
+    {
+        matchTime = m_pMatchModeTimer->Get();
+    }
+
+    struct HubShift
+    {
+        bool m_Transition;
+        bool m_bShift1;
+        bool m_bShift2;
+        bool m_bShift3;
+        bool m_bShift4;
+        bool m_EndGame;
+    };
+    constexpr const HubShift ACTIVE_FIRST = {true, true, false, true, false, true};
+    constexpr const HubShift INACTIVE_FIRST = {true, false, true, false, true, true};
+
+    static bool bGotGameData = false;
+    static HubShift allianceHubShift;
+
+    // Look for the game data to be ready
+    if (!bGotGameData)
+    {
+        bool bInactiveFirst = false;
+        if (!gameData.empty())
+        {
+            // For some reason the game data is who is *inactive* first (instead of active)
+            bInactiveFirst = (((gameData.at(0U) == 'R') && (m_AllianceColor == DriverStation::kRed)) ||
+                              ((gameData.at(0U) == 'B') && (m_AllianceColor == DriverStation::kBlue)));
+        }
+
+        allianceHubShift = bInactiveFirst ? INACTIVE_FIRST : ACTIVE_FIRST;
+        bGotGameData = true;
+    }
+
+    // Auto: 20_s, Teleop: 110_s, End Game: 30_s (Driver Control Total: 140_s or 2m20s)
+    constexpr const units::time::second_t TRANSITION_END_TIME_S = 130_s;
+    constexpr const units::time::second_t SHIFT_1_END_TIME_S = 105_s;
+    constexpr const units::time::second_t SHIFT_2_END_TIME_S = 80_s;
+    constexpr const units::time::second_t SHIFT_3_END_TIME_S = 55_s;
+    constexpr const units::time::second_t SHIFT_4_END_TIME_S = 30_s;
+
+    bool bHubActive = false;
+    units::time::second_t shiftTime = 0.0_s;
+    if (matchTime > TRANSITION_END_TIME_S)
+    {
+        bHubActive = allianceHubShift.m_Transition;
+        shiftTime = matchTime - TRANSITION_END_TIME_S;
+    }
+    else if (matchTime > SHIFT_1_END_TIME_S)
+    {
+        bHubActive = allianceHubShift.m_bShift1;
+        shiftTime = matchTime - SHIFT_1_END_TIME_S;
+    }
+    else if (matchTime > SHIFT_2_END_TIME_S)
+    {
+        bHubActive = allianceHubShift.m_bShift2;
+        shiftTime = matchTime - SHIFT_2_END_TIME_S;
+    }
+    else if (matchTime > SHIFT_3_END_TIME_S)
+    {
+        bHubActive = allianceHubShift.m_bShift3;
+        shiftTime = matchTime - SHIFT_3_END_TIME_S;
+    }
+    else if (matchTime > SHIFT_4_END_TIME_S)
+    {
+        bHubActive = allianceHubShift.m_bShift4;
+        shiftTime = matchTime - SHIFT_4_END_TIME_S;
+    }
+    else
+    {
+        bHubActive = allianceHubShift.m_EndGame;
+        shiftTime = matchTime;
+    }
+
     // Give the drive team some state information
     SmartDashboard::PutBoolean("RIO pins stable", m_bRioPinsStable);
-    SmartDashboard::PutNumber("Match time", DriverStation::GetMatchTime().value());
+    SmartDashboard::PutNumber("Battery voltage", batteryVoltage);
+    SmartDashboard::PutNumber("Match time", matchTime.value());
+    SmartDashboard::PutNumber("Shift time", shiftTime.value());
+    SmartDashboard::PutBoolean("Hub active", bHubActive);
 }
 
 
