@@ -31,7 +31,7 @@ void YtaRobot::AutonomousRoutine2()
     // The robot faces the driver station, so it is off by 180 degrees
     m_pPigeon->SetYaw(units::angle::degree_t(ANGLE_180_DEGREES));
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.00, 2.0_s, true);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.00, 2.75_s, true);
 
     // Ramp up the shooter
     m_pShooterMotors->Set(-0.65);
@@ -42,7 +42,7 @@ void YtaRobot::AutonomousRoutine2()
  
     // Feeder oscillating loop
     Timer feederTimer;   
-    for (uint32_t i = 0U; i < 10U; i++)
+    for (uint32_t i = 0U; i < 12U; i++)
     {
         m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
         AutonomousDelay(0.35_s);

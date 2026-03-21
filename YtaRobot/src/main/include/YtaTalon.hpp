@@ -15,12 +15,12 @@
 #include <cstdio>                               // for std::snprintf
 
 // C INCLUDES
-#include "ctre/phoenix6/CANBus.hpp"             // for working with CANBus objects
-#include "ctre/phoenix6/TalonFX.hpp"            // for CTRE TalonFX API
 #include "frc/smartdashboard/SmartDashboard.h"  // for interacting with the smart dashboard
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                       // for ConvertCelsiusToFahrenheit
+#include "ctre/phoenix6/CANBus.hpp"             // for working with CANBus objects
+#include "ctre/phoenix6/TalonFX.hpp"            // for CTRE TalonFX API
 
 using namespace frc;
 using namespace ctre::phoenix6;

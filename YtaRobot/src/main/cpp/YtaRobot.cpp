@@ -487,7 +487,7 @@ void YtaRobot::TeleopPeriodic()
 
     IntakeSequence();
     ShootSequence();
-    TurretSequence();
+    //TurretSequence();
     //HangSequence();
 
     //PneumaticSequence();
@@ -1576,7 +1576,8 @@ void YtaRobot::SwerveDriveSequence()
     Translation2d translation = {units::meter_t(translationAxis), units::meter_t(strafeAxis)};
 
     // Update the swerve module states
-    m_pSwerveDrive->SetModuleStates(translation, rotationAxis, bFieldRelative, true);
+    constexpr const double SWERVE_ROTATE_2026_LIMIT_FACTOR = 0.80;
+    m_pSwerveDrive->SetModuleStates(translation, rotationAxis * SWERVE_ROTATE_2026_LIMIT_FACTOR, bFieldRelative, true);
 
     // Update the odometry
     m_pSwerveDrive->UpdateOdometry();
