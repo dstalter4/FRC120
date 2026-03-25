@@ -88,7 +88,7 @@ namespace SwerveConfig
 
     // The swerve module configuration on the robot (change the typedef based on the motors on the module)
     typedef TalonFxSwerveModule SwerveModuleType;
-    static constexpr const ModuleConfiguration & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK5N_R3_CONFIG;
+    static constexpr const ModuleConfiguration & SELECTED_SWERVE_MODULE_CONFIG = SDS_MK5N_R2_CONFIG;
 
     // Names for the CAN buses that swerve can use
     static constexpr const std::string_view RIO_CAN_BUS_NAME = "rio";
