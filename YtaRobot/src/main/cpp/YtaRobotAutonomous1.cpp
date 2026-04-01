@@ -55,7 +55,7 @@ void YtaRobot::AutonomousRoutine1()
     AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.02, 2.0_s, true);
 
     // Ramp up the shooter
-    m_pShooterMotors->Set(-0.65);
+    m_pShooterMotors->Set(0.65);
     AutonomousDelay(0.5_s);
 
     // Injector on

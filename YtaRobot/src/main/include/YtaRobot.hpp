@@ -483,9 +483,8 @@ private:
     static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.60;
     static constexpr double         FEEDER_MOTOR_SPEED                      = 0.20;
     static constexpr double         INJECTOR_MOTOR_SPEED                    = 0.90;
-    static constexpr double         SHOOTER_MOTOR_SPEED                     = -0.85;
-    static constexpr double         SHOOTER_MOTOR_SPEED_STEP                = -0.05;
-    static constexpr double         TURRET_ROTATE_MOTOR_SPEED               = 0.05;
+    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.85;
+    static constexpr double         SHOOTER_MOTOR_SPEED_STEP                = 0.05;
 
     static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = 0.0_deg;
     static constexpr const units::angle::degree_t INTAKE_DOWN_ANGLE_DEGREES             = -120.0_deg;
