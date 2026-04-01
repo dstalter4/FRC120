@@ -267,8 +267,7 @@ private:
     // Superstructure sequences
     void IntakeSequence();
     void ShootSequence();
-    void ShootSequenceNoRamp();
-    void TurretSequence();
+    void HoodSequence();
     void HangSequence();
     void CheckForManualAdjust();
 
@@ -317,7 +316,7 @@ private:
     TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
     TalonFxMotorController *        m_pInjectorMotor;                       // Injector motor control
     TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
-    TalonFxMotorController *        m_pTurretMotor;                         // Turret motor control
+    TalonFxMotorController *        m_pHoodMotor;                           // Hood motor control
     TalonFxMotorController *        m_pHangMotor;                           // Hang motor control
     
     // LEDs
@@ -347,7 +346,7 @@ private:
     
     // Encoders
     CANcoder *                      m_pIntakeCanCoder;                      // Absolute encoder to monitor intake position
-    CANcoder *                      m_pTurretCanCoder;                      // Absolute encoder to monitor turret position
+    CANcoder *                      m_pHoodCanCoder;                        // Absolute encoder to monitor hood position
     
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
@@ -424,7 +423,6 @@ private:
     // Aux inputs
     static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
     static const int                AUX_RAMP_UP_AXIS                        = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_TRIGGER;
-    static const int                AUX_ROTATE_TURRET_AXIS                  = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.LEFT_X_AXIS;
     static const int                AUX_INTAKE_UP_DOWN_BUTTON               = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                AUX_UNCLOG_BUTTON                       = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
     static const int                AUX_HOOD_UP_BUTTON                      = AUX_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.UP_BUTTON;
@@ -451,10 +449,10 @@ private:
     static const unsigned           FEEDER_MOTOR_CAN_ID                     = 33;   // PDH 16
     static const unsigned           INJECTOR_MOTOR_CAN_ID                   = 34;   // PDH 5
     static const unsigned           SHOOTER_MOTORS_CAN_START_ID             = 35;   // PDH 14, PDH 12
-    static const unsigned           TURRET_MOTOR_CAN_ID                     = 37;   // PDH 7
+    static const unsigned           HOOD_MOTOR_CAN_ID                       = 37;   // PDH 7
     static const unsigned           HANG_MOTOR_CAN_ID                       = 38;
     static const unsigned           INTAKE_CANCODER_CAN_ID                  = 41;
-    static const unsigned           TURRET_CANCODER_CAN_ID                  = 42;
+    static const unsigned           HOOD_CANCODER_CAN_ID                    = 42;
     static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
     static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 
@@ -465,8 +463,8 @@ private:
     static const int                CANDLE_CAN_ID                           = 26;
 
     // PWM Signals
-    static const int                HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL   = 0;
-    static const int                HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL    = 1;
+    static const int                HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL    = 0;
+    static const int                HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL   = 1;
     
     // Relays
     // (none)

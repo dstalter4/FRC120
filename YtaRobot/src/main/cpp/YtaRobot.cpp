@@ -51,7 +51,7 @@ YtaRobot::YtaRobot() :
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID, m_RioCanBus)),
     m_pInjectorMotor                    (new TalonFxMotorController(INJECTOR_MOTOR_CAN_ID, m_RioCanBus)),
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter motors", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Coast, m_RioCanBus, false)),
-    m_pTurretMotor                      (new TalonFxMotorController(TURRET_MOTOR_CAN_ID, m_RioCanBus)),
+    m_pHoodMotor                        (new TalonFxMotorController(HOOD_MOTOR_CAN_ID, m_RioCanBus)),
     m_pHangMotor                        (new TalonFxMotorController(HANG_MOTOR_CAN_ID, m_RioCanBus)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
     m_LedStripSolidColor                (0, (NUMBER_OF_LEDS - 1)),
@@ -61,7 +61,7 @@ YtaRobot::YtaRobot() :
     m_pHoodRightServoActuator           (new PWM(HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL)),
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pIntakeCanCoder                   (new CANcoder(INTAKE_CANCODER_CAN_ID, m_RioCanBus)),
-    m_pTurretCanCoder                   (new CANcoder(TURRET_CANCODER_CAN_ID, m_RioCanBus)),
+    m_pHoodCanCoder                     (new CANcoder(HOOD_CANCODER_CAN_ID, m_RioCanBus)),
     m_pMatchModeTimer                   (new Timer()),
     m_pRobotProgramTimer                (new Timer()),
     m_pSafetyTimer                      (new Timer()),
@@ -335,9 +335,6 @@ void YtaRobot::ConfigureMotorControllers()
     //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
     //m_pMotor->ApplyConfiguration();
 
-    (void)m_pTurretMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
-    m_pTurretMotor->ApplyConfiguration();
-
     // Configure CANCoder
     // CANCoder: 0.835449 (300.76164_deg) is full up, 0.0.501221 (180.43956_deg) is full down, currently moving as CW+
     // Starting position = 0.831299 (299.26764_deg)
@@ -378,13 +375,13 @@ void YtaRobot::ConfigureMotorControllers()
 
 
 
-    // Turret CANcoder: 0.937256 is facing forward, 90R is 0.191650, 90L is 0.693359
+    // Hood CANcoder: No measurements yet for full up/down.
     canCoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0_tr;
     //canCoderConfig.MagnetSensor.SensorDirection = InvertedValue::CounterClockwise_Positive;
-    (void)m_pTurretCanCoder->GetConfigurator().Apply(canCoderConfig);
+    (void)m_pHoodCanCoder->GetConfigurator().Apply(canCoderConfig);
 
-    (void)m_pTurretMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
-    m_pTurretMotor->ApplyConfiguration();
+    (void)m_pHoodMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    m_pHoodMotor->ApplyConfiguration();
 }
 
 
@@ -487,7 +484,7 @@ void YtaRobot::TeleopPeriodic()
 
     IntakeSequence();
     ShootSequence();
-    //TurretSequence();
+    //HoodSequence();
     //HangSequence();
 
     //PneumaticSequence();
@@ -614,12 +611,11 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CheckForManualAdjust()
 {
-    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Shooter speed", "Intake angle", "Turret angle", "Hood position"};
+    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Shooter speed", "Intake angle", "Hood position"};
     enum ManualAdjustState : uint32_t
     {
         SHOOTER_SPEED,
         INTAKE_ANGLE,
-        TURRET_ANGLE,
         HOOD_POSITION,
         INVALID_CHECK
     };
@@ -825,43 +821,13 @@ void YtaRobot::ShootSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::TurretSequence
+/// @method YtaRobot::HoodSequence
 ///
-/// Main sequence for turret control logic.
+/// Main sequence for hood control logic.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::TurretSequence()
+void YtaRobot::HoodSequence()
 {
-    // Turret CANcoder: 0.937256 is facing forward, 90R is 0.191650, 90L is 0.693359
-    units::angle::turn_t turretAngleTurns = m_pTurretCanCoder->GetAbsolutePosition().GetValue();
-
-    // Get a value from ~0.2 -> ~0.45 -> ~-0.3 (L -> C -> R)
-    turretAngleTurns -= 0.5_tr;
-
-    // Adjust to ~0.2 -> ~0.45 -> ~0.7 (L -> C -> R)
-    if (turretAngleTurns < 0.0_tr)
-    {
-        turretAngleTurns += 1.0_tr;
-    }
-
-    constexpr units::angle::turn_t TURRET_RIGHT_TURN_CANCODER_LIMIT_TURNS = 0.60_tr;
-    constexpr units::angle::turn_t TURRET_LEFT_TURN_CANCODER_LIMIT_TURNS = 0.25_tr;
-
-    if ((m_pAuxController->GetAxisValue(AUX_ROTATE_TURRET_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND) && (turretAngleTurns < TURRET_RIGHT_TURN_CANCODER_LIMIT_TURNS))
-    {
-        // This is turning right
-        m_pTurretMotor->SetDutyCycle(TURRET_ROTATE_MOTOR_SPEED);
-    }
-    else if ((m_pAuxController->GetAxisValue(AUX_ROTATE_TURRET_AXIS) < -JOYSTICK_AXIS_INPUT_DEAD_BAND) && (turretAngleTurns > TURRET_LEFT_TURN_CANCODER_LIMIT_TURNS))
-    {
-        // This is turning left
-        m_pTurretMotor->SetDutyCycle(-TURRET_ROTATE_MOTOR_SPEED);
-    }
-    else
-    {
-        m_pTurretMotor->SetDutyCycle(0.0);
-    }
-
     static double hoodServoValue = 0.0;
     constexpr const double HOOD_SERVO_STEP_VALUE = 0.1;
     constexpr const double HOOD_SERVO_UPPER_LIMIT = 1.0;
@@ -884,7 +850,7 @@ void YtaRobot::TurretSequence()
     m_pHoodRightServoActuator->SetPosition(hoodServoValue);
 
     SmartDashboard::PutNumber("Hood servo", hoodServoValue);
-    SmartDashboard::PutNumber("Turret CANcoder", turretAngleTurns.value());
+    SmartDashboard::PutNumber("Hood CANcoder", units::angle::degree_t(m_pHoodCanCoder->GetAbsolutePosition().GetValue()).value());
 }
 
 
