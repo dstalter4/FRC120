@@ -22,6 +22,7 @@
 #include "YtaRobot.hpp"                         // for GetRobotInstance()
 
 // STATIC MEMBER DATA
+PIDController                                   RobotCamera::m_VisionPid{0.03, 0.00, 0.002};
 std::shared_ptr<nt::NetworkTable>               RobotCamera::m_pLimelightNetworkTable;
 RobotCamera::UsbCameraStorage                   RobotCamera::m_UsbCameras;
 RobotCamera::UsbCameraInfo *                    RobotCamera::m_pCurrentUsbCamera;
@@ -185,6 +186,30 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
         return;
     }
 
+    // Get the horizontal offset from the target
+    double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
+    
+    // Use the PID controller to compute the strafe value
+    double strafe = m_VisionPid.Calculate(targetX);
+
+    SmartDashboard::PutNumber("Limelight targetX: ", targetX);
+    SmartDashboard::PutNumber("Limelight raw strafe: ", strafe);
+
+    // Clamping strafe output
+    strafe = std::clamp(strafe, -0.95, 0.95);
+
+    // WPILib recommended feed forward
+    // @todo: Is this necessary?
+    if (std::abs(strafe) > 0.01)
+    {
+        strafe += std::copysign(0.02, strafe);
+    }
+
+    // Drive
+    pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, units::meter_t{strafe}}, 0.0, true, true);
+
+
+/*
     // Get the x-axis target value
     double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
 
@@ -204,6 +229,7 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
         // No movement required
         pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
     }
+*/
 }
 
 
@@ -343,13 +369,21 @@ void RobotCamera::LimelightThread()
 
     // The limelight camera mode will be set by autonomous or teleop
     // Set a limelight priority (e.g. for the April tags)
-    const uint32_t LIMELIGHT_PRIORITY = 1U;
+    const uint32_t LIMELIGHT_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 10U : 25U;
     m_pLimelightNetworkTable->PutNumber("priorityid", LIMELIGHT_PRIORITY);
-    
+
+    // Setting constants for the vision PID controller.  Set point is
+    // 0.0_deg (centered on target), tolerance is 1.5_deg, and enable
+    // continuous input across the Limelight field of view.
+    m_VisionPid.SetSetpoint(0.0);
+    m_VisionPid.SetTolerance(1.5);
+    m_VisionPid.EnableContinuousInput(-27.0, 27.0);
+
     while (true)
     {
         // Be sure to relinquish the CPU when done
         std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
+        SmartDashboard::PutNumber("Limelight heartbeat", m_pLimelightNetworkTable->GetNumber("hb", 0.0));
     }
 }
 
