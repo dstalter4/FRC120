@@ -127,6 +127,9 @@ public:
 private:
     
     // Create the camera objects for any configured cameras
+    static void EnableLimelightPortForwarding(bool bEnableEthernetForwarding, bool bEnableUsb0Forwarding, bool bEnableUsb1Forwarding);
+
+    // Create the camera objects for any configured cameras
     static bool CreateConfiguredCameras();
 
     // Update values on the SmartDashboard

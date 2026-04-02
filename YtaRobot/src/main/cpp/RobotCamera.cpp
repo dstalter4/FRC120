@@ -265,6 +265,51 @@ bool RobotCamera::CreateConfiguredCameras()
 
 
 ////////////////////////////////////////////////////////////////
+/// @method RobotCamera::EnableLimelightPortForwarding
+///
+/// This method enalbes Limelight port forwarding for the
+/// different options of connecting a Limelight.  The expected
+/// use case is to enable Ethernet forwarding.  The Limelight
+/// 3A/3G can connect over USB, which is when the USB forwarding
+/// options would be used.
+///
+////////////////////////////////////////////////////////////////
+void RobotCamera::EnableLimelightPortForwarding(bool bEnableEthernetForwarding, bool bEnableUsb0Forwarding, bool bEnableUsb1Forwarding)
+{
+    constexpr const int LIMELIGHT_START_PORT = 5800;
+    constexpr const int LIMELIGHT_END_PORT = 5809;
+    wpi::PortForwarder & rWpiPortForwarder = wpi::PortForwarder::GetInstance();
+
+    // It's a little inefficient to loop and then check
+    // all the enables, but it keeps things a bit neater.
+    for (int port = LIMELIGHT_START_PORT; port <= LIMELIGHT_END_PORT; port++)
+    {
+        // Enable web interface and video stream through the roboRIO
+        if (bEnableEthernetForwarding)
+        {
+            rWpiPortForwarder.Add(port, "limelight.local", port);
+        }
+
+        // Enable web interface and video stream when connected via USB
+        // For usbIndex 0: ports 5800-5809 forward to 172.29.0.1
+        // For usbIndex 1: ports 5810-5819 forward to 172.29.1.1
+        // To access the interface of the camera with usbIndex0, go to
+        // roboRIO-(teamnum)-FRC.local:5801. Port 5811 for usbIndex1.
+        if (bEnableUsb0Forwarding)
+        {
+            rWpiPortForwarder.Add(port, "172.29.0.1", port);
+        }
+        if (bEnableUsb1Forwarding)
+        {
+            constexpr const int USB1_PORT_OFFSET = 10;
+            rWpiPortForwarder.Add((port + USB1_PORT_OFFSET), "172.29.1.1", (port + USB1_PORT_OFFSET));
+        }
+    }
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method RobotCamera::LimelightThread
 ///
 /// This method contains the workflow for using a limelight
@@ -293,13 +338,8 @@ void RobotCamera::LimelightThread()
 
     RobotUtils::DisplayMessage("Limelight thread released.");
 
-    // Enable port forwarding for the limelight while tethered via USB
-    const int LIMELIGHT_START_PORT = 5800;
-    const int LIMELIGHT_END_PORT = 5805;
-    for (int port = LIMELIGHT_START_PORT; port <= LIMELIGHT_END_PORT; port++)
-    {
-        wpi::PortForwarder::GetInstance().Add(port, "limelight.local", port);
-    }
+    // Enable Ethernet port forwarding (but not USB)
+    EnableLimelightPortForwarding(true, false, false);
 
     // The limelight camera mode will be set by autonomous or teleop
     // Set a limelight priority (e.g. for the April tags)
