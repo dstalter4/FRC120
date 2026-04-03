@@ -1966,9 +1966,6 @@ void YtaRobot::DirectionalAlign()
         }
         case DIRECTIONAL_ALIGN:
         {   
-            // Force update gyro value
-            //RobotI2c::ManualTrigger();
-            
             // Three conditions for stopping the align:
             // 1. Destination angle is reached
             // 2. Safety timer expires
