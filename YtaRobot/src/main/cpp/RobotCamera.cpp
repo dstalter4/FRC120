@@ -149,8 +149,8 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
         if (bEnableMotors)
         {
             // Steer the robot
-            pRobotObj->m_pLeftDriveMotors->Set(-leftCommand);
-            pRobotObj->m_pRightDriveMotors->Set(rightCommand);
+            pRobotObj->m_pLeftDriveMotors->SetDutyCycle(-leftCommand);
+            pRobotObj->m_pRightDriveMotors->SetDutyCycle(rightCommand);
         }
 
         // Send useful information to smart dashboard.
@@ -161,8 +161,8 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
     }
 
     // Motors off
-    pRobotObj->m_pLeftDriveMotors->Set(0.0);
-    pRobotObj->m_pRightDriveMotors->Set(0.0);
+    pRobotObj->m_pLeftDriveMotors->SetDutyCycle(0.0);
+    pRobotObj->m_pRightDriveMotors->SetDutyCycle(0.0);
 
     // Clean up the timer
     m_AutoCameraTimer.Stop();

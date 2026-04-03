@@ -44,13 +44,13 @@ YtaRobot::YtaRobot() :
     m_CanivoreBus                       (CANIVORE_CAN_BUS_NAME),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, m_CanivoreBus)),
     m_pSwerveDrive                      (new SwerveDrive(m_pPigeon, GetCanBusReferenceLambda)),
-    m_pLeftDriveMotors                  (new ArcadeDriveTalonFxType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
-    m_pRightDriveMotors                 (new ArcadeDriveTalonFxType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, true)),
+    m_pLeftDriveMotors                  (new ArcadeDriveTalonType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, m_RioCanBus)),
+    m_pRightDriveMotors                 (new ArcadeDriveTalonType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, m_RioCanBus)),
     m_pIntakeRollersMotor               (new TalonFxMotorController(INTAKE_ROLLERS_MOTOR_CAN_ID, m_RioCanBus)),
     m_pIntakeAngleMotor                 (new TalonFxMotorController(INTAKE_ANGLE_MOTOR_CAN_ID, m_RioCanBus)),
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID, m_RioCanBus)),
     m_pInjectorMotor                    (new TalonFxMotorController(INJECTOR_MOTOR_CAN_ID, m_RioCanBus)),
-    m_pShooterMotors                    (new TalonMotorGroup<TalonFX>("Shooter motors", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Coast, m_RioCanBus, false)),
+    m_pShooterMotors                    (new TalonMotorGroup<TalonFX, TalonFXConfiguration>("Shooter motors", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Coast, m_RioCanBus)),
     m_pHoodMotor                        (new TalonFxMotorController(HOOD_MOTOR_CAN_ID, m_RioCanBus)),
     m_pHangMotor                        (new TalonFxMotorController(HANG_MOTOR_CAN_ID, m_RioCanBus)),
     m_pCandle                           (new CANdle(CANDLE_CAN_ID, m_CanivoreBus)),
@@ -235,7 +235,7 @@ void YtaRobot::CheckIfRioPinsAreStable()
             //}
 
             // At this point we have the angle we want relative to zero
-            //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(startingOffsetDegrees);
+            //(void)m_pMotor->GetMotorObject()->GetConfigurator().SetPosition(startingOffsetDegrees);
             //std::printf("encoderValue: %f\n", encoderValue);
             //std::printf("encoderValueDegrees: %f\n", encoderValueDegrees.value());
             //std::printf("startingOffsetDegrees (final): %f\n", startingOffsetDegrees.value());
@@ -302,8 +302,7 @@ void YtaRobot::ConfigureMotorControllers()
     //   the configuration stored in the device.
     // - Calling the methods provided by YtaTalon.hpp *never* update the configuration
     //   objects in the classes/structs.  To update those objects, retrieve the objects
-    //   via things like m_MotorConfiguration (for individual motors) or
-    //   GetMotorConfiguration() (for motor groups).
+    //   via things like GetMotorConfiguration().
     // - The classes/structs in YtaTalon.hpp provide ApplyConfiguration() routines.
     //   These can be used to directly apply a stack local or class scope configuration,
     //   or to apply an updated configuration when the configuration objects were directly
@@ -330,10 +329,10 @@ void YtaRobot::ConfigureMotorControllers()
     //(void)m_pMotors->GetMotorObject(MOTORS_CAN_START_ID)->GetConfigurator().SetPosition(0.0_tr);
 
     // Configure a single motor
-    //(void)m_pMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
-    //(void)m_pMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(135.0 / 1.0);
-    //(void)m_pMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
-    //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
+    //(void)m_pMotor->GetMotorConfiguration()->MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    //(void)m_pMotor->GetMotorConfiguration()->Feedback.WithSensorToMechanismRatio(135.0 / 1.0);
+    //(void)m_pMotor->GetMotorConfiguration()->Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    //(void)m_pMotor->GetMotorObject()->GetConfigurator().SetPosition(0.0_tr);
     //m_pMotor->ApplyConfiguration();
 
     // Configure shooter motor in case WithVelocity() is called
@@ -356,11 +355,11 @@ void YtaRobot::ConfigureMotorControllers()
     
     // Configure the intake angle motor
     // Ratio is 50:1
-    (void)m_pIntakeAngleMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
-    (void)m_pIntakeAngleMotor->m_MotorConfiguration.Feedback.WithSensorToMechanismRatio(50.0 / 1.0);
-    (void)m_pIntakeAngleMotor->m_MotorConfiguration.Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
-    //(void)m_pIntakeAngleMotor->m_MotorConfiguration.SoftwareLimitSwitch.WithForwardSoftLimitThreshold(10.0_deg).WithReverseSoftLimitThreshold(-120.0_deg);
-    //(void)m_pIntakeAngleMotor->m_MotorConfiguration.SoftwareLimitSwitch.WithForwardSoftLimitEnable(true).WithReverseSoftLimitEnable(true);
+    (void)m_pIntakeAngleMotor->GetMotorConfiguration()->MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    (void)m_pIntakeAngleMotor->GetMotorConfiguration()->Feedback.WithSensorToMechanismRatio(50.0 / 1.0);
+    (void)m_pIntakeAngleMotor->GetMotorConfiguration()->Slot0.WithKP(18.0).WithKI(0.0).WithKD(0.1);
+    //(void)m_pIntakeAngleMotor->GetMotorConfiguration()->SoftwareLimitSwitch.WithForwardSoftLimitThreshold(10.0_deg).WithReverseSoftLimitThreshold(-120.0_deg);
+    //(void)m_pIntakeAngleMotor->GetMotorConfiguration()->SoftwareLimitSwitch.WithForwardSoftLimitEnable(true).WithReverseSoftLimitEnable(true);
     m_pIntakeAngleMotor->ApplyConfiguration();
 
     units::angle::degree_t intakeCanCoderDegrees = m_pIntakeCanCoder->GetAbsolutePosition().GetValue();
@@ -372,7 +371,7 @@ void YtaRobot::ConfigureMotorControllers()
     // If the delta is positive, the intake is above where we want it (up higher).
     //    Up higher means a positive angle position for the FX.
     units::angle::turn_t intakeSetPositionTurns = intakeAngleDelta;
-    (void)m_pIntakeAngleMotor->m_pTalonFx->GetConfigurator().SetPosition(intakeSetPositionTurns);
+    (void)m_pIntakeAngleMotor->GetMotorObject()->GetConfigurator().SetPosition(intakeSetPositionTurns);
     // Expected starting position is up, but in local testing, may sometimes be down
     if (intakeAngleDelta < -50.0_deg)
     {
@@ -389,7 +388,7 @@ void YtaRobot::ConfigureMotorControllers()
     //canCoderConfig.MagnetSensor.SensorDirection = InvertedValue::CounterClockwise_Positive;
     (void)m_pHoodCanCoder->GetConfigurator().Apply(canCoderConfig);
 
-    (void)m_pHoodMotor->m_MotorConfiguration.MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
+    (void)m_pHoodMotor->GetMotorConfiguration()->MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
     m_pHoodMotor->ApplyConfiguration();
 }
 
@@ -774,13 +773,13 @@ void YtaRobot::IntakeSequence()
         }
     }
 
-    m_pIntakeAngleMotor->SetPositionVoltage(m_IntakeAngleDegrees.value() + m_IntakeAngleOffsetDegrees.value());
+    m_pIntakeAngleMotor->SetPositionVoltage(m_IntakeAngleDegrees + m_IntakeAngleOffsetDegrees);
 
     // Display some information on the intake position
     SmartDashboard::PutBoolean("Intake lowered", m_bIntakeLowered);
     SmartDashboard::PutNumber("Intake angle", m_IntakeAngleDegrees.value());
     SmartDashboard::PutNumber("Intake angle offset", m_IntakeAngleOffsetDegrees.value());
-    SmartDashboard::PutNumber("Intake FX", units::angle::degree_t(m_pIntakeAngleMotor->m_pTalonFx->GetPosition().GetValue()).value());
+    SmartDashboard::PutNumber("Intake FX", units::angle::degree_t(m_pIntakeAngleMotor->GetMotorObject()->GetPosition().GetValue()).value());
     SmartDashboard::PutNumber("Intake CANcoder", units::angle::degree_t(m_pIntakeCanCoder->GetAbsolutePosition().GetValue()).value());
 }
 
@@ -807,7 +806,7 @@ void YtaRobot::ShootSequence()
         m_bShootSequenceActive = true;
         m_bShotInProgress = true;
         bManualRamp = true;
-        m_pShooterMotors->Set(m_ShooterMotorSpeed);
+        m_pShooterMotors->SetDutyCycle(m_ShooterMotorSpeed);
         //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(SHOOTER_MOTOR_TARGET_TPS));
     }
     else
@@ -821,7 +820,7 @@ void YtaRobot::ShootSequence()
         {
             shootTimer.Reset();
             shootTimer.Start();
-            m_pShooterMotors->Set(m_ShooterMotorSpeed);
+            m_pShooterMotors->SetDutyCycle(m_ShooterMotorSpeed);
             //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(SHOOTER_MOTOR_TARGET_TPS));
             shootTimeStamp = shootTimer.Get();
             m_bShootSequenceActive = true;
@@ -841,7 +840,7 @@ void YtaRobot::ShootSequence()
         // Not shooting, but communicate to the intake logic that the injector is in use.
         m_bShootSequenceActive = true;
         m_bShotInProgress = false;
-        m_pShooterMotors->Set(0.0);
+        m_pShooterMotors->SetDutyCycle(0.0);
         //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(0.0_tps));
         m_pFeederMotor->SetDutyCycle(0.0);
         m_pInjectorMotor->SetDutyCycle(m_InjectorMotorSpeed);
@@ -852,7 +851,7 @@ void YtaRobot::ShootSequence()
         {
             m_bShootSequenceActive = false;
             m_bShotInProgress = false;
-            m_pShooterMotors->Set(0.0);
+            m_pShooterMotors->SetDutyCycle(0.0);
             //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(0.0_tps));
         }
 
@@ -1707,8 +1706,8 @@ void YtaRobot::DriveControlSequence()
     double rightSpeed = RobotUtils::Limit(RightDriveEquation(xAxisDrive, yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
     
     // Set motor speed
-    m_pLeftDriveMotors->Set(leftSpeed);
-    m_pRightDriveMotors->Set(rightSpeed);
+    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
+    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
 
     if (RobotUtils::DEBUG_PRINTS)
     {
@@ -1774,16 +1773,16 @@ bool YtaRobot::DirectionalInch()
     pInchingDriveTimer->Start();
     
     // Motors on
-    m_pLeftDriveMotors->Set(leftSpeed);
-    m_pRightDriveMotors->Set(rightSpeed);
+    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
+    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
     
     while (pInchingDriveTimer->Get() < INCHING_DRIVE_DELAY_S)
     {
     }
     
     // Motors back off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
+    m_pLeftDriveMotors->SetDutyCycle(OFF);
+    m_pRightDriveMotors->SetDutyCycle(OFF);
     
     // Stop the timer
     pInchingDriveTimer->Stop();
@@ -1944,13 +1943,13 @@ void YtaRobot::DirectionalAlign()
                 // The destination angle and direction is now known, time to do the move
                 if (bTurnLeft)
                 {
-                    m_pLeftDriveMotors->Set(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR);
-                    m_pRightDriveMotors->Set(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR);
+                    m_pLeftDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR);
+                    m_pRightDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR);
                 }
                 if (bTurnRight)
                 {
-                    m_pLeftDriveMotors->Set(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR);
-                    m_pRightDriveMotors->Set(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR);
+                    m_pLeftDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR);
+                    m_pRightDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR);
                 }
                 
                 // Start the safety timer
@@ -1982,8 +1981,8 @@ void YtaRobot::DirectionalAlign()
                 (bStateChangeAllowed))
             {
                 // Motors off
-                m_pLeftDriveMotors->Set(OFF);
-                m_pRightDriveMotors->Set(OFF);
+                m_pLeftDriveMotors->SetDutyCycle(OFF);
+                m_pRightDriveMotors->SetDutyCycle(OFF);
                 
                 // Reset the safety timer
                 pDirectionalAlignTimer->Stop();

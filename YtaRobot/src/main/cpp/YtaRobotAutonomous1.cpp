@@ -46,7 +46,7 @@ void YtaRobot::AutonomousRoutine1()
     m_pPigeon->SetYaw(units::angle::degree_t(ANGLE_180_DEGREES));
 
     // Intake down, motor on
-    m_pIntakeAngleMotor->SetPositionVoltage(INTAKE_DOWN_ANGLE_DEGREES.value());
+    m_pIntakeAngleMotor->SetPositionVoltage(INTAKE_DOWN_ANGLE_DEGREES);
     m_pIntakeRollersMotor->SetDutyCycle(-INTAKE_ROLLERS_MOTOR_SPEED);
 
     // Drive towards the depot
@@ -60,11 +60,11 @@ void YtaRobot::AutonomousRoutine1()
     AutonomousDelay(1.0_s);
 
     // Intake up, motor off
-    m_pIntakeAngleMotor->SetPositionVoltage(INTAKE_UP_ANGLE_DEGREES.value());
+    m_pIntakeAngleMotor->SetPositionVoltage(INTAKE_UP_ANGLE_DEGREES);
     m_pIntakeRollersMotor->SetDutyCycle(0.0);
 
     // Ramp up the shooter while we move back toward the hub to shoot
-    m_pShooterMotors->Set(SHOOTER_MOTOR_SPEED);
+    m_pShooterMotors->SetDutyCycle(SHOOTER_MOTOR_SPEED);
 
     // On a real field, moving back from the depot needs higher rotate
     // to compensate for driving over the depot perimeter bump.
@@ -78,8 +78,7 @@ void YtaRobot::AutonomousRoutine1()
     m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
     AutonomousDelay(7.0_s);
 
-    // Everything off
-    m_pShooterMotors->Set(0.0);
+    m_pShooterMotors->SetDutyCycle(0.0);
     m_pInjectorMotor->SetDutyCycle(0.0);
     m_pFeederMotor->SetDutyCycle(0.0);
     m_pIntakeRollersMotor->SetDutyCycle(0.0);

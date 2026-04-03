@@ -400,8 +400,8 @@ void YtaRobotTest::RevSpeedControllerTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::TankDrive()
 {
-    YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
-    YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+    YTA_ROBOT_OBJ()->m_pLeftDriveMotors->SetDutyCycle(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
+    YTA_ROBOT_OBJ()->m_pRightDriveMotors->SetDutyCycle(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
 }
 
 

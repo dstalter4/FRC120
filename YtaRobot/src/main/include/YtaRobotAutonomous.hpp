@@ -6,7 +6,7 @@
 /// Contains the declarations for the autonomous portions of code ran in an FRC
 /// robot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef YTAROBOTAUTONOMOUS_HPP
@@ -147,15 +147,15 @@ inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double s
     }
 
     // First turn the motors on
-    m_pLeftDriveMotors->Set(leftSpeed);
-    m_pRightDriveMotors->Set(rightSpeed);
+    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
+    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
 
     // Time it
     AutonomousDelay(time);
 
     // Motors back off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
+    m_pLeftDriveMotors->SetDutyCycle(OFF);
+    m_pRightDriveMotors->SetDutyCycle(OFF);
 }
 
 
@@ -314,15 +314,15 @@ inline void YtaRobot::AutonomousBackDrive(RobotDirection currentDirection)
     }
     
     // Counteract coast
-    m_pLeftDriveMotors->Set(leftSpeed);
-    m_pRightDriveMotors->Set(rightSpeed);
+    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
+    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
     
     // Delay
     AutonomousDelay(YtaRobotAutonomous::COUNTERACT_COAST_TIME_S);
     
     // Motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
+    m_pLeftDriveMotors->SetDutyCycle(OFF);
+    m_pRightDriveMotors->SetDutyCycle(OFF);
     
     m_pSafetyTimer->Reset();
 }
@@ -366,15 +366,15 @@ inline void YtaRobot::AutonomousBackDriveTurn(RobotDirection currentDirection)
     }
     
     // Counteract coast
-    m_pLeftDriveMotors->Set(leftSpeed);
-    m_pRightDriveMotors->Set(rightSpeed);
+    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
+    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
     
     // Delay
     AutonomousDelay(YtaRobotAutonomous::COUNTERACT_COAST_TIME_S);
     
     // Motors off
-    m_pLeftDriveMotors->Set(OFF);
-    m_pRightDriveMotors->Set(OFF);
+    m_pLeftDriveMotors->SetDutyCycle(OFF);
+    m_pRightDriveMotors->SetDutyCycle(OFF);
     
     m_pSafetyTimer->Reset();
 }

@@ -308,14 +308,14 @@ private:
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
     
     // Motors
-    typedef Yta::Talon::EmptyTalonFx ArcadeDriveTalonFxType;                // Switch to TalonMotorGroup<TalonFX> for real implementation
-    ArcadeDriveTalonFxType *        m_pLeftDriveMotors;                     // Left drive motor control
-    ArcadeDriveTalonFxType *        m_pRightDriveMotors;                    // Right drive motor control
+    typedef Yta::Talon::EmptyTalon  ArcadeDriveTalonType;                   // Switch to TalonMotorGroup<TalonFX, TalonFXConfiguration> for real implementation
+    ArcadeDriveTalonType *          m_pLeftDriveMotors;                     // Left drive motor control
+    ArcadeDriveTalonType *          m_pRightDriveMotors;                    // Right drive motor control
     TalonFxMotorController *        m_pIntakeRollersMotor;                  // Intake rollers motor control
     TalonFxMotorController *        m_pIntakeAngleMotor;                    // Intake angle motor control
     TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
     TalonFxMotorController *        m_pInjectorMotor;                       // Injector motor control
-    TalonMotorGroup<TalonFX> *      m_pShooterMotors;                       // Shooter motor control
+    TalonMotorGroup<TalonFX, TalonFXConfiguration> * m_pShooterMotors;      // Shooter motor control
     TalonFxMotorController *        m_pHoodMotor;                           // Hood motor control
     TalonFxMotorController *        m_pHangMotor;                           // Hang motor control
     
