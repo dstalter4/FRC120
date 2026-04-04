@@ -56,7 +56,7 @@ namespace Yta::Talon
     // Represents a combination of objects to use with a TalonFX motor controller
     class TalonFxMotorController
     {
-    public:
+      public:
         // Constructor
         TalonFxMotorController(uint32_t canId, CANBus & rCanBus) :
             m_pTalonFx(new TalonFX(static_cast<int>(canId), rCanBus)),
@@ -127,7 +127,7 @@ namespace Yta::Talon
             (void)m_pTalonFx->SetControl(musicTone);
         }
 
-    private:
+      private:
         // The Phoenix 6 API requires using different objects with SetControl()
         // function calls.  Create different possible objects so the main robot
         // code doesn't have to worry about it.
@@ -145,7 +145,7 @@ namespace Yta::Talon
     // options available (i.e. interchange within TalonMotorGroup).
     class EmptyTalon
     {
-    public:
+      public:
         EmptyTalon(const char *, uint32_t, uint32_t, MotorGroupControlMode, NeutralModeValue, const CANBus &) {}
 
         // TalonMotorGroup stubs
@@ -163,7 +163,7 @@ namespace Yta::Talon
         inline EmptyTalon & GetValue() { return m_EmptyTalonObj; }
         inline double value() { return 0.0; }
 
-    private:
+      private:
         // Singleton
         static EmptyTalon m_EmptyTalonObj;
     };

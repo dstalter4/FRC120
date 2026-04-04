@@ -37,7 +37,6 @@ YtaRobot * YtaRobot::m_pThis;
 YtaRobot::YtaRobot() :
     m_AutonomousChooser                 (),
     m_AutonomousPositionChooser         (),
-    m_AutoSwerveDirections              (),
     m_pDriveController                  (new DriveControllerType(DRIVE_CONTROLLER_MODEL, DRIVE_JOYSTICK_PORT)),
     m_pAuxController                    (new AuxControllerType(AUX_CONTROLLER_MODEL, AUX_JOYSTICK_PORT)),
     m_RioCanBus                         (RIO_CAN_BUS_NAME),

@@ -440,13 +440,12 @@ void DifferentialDrive::DirectionalAlign(int povValue)
 
 
 ////////////////////////////////////////////////////////////////
-/// @method DifferentialDrive::AutonomousDriveSequence
+/// @method DifferentialDrive::AutonomousDrive
 ///
-/// Drives during autonomous for a specified amount of time
-/// using traditional differential drive.
+/// Drives autonomously for a specified amount of time.
 ///
 ////////////////////////////////////////////////////////////////
-void DifferentialDrive::AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time)
+void DifferentialDrive::AutonomousDrive(RobotDirection direction, double speed, units::second_t time)
 {
     double leftSpeed = 0.0;
     double rightSpeed = 0.0;

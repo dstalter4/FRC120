@@ -62,7 +62,7 @@ public:
     void DriveSequence(std::function<const DriveControlInputs & ()> & rGetDriveControlInputsLambda);
 
     // Autonomous routines that can be called
-    void AutonomousDriveSequence(DifferentialDrive::RobotDirection direction, double speed, units::second_t time);
+    void AutonomousDrive(DifferentialDrive::RobotDirection direction, double speed, units::second_t time);
     void AutonomousBackDrive(DifferentialDrive::RobotDirection currentDirection);
     void AutonomousBackDriveTurn(DifferentialDrive::RobotDirection currentDirection);
 

@@ -118,47 +118,8 @@ private:
         ROBOT_MODE_NOT_SET
     };
 
-    enum class RobotTranslation
-    {
-        ROBOT_NO_TRANSLATION,
-        ROBOT_TRANSLATION_FORWARD,
-        ROBOT_TRANSLATION_REVERSE
-    };
-
-    enum class RobotStrafe
-    {
-        ROBOT_NO_STRAFE,
-        ROBOT_STRAFE_LEFT,
-        ROBOT_STRAFE_RIGHT
-    };
-
-    enum class RobotRotation
-    {
-        ROBOT_NO_ROTATION,
-        ROBOT_CLOCKWISE,
-        ROBOT_COUNTER_CLOCKWISE
-    };
-
     // STRUCTS
-    // @todo: Should these be in SwerveDrive.hpp?
-    struct RobotSwerveDirections
-    {
-      public:
-        RobotSwerveDirections() : m_Translation(RobotTranslation::ROBOT_NO_TRANSLATION), m_Strafe(RobotStrafe::ROBOT_NO_STRAFE), m_Rotation(RobotRotation::ROBOT_NO_ROTATION) {}
-        inline void SetSwerveDirections(RobotTranslation translationDirection, RobotStrafe strafeDirection, RobotRotation rotationDirection)
-        {
-            m_Translation = translationDirection;
-            m_Strafe = strafeDirection;
-            m_Rotation = rotationDirection;
-        }
-        inline RobotTranslation GetTranslation() { return m_Translation; }
-        inline RobotStrafe GetStrafe() { return m_Strafe; }
-        inline RobotRotation GetRotation() { return m_Rotation; }
-      private:
-        RobotTranslation m_Translation;
-        RobotStrafe m_Strafe;
-        RobotRotation m_Rotation;
-    };
+    // (none)
 
     // This is a hacky way of retrieving a pointer to the robot object
     // outside of the robot class.  The robot object itself is a static
@@ -179,15 +140,6 @@ private:
 
     // Updates information on the smart dashboard for the drive team
     void UpdateSmartDashboard();
-
-    // Autonomous wait for something to complete delay routine
-    inline void AutonomousDelay(units::second_t time);
-
-    // Autonomous drive for a specified time
-    inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
-
-    // Autonomous drive for a specified angle
-    inline void AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
     
     // Autonomous routines
     // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this)!
@@ -248,7 +200,6 @@ private:
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
     SendableChooser<std::string>    m_AutonomousPositionChooser;            // Selects from the dashboard where the robot is located
-    RobotSwerveDirections           m_AutoSwerveDirections;                 // Used by autonomous routines to control swerve drive movements
     
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
