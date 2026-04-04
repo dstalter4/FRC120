@@ -36,6 +36,7 @@
 #include "frc2/command/CommandPtr.h"                        // for CommandPtr
 
 // C++ INCLUDES
+#include "DifferentialDrive.hpp"                            // for using differential drive
 #include "DriveConfiguration.hpp"                           // for information on the drive config
 #include "RobotUtils.hpp"                                   // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                                  // for using swerve drive
@@ -117,22 +118,6 @@ private:
         ROBOT_MODE_NOT_SET
     };
 
-    enum RobotDriveState
-    {
-        MANUAL_CONTROL,
-        DIRECTIONAL_INCH,
-        DIRECTIONAL_ALIGN
-    };
-    
-    enum class RobotDirection
-    {
-        ROBOT_NO_DIRECTION,
-        ROBOT_FORWARD,
-        ROBOT_REVERSE,
-        ROBOT_LEFT,
-        ROBOT_RIGHT
-    };
-
     enum class RobotTranslation
     {
         ROBOT_NO_TRANSLATION,
@@ -155,6 +140,7 @@ private:
     };
 
     // STRUCTS
+    // @todo: Should these be in SwerveDrive.hpp?
     struct RobotSwerveDirections
     {
       public:
@@ -198,15 +184,10 @@ private:
     inline void AutonomousDelay(units::second_t time);
 
     // Autonomous drive for a specified time
-    inline void AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time);
     inline void AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
 
     // Autonomous drive for a specified angle
     inline void AutonomousRotateByGyroSequence(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
-    
-    // Autonomous routines to back drive the motors to abruptly stop
-    inline void AutonomousBackDrive(RobotDirection currentDirection);
-    inline void AutonomousBackDriveTurn(RobotDirection currentDirection);
     
     // Autonomous routines
     // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this)!
@@ -238,16 +219,7 @@ private:
 
     // Main sequence for drive motor control
     void SwerveDriveSequence();
-    void DriveControlSequence();
-
-    // Function to check for drive control direction swap
-    inline void CheckForDriveSwap();
-    
-    // Function to automate slightly moving the robot
-    bool DirectionalInch();
-    
-    // Function to automatically align the robot to a certain point
-    void DirectionalAlign();
+    void DifferentialDriveControlSequence();
 
     // Main sequence for LED control
     void LedSequence();
@@ -291,7 +263,7 @@ private:
 
     // GetCanBusReferenceLambda
     // Lambda to retrieve a reference to the CANBus with the specified string name.
-    std::function<const CANBus&(std::string_view)> GetCanBusReferenceLambda = [this](std::string_view canBusName) -> const CANBus&
+    std::function<const CANBus&(std::string_view)> m_GetCanBusReferenceLambda = [this](std::string_view canBusName) -> const CANBus&
     {
         if (canBusName.compare(CANIVORE_CAN_BUS_NAME) == 0)
         {
@@ -306,11 +278,11 @@ private:
     // Swerve Drive
     Pigeon2 *                       m_pPigeon;                              // CTRE Pigeon2 IMU
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
-    
+
+    // Differential Drive
+    DifferentialDrive *             m_pDifferentialDrive;                   // Differential drive control
+
     // Motors
-    typedef Yta::Talon::EmptyTalon  ArcadeDriveTalonType;                   // Switch to TalonMotorGroup<TalonFX, TalonFXConfiguration> for real implementation
-    ArcadeDriveTalonType *          m_pLeftDriveMotors;                     // Left drive motor control
-    ArcadeDriveTalonType *          m_pRightDriveMotors;                    // Right drive motor control
     TalonFxMotorController *        m_pIntakeRollersMotor;                  // Intake rollers motor control
     TalonFxMotorController *        m_pIntakeAngleMotor;                    // Intake angle motor control
     TalonFxMotorController *        m_pFeederMotor;                         // Feeder motor control
@@ -351,7 +323,6 @@ private:
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
     Timer *                         m_pRobotProgramTimer;                   // Starts at robot program entry, free runs for program life time
-    Timer *                         m_pSafetyTimer;                         // Fail safe in case critical operations don't complete
     
     // Accelerometer
     // (none)
@@ -370,7 +341,6 @@ private:
     units::angle::degree_t          m_IntakeAngleDegrees;                   // Keep track of the intake angle
     units::angle::degree_t          m_IntakeAngleOffsetDegrees;             // Keep track of the intake angle offset from manual adjustment
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
-    RobotDriveState                 m_RobotDriveState;                      // Keep track of how the drive sequence flows
     std::optional
     <DriverStation::Alliance>       m_AllianceColor;                        // Color reported by driver station during a match
     bool                            m_bIntakeLowered;                       // Keep track if the intake is lowered or raised
@@ -378,7 +348,6 @@ private:
     bool                            m_bShootSequenceActive;                 // Keep track if the robot is actively shooting/unclogging
     bool                            m_bShotInProgress;                      // Keep track if the robot is shooting balls
     bool                            m_bRioPinsStable;                       // Indicates whether the RIO pin measurements (e.g. PWM) are stable
-    bool                            m_bDriveSwap;                           // Allow the user to push a button to change forward/reverse
     bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progres
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
     
@@ -396,10 +365,6 @@ private:
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
     // Driver inputs
-    // Note: The primary drive axes are in the controller headers.
-    static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
-    static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
-
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                REZERO_SWERVE_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                LOCK_SWERVE_WHEELS_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
@@ -410,16 +375,24 @@ private:
     static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
     static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
+
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV = Yta::Controller::PovDirections::POV_LEFT;
+    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV = Yta::Controller::PovDirections::POV_RIGHT;
+
+
+    // These driver inputs only apply to differential drive.
+    // Note: The primary drive axes are in the controller headers.
+    static const int                DRIVE_SLOW_X_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_X_AXIS;
+    static const int                DRIVE_SLOW_Y_AXIS                       = DRIVE_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_Y_AXIS;
     static const int                DRIVE_SWAP_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_FORWARD_POV            = Yta::Controller::PovDirections::POV_INVALID_UP;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_REVERSE_POV            = Yta::Controller::PovDirections::POV_INVALID_DOWN;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_LEFT_POV               = Yta::Controller::PovDirections::POV_INVALID_LEFT;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_INCH_RIGHT_POV              = Yta::Controller::PovDirections::POV_INVALID_RIGHT;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_LEFT_OR_CCW_SLOW_POV = Yta::Controller::PovDirections::POV_LEFT;
-    static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_RIGHT_OR_CW_SLOW_POV = Yta::Controller::PovDirections::POV_RIGHT;
+
 
     // Aux inputs
     static const int                AUX_SHOOT_AXIS                          = AUX_CONTROLLER_MAPPINGS->AXIS_MAPPINGS.RIGHT_TRIGGER;
@@ -443,7 +416,8 @@ private:
     //       the same IDs, but still allow code for both drive base
     //       types to be present.  When using swerve drive, IDs 11-18
     //       are used by the swerve modules (see the SwerveModuleConfigs
-    //       in SwerveConfig.hpp).
+    //       in SwerveConfig.hpp).  When using differential drive, check
+    //       the IDs in DifferentialDrive.hpp.
     // Superstructure uses IDs starting at 31
     static const unsigned           INTAKE_ROLLERS_MOTOR_CAN_ID             = 31;   // PDH 6
     static const unsigned           INTAKE_ANGLE_MOTOR_CAN_ID               = 32;   // PDH 4
@@ -454,8 +428,6 @@ private:
     static const unsigned           HANG_MOTOR_CAN_ID                       = 38;
     static const unsigned           INTAKE_CANCODER_CAN_ID                  = 41;
     static const unsigned           HOOD_CANCODER_CAN_ID                    = 42;
-    static const unsigned           LEFT_DRIVE_MOTORS_CAN_START_ID          = Yta::Drive::Config::USE_SWERVE_DRIVE ? 64 : 1;
-    static const unsigned           RIGHT_DRIVE_MOTORS_CAN_START_ID         = Yta::Drive::Config::USE_SWERVE_DRIVE ? 66 : 3;
 
     // CANivore Signals
     // Note: IDs 21-24 are used by the CANcoders (see the
@@ -512,99 +484,11 @@ private:
     static const unsigned           TWO_MOTORS                              = 2;
     static const unsigned           NUMBER_OF_LEDS                          = 8;
 
-    static const unsigned           CAMERA_RUN_INTERVAL_MS                  = 1000U;
-    
-    static constexpr double         JOYSTICK_TRIM_UPPER_LIMIT               =  0.05;
-    static constexpr double         JOYSTICK_TRIM_LOWER_LIMIT               = -0.05;
     static constexpr double         JOYSTICK_AXIS_INPUT_DEAD_BAND           =  0.10;
-    static constexpr double         DRIVE_THROTTLE_VALUE_RANGE              =  1.00;
-    static constexpr double         DRIVE_THROTTLE_VALUE_BASE               =  0.00;
-    static constexpr double         DRIVE_SLOW_THROTTLE_VALUE               =  0.35;
+    static constexpr double         DRIVE_TRIM_UPPER_LIMIT                  =  0.05;
+    static constexpr double         DRIVE_TRIM_LOWER_LIMIT                  = -0.05;
     static constexpr double         SWERVE_DRIVE_SLOW_SPEED                 =  0.10;
     static constexpr double         SWERVE_ROTATE_SLOW_SPEED                =  0.10;
-    static constexpr double         DRIVE_MOTOR_UPPER_LIMIT                 =  1.00;
-    static constexpr double         DRIVE_MOTOR_LOWER_LIMIT                 = -1.00;
-
-    static constexpr units::second_t    SAFETY_TIMER_MAX_VALUE_S            =  5.00_s;
-
-
-
-    // These indicate which motor value (+1/-1) represent
-    // forward/reverse in the robot.  They are used to keep
-    // autonomous movement code common without yearly updates.
-
-    static constexpr double         LEFT_DRIVE_FORWARD_SCALAR               = -1.00;
-    static constexpr double         LEFT_DRIVE_REVERSE_SCALAR               = +1.00;
-    static constexpr double         RIGHT_DRIVE_FORWARD_SCALAR              = +1.00;
-    static constexpr double         RIGHT_DRIVE_REVERSE_SCALAR              = -1.00;
-
-    ////////////////////////////////////////////////////////////////
-    // Inputs from joystick:
-    //
-    // Forward:     (0, -1)
-    // Reverse:     (0, +1)
-    // Left:        (-1, 0)
-    // Right:       (+1, 0)
-    //
-    // Equations:
-    //
-    //     x+y   x-y   -x+y   -x-y
-    // F:   -1    +1     -1     +1
-    // B:   +1    -1     +1     -1
-    // L:   -1    -1     +1     +1
-    // R:   +1    +1     -1     -1
-    //
-    // Output to motors:
-    //
-    // Left forward/right = +1, Right forward/left  = +1:
-    // Left reverse/left  = -1, Right reverse/right = -1:
-    // x-y, -x-y
-    //
-    // Left forward/right = -1, Right forward/left  = -1:
-    // Left reverse/left  = +1, Right reverse/right = +1:
-    // -x+y, x+y
-    //
-    // Left forward/right = +1, Right forward/left  = -1:
-    // Left reverse/left  = -1, Right reverse/right = +1:
-    // x-y, x+y
-    //
-    // Left forward/right = -1, Right forward/left  = +1:
-    // Left reverse/left  = +1, Right reverse/right = -1:
-    // -x+y, -x-y
-    ////////////////////////////////////////////////////////////////
-
-    inline static constexpr double LeftDriveEquation(double xInput, double yInput)
-    {
-        double leftValue = 0.0;
-
-        if (static_cast<int>(LEFT_DRIVE_FORWARD_SCALAR) == 1)
-        {
-            leftValue = xInput - yInput;
-        }
-        else
-        {
-            leftValue = -xInput + yInput;
-        }
-        
-        return leftValue;
-    }
-
-    inline static constexpr double RightDriveEquation(double xInput, double yInput)
-    {
-        double rightValue = 0.0;
-
-        if (static_cast<int>(RIGHT_DRIVE_FORWARD_SCALAR) == 1)
-        {
-            rightValue = -xInput - yInput;
-        }
-        else
-        {
-            rightValue = xInput + yInput;
-        }
-        
-        return rightValue;
-    }
-
 };  // End class
 
 
@@ -619,25 +503,6 @@ inline void YtaRobot::HeartBeat()
 {
     m_HeartBeat++;
     SmartDashboard::PutNumber("Heartbeat", m_HeartBeat);
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::CheckForDriveSwap
-///
-/// Updates the drive control direction.
-///
-////////////////////////////////////////////////////////////////
-inline void YtaRobot::CheckForDriveSwap()
-{
-    // Check if the driver pushed the button to have
-    // forward be reverse and vice versa
-    if (m_pDriveController->DetectButtonChange(DRIVE_SWAP_BUTTON))
-    {
-        m_bDriveSwap = !m_bDriveSwap;
-        SmartDashboard::PutBoolean("Drive swap", m_bDriveSwap);
-    }
 }
 
 

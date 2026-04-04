@@ -42,9 +42,6 @@ void YtaRobot::AutonomousInit()
     // Indicate the autonomous routine has not executed yet
     YtaRobotAutonomous::bAutonomousExecutionComplete = false;
     
-    m_pSafetyTimer->Stop();
-    m_pSafetyTimer->Reset();
-    
     // Autonomous needs full camera processing
     RobotCamera::SetFullProcessing(true);
     RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);

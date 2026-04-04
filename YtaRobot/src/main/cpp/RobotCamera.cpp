@@ -65,7 +65,7 @@ double                                          RobotCamera::AutonomousCamera::m
 ////////////////////////////////////////////////////////////////
 bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors)
 {
-    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
+    //YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
     bool bTargetFound = false;
     m_AutoCameraTimer.Start();
 
@@ -149,8 +149,10 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
         if (bEnableMotors)
         {
             // Steer the robot
-            pRobotObj->m_pLeftDriveMotors->SetDutyCycle(-leftCommand);
-            pRobotObj->m_pRightDriveMotors->SetDutyCycle(rightCommand);
+            // @todo: DifferentialDrive cleanup - use a pRobotObj->m_pDifferentialDrive call.
+            //        Note: This entire method needs to be addressed as part of camera clean up.
+            //pRobotObj->m_pLeftDriveMotors->SetDutyCycle(-leftCommand);
+            //pRobotObj->m_pRightDriveMotors->SetDutyCycle(rightCommand);
         }
 
         // Send useful information to smart dashboard.
@@ -161,8 +163,8 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
     }
 
     // Motors off
-    pRobotObj->m_pLeftDriveMotors->SetDutyCycle(0.0);
-    pRobotObj->m_pRightDriveMotors->SetDutyCycle(0.0);
+    //pRobotObj->m_pLeftDriveMotors->SetDutyCycle(0.0);
+    //pRobotObj->m_pRightDriveMotors->SetDutyCycle(0.0);
 
     // Clean up the timer
     m_AutoCameraTimer.Stop();

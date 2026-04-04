@@ -43,9 +43,8 @@ YtaRobot::YtaRobot() :
     m_RioCanBus                         (RIO_CAN_BUS_NAME),
     m_CanivoreBus                       (CANIVORE_CAN_BUS_NAME),
     m_pPigeon                           (new Pigeon2(PIGEON_CAN_ID, m_CanivoreBus)),
-    m_pSwerveDrive                      (new SwerveDrive(m_pPigeon, GetCanBusReferenceLambda)),
-    m_pLeftDriveMotors                  (new ArcadeDriveTalonType("Left Drive", TWO_MOTORS, LEFT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, m_RioCanBus)),
-    m_pRightDriveMotors                 (new ArcadeDriveTalonType("Right Drive", TWO_MOTORS, RIGHT_DRIVE_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW, NeutralModeValue::Brake, m_RioCanBus)),
+    m_pSwerveDrive                      (new SwerveDrive(m_pPigeon, m_GetCanBusReferenceLambda)),
+    m_pDifferentialDrive                (new DifferentialDrive(m_GetCanBusReferenceLambda)),
     m_pIntakeRollersMotor               (new TalonFxMotorController(INTAKE_ROLLERS_MOTOR_CAN_ID, m_RioCanBus)),
     m_pIntakeAngleMotor                 (new TalonFxMotorController(INTAKE_ANGLE_MOTOR_CAN_ID, m_RioCanBus)),
     m_pFeederMotor                      (new TalonFxMotorController(FEEDER_MOTOR_CAN_ID, m_RioCanBus)),
@@ -64,21 +63,18 @@ YtaRobot::YtaRobot() :
     m_pHoodCanCoder                     (new CANcoder(HOOD_CANCODER_CAN_ID, m_RioCanBus)),
     m_pMatchModeTimer                   (new Timer()),
     m_pRobotProgramTimer                (new Timer()),
-    m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_ShooterMotorSpeed                 (SHOOTER_MOTOR_SPEED),
     m_InjectorMotorSpeed                (INJECTOR_MOTOR_SPEED),
     m_IntakeAngleDegrees                (INTAKE_UP_ANGLE_DEGREES),
     m_IntakeAngleOffsetDegrees          (0.0_deg),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
-    m_RobotDriveState                   (MANUAL_CONTROL),
     m_AllianceColor                     (DriverStation::GetAlliance()),
     m_bIntakeLowered                    (false),
     m_bIntakeSequenceActive             (false),
     m_bShootSequenceActive              (false),
     m_bShotInProgress                   (false),
     m_bRioPinsStable                    (false),
-    m_bDriveSwap                        (false),
     m_bCameraAlignInProgress            (false),
     m_HeartBeat                         (0U)
 {
@@ -414,8 +410,6 @@ void YtaRobot::InitialStateSetup()
     // @todo: Make this a dedicated function.
     m_pMatchModeTimer->Stop();
     m_pMatchModeTimer->Reset();
-    m_pSafetyTimer->Stop();
-    m_pSafetyTimer->Reset();
     
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
@@ -487,7 +481,7 @@ void YtaRobot::TeleopPeriodic()
     }
     else
     {
-        DriveControlSequence();
+        DifferentialDriveControlSequence();
     }
 
     IntakeSequence();
@@ -1542,9 +1536,9 @@ void YtaRobot::SwerveDriveSequence()
 
     // The GetDriveX() and GetDriveY() functions refer to ***controller joystick***
     // x and y axes.  Multiply by -1.0 here to keep the joystick input retrieval code common.
-    double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
+    double translationAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput() * -1.0, DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+    double strafeAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput() * -1.0, DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+    double rotationAxis = RobotUtils::Trim(m_pDriveController->GetDriveRotateInput() * -1.0, DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
 
     // Override normal control if a fine positioning request is made
     switch (m_pDriveController->GetPovAsDirection())
@@ -1614,7 +1608,7 @@ void YtaRobot::SwerveDriveSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DriveControlSequence
+/// @method YtaRobot::DifferentialDriveControlSequence
 ///
 /// This method contains the main workflow for drive control.
 /// It will gather input from the drive joystick and then filter
@@ -1623,385 +1617,62 @@ void YtaRobot::SwerveDriveSequence()
 /// will actually set the speed values.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::DriveControlSequence()
+void YtaRobot::DifferentialDriveControlSequence()
 {
-    if (Yta::Drive::Config::DIRECTIONAL_ALIGN_ENABLED)
+    static DifferentialDrive::DriveControlInputs driveControlInputs;
+    std::function<const DifferentialDrive::DriveControlInputs & ()> getDriveControlInputsLambda = [this]() -> const DifferentialDrive::DriveControlInputs &
     {
-        // Check for a directional align first
-        DirectionalAlign();
-        
-        // If an align is in progress, do not accept manual driver input
-        if (m_RobotDriveState == DIRECTIONAL_ALIGN)
+        driveControlInputs.m_xAxis = RobotUtils::Trim(m_pDriveController->GetDriveXInput(), DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+        driveControlInputs.m_yAxis = RobotUtils::Trim(m_pDriveController->GetDriveYInput(), DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+        driveControlInputs.m_xAxisSlow = RobotUtils::Trim(m_pDriveController->GetAxisValue(DRIVE_SLOW_X_AXIS), DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+        driveControlInputs.m_yAxisSlow = RobotUtils::Trim(m_pDriveController->GetAxisValue(DRIVE_SLOW_Y_AXIS), DRIVE_TRIM_UPPER_LIMIT, DRIVE_TRIM_LOWER_LIMIT);
+        driveControlInputs.m_PovValue = m_pDriveController->GetPovValue();
+        driveControlInputs.m_Throttle = m_pDriveController->GetThrottleControl();
+
+        if (Yta::Drive::Config::DRIVE_SWAP_ENABLED)
         {
-            return;
-        }
-    }
-
-    if (Yta::Drive::Config::DIRECTIONAL_INCH_ENABLED)
-    {
-        // If a directional inch occurred, just return
-        if (DirectionalInch())
-        {
-            return;
-        }
-    }
-
-    if (Yta::Drive::Config::DRIVE_SWAP_ENABLED)
-    {
-        CheckForDriveSwap();
-    }
-    
-    // Computes what the maximum drive speed could be
-    double throttleControl = (m_pDriveController->GetThrottleControl() * DRIVE_THROTTLE_VALUE_RANGE) + DRIVE_THROTTLE_VALUE_BASE;
-
-    // All the controllers are normalized
-    // to represent the x and y axes with
-    // the following values:
-    //   -1
-    //    |
-    // -1---+1
-    //    |
-    //   +1
-    
-    // Get driver X/Y inputs
-    double xAxisDrive = m_pDriveController->GetDriveXInput();
-    double yAxisDrive = m_pDriveController->GetDriveYInput();
-
-    if (RobotUtils::DEBUG_PRINTS)
-    {
-        SmartDashboard::PutNumber("x-axis input", xAxisDrive);
-        SmartDashboard::PutNumber("y-axis input", yAxisDrive);
-    }
-    
-    // Make sure axes inputs clear a certain threshold.  This will help to drive straight.
-    xAxisDrive = RobotUtils::Trim((xAxisDrive * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-    yAxisDrive = RobotUtils::Trim((yAxisDrive * throttleControl), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-
-    // If the swap direction button was pressed, negate y value
-    if (m_bDriveSwap)
-    {
-        yAxisDrive *= -1.0;
-    }
-
-    // By default, the drive equations cause the x-axis input
-    // to be flipped when going reverse.  Correct that here,
-    // if configured.  Remember, y-axis full forward is negative.
-    if ((!Yta::Drive::Config::USE_INVERTED_REVERSE_CONTROLS) && (yAxisDrive > 0.0))
-    {
-        xAxisDrive *= -1.0;
-    }
-    
-    if (Yta::Drive::Config::SLOW_DRIVE_ENABLED)
-    {
-        // Get the slow drive control joystick input
-        double xAxisSlowDrive = m_pDriveController->GetAxisValue(DRIVE_SLOW_X_AXIS);
-        xAxisSlowDrive = RobotUtils::Trim((xAxisSlowDrive * DRIVE_SLOW_THROTTLE_VALUE), JOYSTICK_TRIM_UPPER_LIMIT, JOYSTICK_TRIM_LOWER_LIMIT);
-        
-        // If the normal x-axis drive is non-zero, use it.  Otherwise use the slow drive input, which could also be zero.
-        xAxisDrive = (xAxisDrive != 0.0) ? xAxisDrive : xAxisSlowDrive;
-    }
-    
-    // Filter motor speeds
-    double leftSpeed = RobotUtils::Limit((LeftDriveEquation(xAxisDrive, yAxisDrive)), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
-    double rightSpeed = RobotUtils::Limit(RightDriveEquation(xAxisDrive, yAxisDrive), DRIVE_MOTOR_UPPER_LIMIT, DRIVE_MOTOR_LOWER_LIMIT);
-    
-    // Set motor speed
-    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
-    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
-
-    if (RobotUtils::DEBUG_PRINTS)
-    {
-        SmartDashboard::PutNumber("Left drive speed", leftSpeed);
-        SmartDashboard::PutNumber("Right drive speed", rightSpeed);
-    }
-
-    m_pLeftDriveMotors->DisplayStatusInformation();
-    m_pRightDriveMotors->DisplayStatusInformation();
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DirectionalInch
-///
-/// This method contains the main workflow for drive directional
-/// inching.  Based on input direction, it will briefly move the
-/// robot a slight amount in that direction.
-///
-////////////////////////////////////////////////////////////////
-bool YtaRobot::DirectionalInch()
-{
-    static Timer * pInchingDriveTimer = new Timer();
-    static constexpr units::second_t INCHING_DRIVE_DELAY_S = 0.10_s;
-    static constexpr double INCHING_DRIVE_SPEED = 0.25;
-
-    double leftSpeed = 0.0;
-    double rightSpeed = 0.0;
-
-    if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_FORWARD_POV)
-    {
-        leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
-        rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
-    }
-    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_REVERSE_POV)
-    {
-        leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
-        rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
-    }
-    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_LEFT_POV)
-    {
-        leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR;
-        rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR;
-    }
-    else if (m_pDriveController->GetPovAsDirection() == DRIVE_CONTROLS_INCH_RIGHT_POV)
-    {
-        leftSpeed = INCHING_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR;
-        rightSpeed = INCHING_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR;
-    }
-    else
-    {
-    }
-    
-    if ((leftSpeed == 0.0) && (rightSpeed == 0.0))
-    {
-        // No directional inch input, just return
-        return false;
-    }
-    
-    // Start the timer
-    pInchingDriveTimer->Reset();
-    pInchingDriveTimer->Start();
-    
-    // Motors on
-    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
-    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
-    
-    while (pInchingDriveTimer->Get() < INCHING_DRIVE_DELAY_S)
-    {
-    }
-    
-    // Motors back off
-    m_pLeftDriveMotors->SetDutyCycle(OFF);
-    m_pRightDriveMotors->SetDutyCycle(OFF);
-    
-    // Stop the timer
-    pInchingDriveTimer->Stop();
-    pInchingDriveTimer->Reset();
-
-    return true;
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DirectionalAlign
-///
-/// This method contains the main workflow for automatically
-/// aligning the robot to an angle based on input from the
-/// driver.  The angles are relative to the robot at the start
-/// of the match (when power is applied to the gyro and zero
-/// is set).  The robot angle is reported as follows:
-///
-///     0
-///     |
-/// 270---90
-///     |
-///    180
-///
-/// The POV input is used to pick the angle to align to.  The
-/// corresponding input on the d-pad maps 1:1 to the drawing.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::DirectionalAlign()
-{
-    static Timer * pDirectionalAlignTimer = new Timer();
-    static constexpr units::second_t DIRECTIONAL_ALIGN_MAX_TIME_S = 3.00_s;
-    static constexpr double DIRECTIONAL_ALIGN_DRIVE_SPEED = 0.55;
-
-    // Retain the last POV value between function invocations
-    static int lastPovValue = -1;
-    
-    // Indicate whether or not a change between align/no align is allowed
-    static bool bStateChangeAllowed = false;
-    
-    // Get the current POV value
-    int povValue = m_pDriveController->GetPovValue();
-    
-    // Check if it changed since last function call
-    if (povValue != lastPovValue)
-    {
-        // Something changed, figure out what
-        
-        // POV button was released
-        if (povValue == -1)
-        {
-            // State change not allowed until next button press
-            bStateChangeAllowed = false;
-        }
-        // POV button was pressed
-        else if (lastPovValue == -1)
-        {
-            // State change allowed since button is now pressed
-            bStateChangeAllowed = true;
-        }
-        // There was some change in the already pressed POV value, which doesn't matter
-        else
-        {
-        }
-    }
-    
-    const int POV_NORMALIZATION_ANGLE = 45;
-    
-    // Save off a new last POV value
-    lastPovValue = povValue;
-    
-    // This alignment uses the following from the POV input:
-    //
-    // ///////////////////////
-    // //   315      45     //
-    // //     \  up  /      //
-    // // left |    | right //
-    // //     / down \      //
-    // //   225      135    //
-    // ///////////////////////
-    //
-    // The input value (0 -> 360) will be normalized such that
-    // angle 315 is interpreted as zero.
-    static int destinationAngle = -1;
-    
-    switch (m_RobotDriveState)
-    {
-        case MANUAL_CONTROL:
-        {
-            // Only start an align if a state change is allowed
-            if (bStateChangeAllowed)
-            {                
-                // @todo: Switch this logic to use GetPovAsDirection()
-
-                // This gives a value between 45 -> 405
-                povValue += POV_NORMALIZATION_ANGLE;
-                
-                // Normalize between 0 -> 360 (maps 0:360 in to 45:360:0:45 out)
-                if (povValue >= ANGLE_360_DEGREES)
-                {
-                    povValue -= ANGLE_360_DEGREES;
-                }
-                
-                // Now at value between 0 -> 360, where:
-                // 0 -> 89 = align up
-                // 90 -> 179 = align right
-                // 180 -> 269 = align down
-                // 270 -> 359 = align left
-                // Get a scalar multiplier to find the destination angle.
-                // Making this volatile to prevent the compiler from trying
-                // to optimize the division followed by multliplication of
-                // the same constant.  Integer division is deliberate.
-                // This gives a scalar multiplier of 0 -> 3
-                volatile int degreeMultiplier = (povValue / ANGLE_90_DEGREES);
-                
-                // Find the destination angle.
-                // This gives a value of 0, 90, 180 or 270
-                destinationAngle = ANGLE_90_DEGREES * degreeMultiplier;
-                
-                // Read the starting angle
-                // @todo: Use Pigeon2 to get angle.
-                int startingAngle = 0;
-                
-                // Do some angle math to figure out which direction is faster to turn.
-                // Examples:
-                // Starting: 45, 180    Destination: 0, 90, 180, 270
-                // 45 - 0 = 45          180 - 0 = 180
-                // 45 - 90 = -45        180 - 90 = 90
-                // 45 - 180 = -135      180 - 180 = 0
-                // 45 - 270 = -225      180 - 270 = -90
-                int angleDistance = startingAngle - destinationAngle;
-                int absValueAngleDistance = std::abs(angleDistance);
-                
-                // Variables to indicate which way to turn
-                bool bTurnLeft = false;
-                bool bTurnRight = false;
-                
-                // Figure out which way to turn
-                if (angleDistance > 0)
-                {
-                    // Target is to the left of where we are
-                    bTurnLeft = true;
-                }
-                else
-                {
-                    // Target is to the right of where we are
-                    bTurnRight = true;
-                }
-
-                // If the target distance is more than halfway around, it's actually faster to turn the other way 
-                if (absValueAngleDistance > ANGLE_180_DEGREES)
-                {
-                    bTurnLeft = !bTurnLeft;
-                    bTurnRight = !bTurnRight;
-                }
-                
-                // The destination angle and direction is now known, time to do the move
-                if (bTurnLeft)
-                {
-                    m_pLeftDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_REVERSE_SCALAR);
-                    m_pRightDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_FORWARD_SCALAR);
-                }
-                if (bTurnRight)
-                {
-                    m_pLeftDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * LEFT_DRIVE_FORWARD_SCALAR);
-                    m_pRightDriveMotors->SetDutyCycle(DIRECTIONAL_ALIGN_DRIVE_SPEED * RIGHT_DRIVE_REVERSE_SCALAR);
-                }
-                
-                // Start the safety timer
-                pDirectionalAlignTimer->Start();
-
-                // Indicate a state change is not allowed until POV release
-                bStateChangeAllowed = false;
-                
-                // Indicate a directional align is in process
-                m_RobotDriveState = DIRECTIONAL_ALIGN;
-            }
-            
-            break;
-        }
-        case DIRECTIONAL_ALIGN:
-        {   
-            // Three conditions for stopping the align:
-            // 1. Destination angle is reached
-            // 2. Safety timer expires
-            // 3. User cancels the operation
-            // @todo: Is it a problem that (destinationAngle - 1) can be negative when angle == zero?
-            // @todo: Use Pigeon2 to get angle.
-            int currentAngle = 0;
-            if (((currentAngle >= (destinationAngle - 1)) && (currentAngle <= (destinationAngle + 1))) ||
-                (pDirectionalAlignTimer->Get() > DIRECTIONAL_ALIGN_MAX_TIME_S) ||
-                (bStateChangeAllowed))
+            // Check if the driver pushed the button to have
+            // forward be reverse and vice versa
+            if (m_pDriveController->DetectButtonChange(DRIVE_SWAP_BUTTON))
             {
-                // Motors off
-                m_pLeftDriveMotors->SetDutyCycle(OFF);
-                m_pRightDriveMotors->SetDutyCycle(OFF);
-                
-                // Reset the safety timer
-                pDirectionalAlignTimer->Stop();
-                pDirectionalAlignTimer->Reset();
-                
-                // Clear this just to be safe
-                destinationAngle = -1;
-                
-                // Indicate a state change is not allowed until POV release
-                bStateChangeAllowed = false;
-                
-                // Align done, back to manual control
-                m_RobotDriveState = MANUAL_CONTROL;
+                driveControlInputs.m_bDriveSwap = !driveControlInputs.m_bDriveSwap;
             }
-            
-            break;
         }
-        default:
+
+        Yta::Controller::PovDirections povDirection = m_pDriveController->GetPovAsDirection();
+        switch (povDirection)
         {
-            break;
+            case DRIVE_CONTROLS_INCH_FORWARD_POV:
+            {
+                driveControlInputs.m_InchingDirection = DifferentialDrive::RobotDirection::ROBOT_FORWARD;
+                break;
+            }
+            case DRIVE_CONTROLS_INCH_REVERSE_POV:
+            {
+                driveControlInputs.m_InchingDirection = DifferentialDrive::RobotDirection::ROBOT_REVERSE;
+                break;
+            }
+            case DRIVE_CONTROLS_INCH_LEFT_POV:
+            {
+                driveControlInputs.m_InchingDirection = DifferentialDrive::RobotDirection::ROBOT_LEFT;
+                break;
+            }
+            case DRIVE_CONTROLS_INCH_RIGHT_POV:
+            {
+                driveControlInputs.m_InchingDirection = DifferentialDrive::RobotDirection::ROBOT_RIGHT;
+                break;
+            }
+            default:
+            {
+                driveControlInputs.m_InchingDirection = DifferentialDrive::RobotDirection::ROBOT_NO_DIRECTION;
+                break;
+            }
         }
-    }
+
+        return driveControlInputs;
+    };
+
+    m_pDifferentialDrive->DriveSequence(getDriveControlInputsLambda);
 }
 
 

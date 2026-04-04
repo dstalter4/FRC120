@@ -58,29 +58,6 @@ namespace YtaRobotAutonomous
     //static const bool       ROUTINE_3                           = false;
     //static const bool       TEST_ENABLED                        = false;
     static const bool       USE_COMMAND_BASED_AUTONOMOUS        = false;
-
-    // Autonomous drive speed constants
-    static constexpr double DRIVE_SPEED_SLOW                    =  0.30;
-    static constexpr double DRIVE_SPEED_FAST                    =  0.50;
-    static constexpr double TURN_SPEED                          =  0.25;
-    static constexpr double COUNTERACT_COAST_MOTOR_SPEED        =  0.20;
-    
-    // Autonomous angle constants
-    static const int        FORTY_FIVE_DEGREES                  = 45;
-    static const int        NINETY_DEGREES                      = 90;
-    static const int        ONE_HUNDRED_EIGHTY_DEGREES          = 180;
-    static const int        THREE_HUNDRED_SIXTY_DEGREES         = 360;
-    
-    // Autonomous delay constants
-    static constexpr units::second_t SWERVE_OP_STEP_TIME_S      =  0.10_s;
-    static constexpr units::second_t COUNTERACT_COAST_TIME_S    =  0.25_s;
-    static constexpr units::second_t DELAY_SHORT_S              =  0.50_s;
-    static constexpr units::second_t DELAY_MEDIUM_S             =  1.00_s;
-    static constexpr units::second_t DELAY_LONG_S               =  2.00_s;
-    
-    // Autonomous misc constants
-    static const unsigned   I2C_THREAD_UPDATE_RATE_MS           = 20U;
-    
 } // End namespace
 
 
@@ -96,66 +73,6 @@ namespace YtaRobotAutonomous
 inline void YtaRobot::AutonomousDelay(units::second_t time)
 {
     Wait(time);
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::AutonomousDriveSequence
-///
-/// Drives during autonomous for a specified amount of time
-/// using traditional differential drive.
-///
-////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousDriveSequence(RobotDirection direction, double speed, units::second_t time)
-{
-    double leftSpeed = 0.0;
-    double rightSpeed = 0.0;
-
-    switch (direction)
-    {
-        case RobotDirection::ROBOT_FORWARD:
-        {
-            leftSpeed = speed * LEFT_DRIVE_FORWARD_SCALAR;
-            rightSpeed = speed * RIGHT_DRIVE_FORWARD_SCALAR;
-            break;
-        }
-        case RobotDirection::ROBOT_REVERSE:
-        {
-            leftSpeed = speed * LEFT_DRIVE_REVERSE_SCALAR;
-            rightSpeed = speed * RIGHT_DRIVE_REVERSE_SCALAR;
-            break;
-        }
-        case RobotDirection::ROBOT_LEFT:
-        {
-            leftSpeed = speed * LEFT_DRIVE_REVERSE_SCALAR;
-            rightSpeed = speed * RIGHT_DRIVE_FORWARD_SCALAR;
-            break;
-        }
-        case RobotDirection::ROBOT_RIGHT:
-        {
-            leftSpeed = speed * LEFT_DRIVE_FORWARD_SCALAR;
-            rightSpeed = speed * RIGHT_DRIVE_REVERSE_SCALAR;
-            break;
-        }
-        default:
-        {
-            leftSpeed = 0.0;
-            rightSpeed = 0.0;
-            break;
-        }
-    }
-
-    // First turn the motors on
-    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
-    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
-
-    // Time it
-    AutonomousDelay(time);
-
-    // Motors back off
-    m_pLeftDriveMotors->SetDutyCycle(OFF);
-    m_pRightDriveMotors->SetDutyCycle(OFF);
 }
 
 
@@ -233,8 +150,10 @@ inline void YtaRobot::AutonomousSwerveDriveSequence(RobotSwerveDirections & rSwe
     while (duration < time)
     {
         m_pSwerveDrive->SetModuleStates(translation2d, rotateSpeed, bFieldRelative, true);
-        AutonomousDelay(YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S);
-        duration += YtaRobotAutonomous::SWERVE_OP_STEP_TIME_S;
+
+        static constexpr units::second_t SWERVE_OP_STEP_TIME_S      =  0.10_s;
+        AutonomousDelay(SWERVE_OP_STEP_TIME_S);
+        duration += SWERVE_OP_STEP_TIME_S;
     }
 
     // Stop motion
@@ -274,109 +193,6 @@ inline void YtaRobot::AutonomousRotateByGyroSequence(RobotRotation robotRotation
 
     // Stop motion
     m_pSwerveDrive->SetModuleStates({0_m, 0_m}, 0.0, true, true);
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::AutonomousBackDrive
-///
-/// Back drives the motors to abruptly stop the robot.
-///
-////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousBackDrive(RobotDirection currentDirection)
-{
-    double leftSpeed = YtaRobotAutonomous::COUNTERACT_COAST_MOTOR_SPEED;
-    double rightSpeed = YtaRobotAutonomous::COUNTERACT_COAST_MOTOR_SPEED;
-
-    switch (currentDirection)
-    {
-        // If we are currently going forward, back drive is reverse
-        case RobotDirection::ROBOT_FORWARD:
-        {
-            leftSpeed *= LEFT_DRIVE_REVERSE_SCALAR;
-            rightSpeed *= RIGHT_DRIVE_REVERSE_SCALAR;
-            break;
-        }
-        // If we are currently going reverse, back drive is forward
-        case RobotDirection::ROBOT_REVERSE:
-        {
-            leftSpeed *= LEFT_DRIVE_FORWARD_SCALAR;
-            rightSpeed *= RIGHT_DRIVE_FORWARD_SCALAR;
-            break;
-        }
-        default:
-        {
-            leftSpeed = 0.0;
-            rightSpeed = 0.0;
-            break;
-        }
-    }
-    
-    // Counteract coast
-    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
-    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
-    
-    // Delay
-    AutonomousDelay(YtaRobotAutonomous::COUNTERACT_COAST_TIME_S);
-    
-    // Motors off
-    m_pLeftDriveMotors->SetDutyCycle(OFF);
-    m_pRightDriveMotors->SetDutyCycle(OFF);
-    
-    m_pSafetyTimer->Reset();
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::AutonomousBackDriveTurn
-///
-/// Back drives the motors to abruptly stop the robot during
-/// a turn.
-///
-////////////////////////////////////////////////////////////////
-inline void YtaRobot::AutonomousBackDriveTurn(RobotDirection currentDirection)
-{
-    double leftSpeed = YtaRobotAutonomous::COUNTERACT_COAST_MOTOR_SPEED;
-    double rightSpeed = YtaRobotAutonomous::COUNTERACT_COAST_MOTOR_SPEED;
-
-    switch (currentDirection)
-    {
-        // If the turn is left, counteract is right
-        case RobotDirection::ROBOT_LEFT:
-        {
-            leftSpeed *= LEFT_DRIVE_FORWARD_SCALAR;
-            rightSpeed *= RIGHT_DRIVE_REVERSE_SCALAR;
-            break;
-        }
-        // If the turn is right, counteract is left
-        case RobotDirection::ROBOT_RIGHT:
-        {
-            leftSpeed *= LEFT_DRIVE_REVERSE_SCALAR;
-            rightSpeed *= RIGHT_DRIVE_FORWARD_SCALAR;
-            break;
-        }
-        default:
-        {
-            leftSpeed = 0.0;
-            rightSpeed = 0.0;
-            break;
-        }
-    }
-    
-    // Counteract coast
-    m_pLeftDriveMotors->SetDutyCycle(leftSpeed);
-    m_pRightDriveMotors->SetDutyCycle(rightSpeed);
-    
-    // Delay
-    AutonomousDelay(YtaRobotAutonomous::COUNTERACT_COAST_TIME_S);
-    
-    // Motors off
-    m_pLeftDriveMotors->SetDutyCycle(OFF);
-    m_pRightDriveMotors->SetDutyCycle(OFF);
-    
-    m_pSafetyTimer->Reset();
 }
 
 #endif // YTAROBOTAUTONOMOUS_HPP

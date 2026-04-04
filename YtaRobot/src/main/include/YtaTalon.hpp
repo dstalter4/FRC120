@@ -146,7 +146,7 @@ namespace Yta::Talon
     class EmptyTalon
     {
     public:
-        EmptyTalon(const char *, uint32_t, uint32_t, MotorGroupControlMode, NeutralModeValue, CANBus &) {}
+        EmptyTalon(const char *, uint32_t, uint32_t, MotorGroupControlMode, NeutralModeValue, const CANBus &) {}
 
         // TalonMotorGroup stubs
         inline void SetDutyCycle(double) {}
