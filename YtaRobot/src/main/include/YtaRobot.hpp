@@ -41,20 +41,16 @@
 #include "RobotUtils.hpp"                                   // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                                  // for using swerve drive
 #include "YtaController.hpp"                                // for controller interaction
+#include "YtaLed.hpp"                                       // for LED interaction
 #include "YtaTalon.hpp"                                     // for custom Talon control
 #include "ctre/phoenix6/CANBus.hpp"                         // for creating CANBus objects
-#include "ctre/phoenix6/CANdle.hpp"                         // for interacting with the CANdle
 #include "ctre/phoenix6/Pigeon2.hpp"                        // for PigeonIMU
 #include "ctre/phoenix6/SignalLogger.hpp"                   // for disabling automatic signal logging
-#include "ctre/phoenix6/controls/RainbowAnimation.hpp"      // for creating animations on the CANdle
 
 
 using namespace frc;
 using namespace frc2;
-using namespace ctre::phoenix6;
-using namespace ctre::phoenix6::controls;
 using namespace ctre::phoenix6::hardware;
-using namespace ctre::phoenix6::signals;
 
 
 ////////////////////////////////////////////////////////////////
@@ -175,9 +171,6 @@ private:
 
     // Main sequence for LED control
     void LedSequence();
-    inline void SetLedsToAllianceColor();
-    void MarioKartLights(double translation, double strafe, double rotate);
-    void BlinkMorseCodePattern();
 
     // Main sequence for music control
     void MusicSequence();
@@ -241,15 +234,10 @@ private:
     TalonMotorGroup<TalonFX, TalonFXConfiguration> * m_pShooterMotors;      // Shooter motor control
     TalonFxMotorController *        m_pHoodMotor;                           // Hood motor control
     TalonFxMotorController *        m_pHangMotor;                           // Hang motor control
-    
-    // LEDs
-    CANdle *                        m_pCandle;                              // Controls an RGB LED strip
-    SolidColor                      m_LedStripSolidColor;                   // Used when setting the LEDs to RGB values
-    RainbowAnimation                m_RainbowAnimation;                     // Rainbow animation configuration (brightness, speed, # LEDs)
-    static constexpr const RGBWColor RGBW_OFF{0, 0, 0, 0};                  // Common RGBWColor expression representing LEDs off
 
-    // Interrupts
-    // (none)
+    // LEDs
+    YtaLedController *              m_pLedController;                       // Interfacing to the LEDs
+
 
     // Digital I/O
     DigitalOutput *                 m_pDebugOutput;                         // Debug assist output
@@ -454,37 +442,6 @@ inline void YtaRobot::HeartBeat()
 {
     m_HeartBeat++;
     SmartDashboard::PutNumber("Heartbeat", m_HeartBeat);
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method YtaRobot::SetLedsToAllianceColor
-///
-/// Sets the LEDs to the alliance color.
-///
-////////////////////////////////////////////////////////////////
-void YtaRobot::SetLedsToAllianceColor()
-{
-    switch (m_AllianceColor.value())
-    {
-        case DriverStation::Alliance::kRed:
-        {
-            constexpr const RGBWColor RGBW_RED{255, 0, 0, 0};
-            m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_RED));
-            break;
-        }
-        case DriverStation::Alliance::kBlue:
-        {
-            constexpr const RGBWColor RGBW_BLUE{0, 0, 255, 0};
-            m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_BLUE));
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
 }
 
 
