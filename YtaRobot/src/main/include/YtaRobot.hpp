@@ -42,6 +42,7 @@
 #include "SwerveDrive.hpp"                                  // for using swerve drive
 #include "YtaController.hpp"                                // for controller interaction
 #include "YtaLed.hpp"                                       // for LED interaction
+#include "YtaMusic.hpp"                                     // for music funtionality
 #include "YtaTalon.hpp"                                     // for custom Talon control
 #include "ctre/phoenix6/CANBus.hpp"                         // for creating CANBus objects
 #include "ctre/phoenix6/Pigeon2.hpp"                        // for PigeonIMU
