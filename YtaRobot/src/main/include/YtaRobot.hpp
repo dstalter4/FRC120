@@ -480,13 +480,13 @@ private:
     // (none)
 
     // Motor speeds and angles
-    static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.60;
+    static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.75;
     static constexpr double         FEEDER_MOTOR_SPEED                      = 0.20;
-    static constexpr double         INJECTOR_MOTOR_SPEED                    = 0.90;
-    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.85;
+    static constexpr double         INJECTOR_MOTOR_SPEED                    = -0.70;
+    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.60;
     static constexpr double         SHOOTER_MOTOR_SPEED_STEP                = 0.05;
 
-    static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = 0.0_deg;
+    static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = -20.0_deg;
     static constexpr const units::angle::degree_t INTAKE_DOWN_ANGLE_DEGREES             = -120.0_deg;
     static constexpr const units::angle::degree_t INTAKE_MANUAL_ADJUST_STEP_DEGREES     = 10.0_deg;
 
@@ -494,8 +494,8 @@ private:
 
     // Misc
     const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
-    const std::string               AUTO_ROUTINE_1_STRING                   = "Bump";
-    const std::string               AUTO_ROUTINE_2_STRING                   = "Center";
+    const std::string               AUTO_ROUTINE_1_STRING                   = "Move to depot";
+    const std::string               AUTO_ROUTINE_2_STRING                   = "Move straight back";
     const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
 

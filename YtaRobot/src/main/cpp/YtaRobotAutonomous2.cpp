@@ -23,40 +23,25 @@
 ////////////////////////////////////////////////////////////////
 /// @method YtaRobot::AutonomousRoutine2
 ///
-/// Autonomous routine 2.
+/// Autonomous routine 2.  Starts centered, backs up, and shoots.
 ///
 ////////////////////////////////////////////////////////////////
 void YtaRobot::AutonomousRoutine2()
 {
-    // The robot faces the driver station, so it is off by 180 degrees
-    m_pPigeon->SetYaw(units::angle::degree_t(ANGLE_180_DEGREES));
+    // The robot does not face the driver station, so no need to set the pigeon yaw.
+
+    // Backup towards the tower
     m_AutoSwerveDirections.SetSwerveDirections(RobotTranslation::ROBOT_TRANSLATION_REVERSE, RobotStrafe::ROBOT_NO_STRAFE, RobotRotation::ROBOT_NO_ROTATION);
-    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.00, 2.75_s, true);
+    AutonomousSwerveDriveSequence(m_AutoSwerveDirections, 0.15, 0.0, 0.00, 1.0_s, true);
 
     // Ramp up the shooter
-    m_pShooterMotors->Set(0.65);
-    AutonomousDelay(0.5_s);
+    m_pShooterMotors->Set(SHOOTER_MOTOR_SPEED);
+    AutonomousDelay(1.0_s);
 
-    // Injector on
+    // Injector and feeder on
     m_pInjectorMotor->SetDutyCycle(-INJECTOR_MOTOR_SPEED);
- 
-    // Feeder oscillating loop
-    Timer feederTimer;   
-    for (uint32_t i = 0U; i < 12U; i++)
-    {
-        m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
-        AutonomousDelay(0.35_s);
-        m_pFeederMotor->SetDutyCycle(0.0);
-        AutonomousDelay(0.15_s);
-        m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
-        AutonomousDelay(0.35_s);
-        m_pFeederMotor->SetDutyCycle(0.0);
-        AutonomousDelay(0.15_s);
-        if (i == 2U)
-        {
-            m_pIntakeRollersMotor->SetDutyCycle(-INTAKE_ROLLERS_MOTOR_SPEED);
-        }
-    }
+    m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
+    AutonomousDelay(5.0_s);
 
     m_pShooterMotors->Set(0.0);
     m_pInjectorMotor->SetDutyCycle(0.0);

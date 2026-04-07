@@ -98,9 +98,10 @@ YtaRobot::YtaRobot() :
     m_AutonomousChooser.AddOption(AUTO_TEST_ROUTINE_STRING, AUTO_TEST_ROUTINE_STRING);
     SmartDashboard::PutData("Autonomous Modes", &m_AutonomousChooser);
 
-    m_AutonomousPositionChooser.SetDefaultOption("Hub right", "Hub right");
-    m_AutonomousPositionChooser.AddOption("Hub left", "Hub left");
-    SmartDashboard::PutData("Autonomous Position", &m_AutonomousPositionChooser);
+    m_AutonomousPositionChooser.SetDefaultOption("Left bump", "Left bump");
+    m_AutonomousPositionChooser.AddOption("Hub", "Hub");
+    m_AutonomousPositionChooser.AddOption("Right bump", "Right bump");
+    SmartDashboard::PutData("Autonomous Starting Position", &m_AutonomousPositionChooser);
 
     RobotUtils::DisplayFormattedMessage("The drive forward axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.RIGHT_TRIGGER);
     RobotUtils::DisplayFormattedMessage("The drive reverse axis is: %d\n", Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL)->AXIS_MAPPINGS.LEFT_TRIGGER);
