@@ -366,6 +366,7 @@ private:
     
     // Misc
     double                          m_ShooterMotorSpeed;                    // Keep track of the shooter motor speed
+    double                          m_InjectorMotorSpeed;                   // Keep track of the injector motor speed
     units::angle::degree_t          m_IntakeAngleDegrees;                   // Keep track of the intake angle
     units::angle::degree_t          m_IntakeAngleOffsetDegrees;             // Keep track of the intake angle offset from manual adjustment
     RobotMode                       m_RobotMode;                            // Keep track of the current robot state
@@ -482,8 +483,9 @@ private:
     // Motor speeds and angles
     static constexpr double         INTAKE_ROLLERS_MOTOR_SPEED              = 0.75;
     static constexpr double         FEEDER_MOTOR_SPEED                      = 0.20;
-    static constexpr double         INJECTOR_MOTOR_SPEED                    = -0.70;
-    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.60;
+    static constexpr double         INJECTOR_MOTOR_SPEED                    = -0.80;
+    static constexpr double         INJECTOR_MOTOR_SPEED_STEP               = -0.05;
+    static constexpr double         SHOOTER_MOTOR_SPEED                     = 0.50;
     static constexpr double         SHOOTER_MOTOR_SPEED_STEP                = 0.05;
 
     static constexpr const units::angle::degree_t INTAKE_UP_ANGLE_DEGREES               = -20.0_deg;

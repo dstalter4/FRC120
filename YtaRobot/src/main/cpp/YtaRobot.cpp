@@ -67,6 +67,7 @@ YtaRobot::YtaRobot() :
     m_pSafetyTimer                      (new Timer()),
     m_CameraThread                      (RobotCamera::LimelightThread),
     m_ShooterMotorSpeed                 (SHOOTER_MOTOR_SPEED),
+    m_InjectorMotorSpeed                (INJECTOR_MOTOR_SPEED),
     m_IntakeAngleDegrees                (INTAKE_UP_ANGLE_DEGREES),
     m_IntakeAngleOffsetDegrees          (0.0_deg),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
@@ -611,15 +612,15 @@ void YtaRobot::UpdateSmartDashboard()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CheckForManualAdjust()
 {
-    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Shooter speed", "Intake angle", "Hood position"};
+    constexpr const char * MANUAL_ADJUST_STATE_STRINGS[] = {"Shooter speed", "Injector speed", "Intake angle"};
     enum ManualAdjustState : uint32_t
     {
         SHOOTER_SPEED,
+        INJECTOR_SPEED,
         INTAKE_ANGLE,
-        HOOD_POSITION,
         INVALID_CHECK
     };
-    static ManualAdjustState manualCheckState = SHOOTER_SPEED;
+    static ManualAdjustState manualCheckState = INJECTOR_SPEED;
     uint32_t stateAsUint = static_cast<uint32_t>(manualCheckState);
 
     // Update the manual check state, if needed
@@ -652,6 +653,20 @@ void YtaRobot::CheckForManualAdjust()
                 {
                 }
                 break;
+            }
+            case INJECTOR_SPEED:
+            {
+                if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_UP_POV_DIRECTION))
+                {
+                    m_InjectorMotorSpeed += INJECTOR_MOTOR_SPEED_STEP;
+                }
+                else if (m_pAuxController->DetectPovChange(AUX_MANUAL_ADJUST_DOWN_POV_DIRECTION))
+                {
+                    m_InjectorMotorSpeed -= INJECTOR_MOTOR_SPEED_STEP;
+                }
+                else
+                {
+                }
                 break;
             }
             case INTAKE_ANGLE:
@@ -714,7 +729,7 @@ void YtaRobot::IntakeSequence()
         // Ejecting also moves the feeder and injector
         m_pIntakeRollersMotor->SetDutyCycle(INTAKE_ROLLERS_MOTOR_SPEED);
         m_pFeederMotor->SetDutyCycle(FEEDER_MOTOR_SPEED);
-        m_pInjectorMotor->SetDutyCycle(INJECTOR_MOTOR_SPEED);
+        m_pInjectorMotor->SetDutyCycle(m_InjectorMotorSpeed);
         m_bIntakeSequenceActive = true;
     }
     else
@@ -782,7 +797,7 @@ void YtaRobot::ShootSequence()
         else if (bManualRamp || ((shootTimer.Get() - shootTimeStamp) > SHOOTER_RAMP_UP_TIME_S))
         {
             m_pFeederMotor->SetDutyCycle(-FEEDER_MOTOR_SPEED);
-            m_pInjectorMotor->SetDutyCycle(-INJECTOR_MOTOR_SPEED);
+            m_pInjectorMotor->SetDutyCycle(-m_InjectorMotorSpeed);
         }
         else
         {
@@ -795,7 +810,7 @@ void YtaRobot::ShootSequence()
         m_bShotInProgress = false;
         m_pShooterMotors->Set(0.0);
         m_pFeederMotor->SetDutyCycle(0.0);
-        m_pInjectorMotor->SetDutyCycle(INJECTOR_MOTOR_SPEED);
+        m_pInjectorMotor->SetDutyCycle(m_InjectorMotorSpeed);
     }
     else
     {
@@ -814,6 +829,7 @@ void YtaRobot::ShootSequence()
         }
     }
 
+    SmartDashboard::PutNumber("Injector speed", m_InjectorMotorSpeed);
     SmartDashboard::PutBoolean("Shooting", m_bShotInProgress);
     SmartDashboard::PutNumber("Shooter speed", m_ShooterMotorSpeed);
 }
