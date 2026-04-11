@@ -494,9 +494,9 @@ private:
 
     // Misc
     const std::string               AUTO_NO_ROUTINE_STRING                  = "No autonomous routine";
-    const std::string               AUTO_ROUTINE_1_STRING                   = "Move to depot";
-    const std::string               AUTO_ROUTINE_2_STRING                   = "Move straight back";
-    const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous Routine 3";
+    const std::string               AUTO_ROUTINE_1_STRING                   = "Left bump to depot, then shoot";
+    const std::string               AUTO_ROUTINE_2_STRING                   = "Hub to depot, then shoot";
+    const std::string               AUTO_ROUTINE_3_STRING                   = "Shoot from hub, move to depot, rotate";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous Test Routine";
 
     static const int                OFF                                     = 0;
