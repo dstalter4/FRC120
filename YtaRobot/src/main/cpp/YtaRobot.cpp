@@ -336,6 +336,14 @@ void YtaRobot::ConfigureMotorControllers()
     //(void)m_pMotor->m_pTalonFx->GetConfigurator().SetPosition(0.0_tr);
     //m_pMotor->ApplyConfiguration();
 
+    // Configure shooter motor in case WithVelocity() is called
+    m_pShooterMotors->GetMotorConfiguration()->Slot0.WithKP(10.0).WithKI(0.0).WithKD(0.0);
+    m_pShooterMotors->ApplyConfiguration();
+
+
+
+
+
     // Configure CANCoder
     // CANCoder: 0.835449 (300.76164_deg) is full up, 0.0.501221 (180.43956_deg) is full down, currently moving as CW+
     // Starting position = 0.831299 (299.26764_deg)
@@ -705,6 +713,27 @@ void YtaRobot::CheckForManualAdjust()
 ////////////////////////////////////////////////////////////////
 void YtaRobot::IntakeSequence()
 {
+    /*
+    static VelocityVoltage vv(0.0_tps);
+    static bool bInit = false;
+    if (!bInit)
+    {
+        (void)vv.WithSlot(0);
+        (void)m_pIntakeRollersMotor->m_MotorConfiguration.Slot0.WithKS(0.1).WithKV(0.12).WithKP(0.11).WithKI(0.0).WithKD(0.1);
+        (void)m_pIntakeRollersMotor->ApplyConfiguration();
+        bInit = true;
+    }
+    static bool bOff = true;
+    units::angular_velocity::turns_per_second_t targetTps = 0.0_tps;
+    if (m_pAuxController->DetectButtonChange(AUX_INTAKE_BUTTON))
+    {
+        bOff = !bOff;
+        targetTps = bOff ? 0.0_tps : 50.0_tps;
+    }
+    m_pIntakeRollersMotor->m_pTalonFx->SetControl(vv.WithVelocity(targetTps));
+    return;
+    */
+
     if (m_pAuxController->DetectButtonChange(AUX_INTAKE_UP_DOWN_BUTTON))
     {
         m_bIntakeLowered = !m_bIntakeLowered;
@@ -768,6 +797,8 @@ void YtaRobot::ShootSequence()
     static Timer shootTimer;
     static units::time::second_t shootTimeStamp = 0.0_s;
     static bool bManualRamp = false;
+    //static VelocityVoltage shooterMotorVv(0.0_tps);
+    //constexpr units::angular_velocity::turns_per_second_t SHOOTER_MOTOR_TARGET_TPS = 3500.0_tps / 60.0;
 
     // First check for a manual ramp up request
     if (m_pAuxController->GetAxisValue(AUX_RAMP_UP_AXIS) > JOYSTICK_AXIS_INPUT_DEAD_BAND)
@@ -777,6 +808,7 @@ void YtaRobot::ShootSequence()
         m_bShotInProgress = true;
         bManualRamp = true;
         m_pShooterMotors->Set(m_ShooterMotorSpeed);
+        //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(SHOOTER_MOTOR_TARGET_TPS));
     }
     else
     {
@@ -790,6 +822,7 @@ void YtaRobot::ShootSequence()
             shootTimer.Reset();
             shootTimer.Start();
             m_pShooterMotors->Set(m_ShooterMotorSpeed);
+            //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(SHOOTER_MOTOR_TARGET_TPS));
             shootTimeStamp = shootTimer.Get();
             m_bShootSequenceActive = true;
             m_bShotInProgress = true;
@@ -809,6 +842,7 @@ void YtaRobot::ShootSequence()
         m_bShootSequenceActive = true;
         m_bShotInProgress = false;
         m_pShooterMotors->Set(0.0);
+        //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(0.0_tps));
         m_pFeederMotor->SetDutyCycle(0.0);
         m_pInjectorMotor->SetDutyCycle(m_InjectorMotorSpeed);
     }
@@ -819,6 +853,7 @@ void YtaRobot::ShootSequence()
             m_bShootSequenceActive = false;
             m_bShotInProgress = false;
             m_pShooterMotors->Set(0.0);
+            //m_pShooterMotors->GetMotorObject()->SetControl(shooterMotorVv.WithVelocity(0.0_tps));
         }
 
         // Make sure the intake isn't active before shutting these off
@@ -832,6 +867,9 @@ void YtaRobot::ShootSequence()
     SmartDashboard::PutNumber("Injector speed", m_InjectorMotorSpeed);
     SmartDashboard::PutBoolean("Shooting", m_bShotInProgress);
     SmartDashboard::PutNumber("Shooter speed", m_ShooterMotorSpeed);
+    units::angular_velocity::turns_per_second_t shooterMotorTps = m_pShooterMotors->GetMotorObject()->GetVelocity().GetValue();
+    double shooterMotorRpm = shooterMotorTps.value() * 60.0;
+    SmartDashboard::PutNumber("Shooter RPM", shooterMotorRpm);
 }
 
 
