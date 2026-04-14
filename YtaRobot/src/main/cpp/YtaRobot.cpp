@@ -498,7 +498,7 @@ void YtaRobot::TeleopPeriodic()
 
     //PneumaticSequence();
     
-    //CameraSequence();
+    CameraSequence();
 
     //LedSequence();
     //BlinkMorseCodePattern();
@@ -1426,7 +1426,7 @@ void YtaRobot::CameraSequence()
         m_bCameraAlignInProgress = true;
         RobotCamera::SetLimelightPipeline(1);
         RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
-        RobotCamera::AutonomousCamera::AlignToTargetSwerve();
+        RobotCamera::AutonomousCamera::AlignToTargetSwerve(m_pPigeon->GetYaw().GetValueAsDouble());
     }
     else
     {
@@ -1434,6 +1434,9 @@ void YtaRobot::CameraSequence()
         RobotCamera::SetLimelightPipeline(0);
         RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     }
+
+    // 2026: Go no further
+    return;
 
     static bool bFullProcessing = false;
     

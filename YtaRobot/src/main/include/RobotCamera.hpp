@@ -82,7 +82,7 @@ public:
         };
 
         static bool AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors = true);
-        static void AlignToTargetSwerve();
+        static void AlignToTargetSwerve(double currentYawDegrees);
 
     private:
         static Timer m_AutoCameraTimer;
@@ -241,8 +241,11 @@ private:
     };
     
     // Camera related variables
-    static PIDController                        m_VisionPid;                        // PID controller for automated vision targeting
+    static int                                  m_TargetAprilTagId;                 // Track which AprilTag to target
+    static PIDController                        m_VisionStrafePid;                  // PID controller for strafe control during automated vision targeting
+    static PIDController                        m_VisionRotatePid;                  // PID controller for rotation control during automated vision targeting
     static std::shared_ptr<nt::NetworkTable>    m_pLimelightNetworkTable;           // Network table for the limelight camera
+    static cs::HttpCamera                       m_LimelightHttpCamera;              // Limelight HTTP camera object
     static UsbCameraStorage                     m_UsbCameras;                       // Memory for storing the USB camera objects
     static UsbCameraInfo *                      m_pCurrentUsbCamera;                // Pointer to the currently selected USB camera object   
     static cs::CvSource                         m_CameraOutput;                     // Output source for processed images

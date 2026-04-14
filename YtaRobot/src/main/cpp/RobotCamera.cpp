@@ -22,8 +22,11 @@
 #include "YtaRobot.hpp"                         // for GetRobotInstance()
 
 // STATIC MEMBER DATA
-PIDController                                   RobotCamera::m_VisionPid{0.03, 0.00, 0.002};
+int                                             RobotCamera::m_TargetAprilTagId;
+PIDController                                   RobotCamera::m_VisionStrafePid{0.025, 0.02, 0.002};
+PIDController                                   RobotCamera::m_VisionRotatePid{0.025, 0.02, 0.002};
 std::shared_ptr<nt::NetworkTable>               RobotCamera::m_pLimelightNetworkTable;
+cs::HttpCamera                                  RobotCamera::m_LimelightHttpCamera("limelight", "http://limelight.local:5800/stream.mjpg", cs::HttpCamera::HttpCameraKind::kMJPGStreamer);
 RobotCamera::UsbCameraStorage                   RobotCamera::m_UsbCameras;
 RobotCamera::UsbCameraInfo *                    RobotCamera::m_pCurrentUsbCamera;
 cs::CvSource                                    RobotCamera::m_CameraOutput;
@@ -177,7 +180,7 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 /// target based on feedback from the camera using swerve drive.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
+void RobotCamera::AutonomousCamera::AlignToTargetSwerve(double currentYawDegrees)
 {
     // Make sure the robot object has been created (the thread will start running very early)
     YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
@@ -189,14 +192,20 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
     // Get the horizontal offset from the target
     double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
     
-    // Use the PID controller to compute the strafe value
-    double strafe = m_VisionPid.Calculate(targetX);
+    // Use the PID controller to compute the strafe and rotation values
+    double strafe = m_VisionStrafePid.Calculate(targetX);
+    double rotation = m_VisionRotatePid.Calculate(currentYawDegrees);
 
-    SmartDashboard::PutNumber("Limelight targetX: ", targetX);
-    SmartDashboard::PutNumber("Limelight raw strafe: ", strafe);
+    // Get the primary tracked ID
+    int primaryTrackedId = m_pLimelightNetworkTable->GetNumber("tid", 0.0);
+
+    SmartDashboard::PutNumber("Limelight targetX", targetX);
+    SmartDashboard::PutNumber("Limelight raw strafe", strafe);
+    SmartDashboard::PutNumber("Limelight primary ID", primaryTrackedId);
 
     // Clamping strafe output
     strafe = std::clamp(strafe, -0.95, 0.95);
+    rotation = std::clamp(rotation, -0.25, 0.25);
 
     // WPILib recommended feed forward
     // @todo: Is this necessary?
@@ -204,8 +213,13 @@ void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
     {
         strafe += std::copysign(0.02, strafe);
     }
+    if (std::abs(rotation) > 0.01)
+    {
+        rotation += std::copysign(0.02, rotation);
+    }
 
     // Drive
+    // @todo: Integrate 'rotation' (requires some tuning).
     pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, units::meter_t{strafe}}, 0.0, true, true);
 
 
@@ -367,17 +381,32 @@ void RobotCamera::LimelightThread()
     // Enable Ethernet port forwarding (but not USB)
     EnableLimelightPortForwarding(true, false, false);
 
+    // Start Limelight automatic capture to send it to the dashboard
+    // Note: This is just experimental.
+    //CameraServer::StartAutomaticCapture(m_LimelightHttpCamera);
+
     // The limelight camera mode will be set by autonomous or teleop
     // Set a limelight priority (e.g. for the April tags)
-    const uint32_t LIMELIGHT_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 10U : 25U;
-    m_pLimelightNetworkTable->PutNumber("priorityid", LIMELIGHT_PRIORITY);
+    //const uint32_t LIMELIGHT_PRIORITY = (YtaRobot::GetRobotInstance()->m_AllianceColor.value() == DriverStation::Alliance::kRed) ? 10U : 25U;
+    //m_pLimelightNetworkTable->PutNumber("priorityid", LIMELIGHT_PRIORITY);
 
-    // Setting constants for the vision PID controller.  Set point is
-    // 0.0_deg (centered on target), tolerance is 1.5_deg, and enable
+    // Hard coding to 25 for testing
+    m_pLimelightNetworkTable->PutNumber("priorityid", 25U);
+
+    // Setting constants for the strafe vision PID controller.  Set point
+    // is 0.0_deg (centered on target), tolerance is 1.5_deg, and enable
     // continuous input across the Limelight field of view.
-    m_VisionPid.SetSetpoint(0.0);
-    m_VisionPid.SetTolerance(1.5);
-    m_VisionPid.EnableContinuousInput(-27.0, 27.0);
+    m_VisionStrafePid.SetSetpoint(0.0);
+    m_VisionStrafePid.SetTolerance(1.5);
+    m_VisionStrafePid.EnableContinuousInput(-27.0, 27.0);
+
+    // Setting constants for the rotate vision PID controller.  Set point
+    // is computed later based on the target tag.  Tolerance is one degree.
+    // Enable a full 360 input range.
+    m_VisionRotatePid.SetSetpoint(40.0);
+    m_VisionRotatePid.SetTolerance(1.0);
+    m_VisionRotatePid.EnableContinuousInput(0.0, 360.0);
+
 
     while (true)
     {
