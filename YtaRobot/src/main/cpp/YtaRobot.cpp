@@ -21,7 +21,6 @@
 
 // C++ INCLUDES
 #include "YtaRobot.hpp"                 // for class declaration (and other headers)
-#include "RobotCamera.hpp"              // for interacting with cameras
 #include "RobotUtils.hpp"               // for Trim(), Limit() and DisplayMessage()
 
 // STATIC MEMBER VARIABLES
@@ -60,7 +59,8 @@ YtaRobot::YtaRobot() :
     m_pHoodCanCoder                     (new CANcoder(HOOD_CANCODER_CAN_ID, m_RioCanBus)),
     m_pMatchModeTimer                   (new Timer()),
     m_pRobotProgramTimer                (new Timer()),
-    m_CameraThread                      (RobotCamera::LimelightThread),
+    m_pLimelightCamera                  (new LimelightCamera("limelight")),
+    m_pLimelightFound                   (false),
     m_ShooterMotorSpeed                 (SHOOTER_MOTOR_SPEED),
     m_InjectorMotorSpeed                (INJECTOR_MOTOR_SPEED),
     m_IntakeAngleDegrees                (INTAKE_UP_ANGLE_DEGREES),
@@ -101,11 +101,6 @@ YtaRobot::YtaRobot() :
     m_pHoodLeftServoActuator->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
     m_pHoodRightServoActuator->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
 
-    // Spawn the vision thread
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
-    m_CameraThread.detach();
-
     // Start the free running timer
     m_pRobotProgramTimer->Reset();
     m_pRobotProgramTimer->Start();
@@ -143,6 +138,11 @@ void YtaRobot::RobotInit()
 {
     RobotUtils::DisplayMessage("RobotInit called.");
     SetStaticThisInstance();
+
+    // Attempt to locate the limelight.  The called function has a
+    // search timeout.  If it isn't found, this will have to be
+    // called again later.
+    m_pLimelightFound = m_pLimelightCamera->FindAndSetNetworkTable();
 }
 
 
@@ -166,6 +166,7 @@ void YtaRobot::RobotPeriodic()
     // @todo: Read and display sensor values for calibration when not enabled
     // @note: From testing, smart dashboard prints of sensor values do give real time data.
     CheckIfRioPinsAreStable();
+    UpdateSmartDashboard();
 }
 
 
@@ -406,8 +407,8 @@ void YtaRobot::InitialStateSetup()
     // Set the LEDs to the alliance color
     m_pLedController->SetLedsToAllianceColor();
 
-    // Indicate the camera thread can continue
-    RobotCamera::ReleaseThread();
+    // Set the limelight priority ID
+    m_pLimelightCamera->SetPriorityId(LimelightCamera::TaggedFieldElement::ELEMENT_HUB_CENTER, m_AllianceColor.value());
 
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
@@ -435,11 +436,6 @@ void YtaRobot::TeleopInit()
     // Autonomous should have left things in a known state, but just in case, clear everything.
     CommandScheduler::GetInstance().CancelAll();
     InitialStateSetup();
-
-    // Tele-op won't do detailed processing of the images unless instructed to
-    RobotCamera::SetFullProcessing(false);
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Start the mode timer for teleop
     m_pMatchModeTimer->Start();
@@ -478,7 +474,6 @@ void YtaRobot::TeleopPeriodic()
     //HoodSequence();
     //HangSequence();
     CheckForManualAdjust();
-    UpdateSmartDashboard();
 
     //PneumaticSequence();
     
@@ -586,6 +581,7 @@ void YtaRobot::UpdateSmartDashboard()
 
     // Give the drive team some state information
     SmartDashboard::PutBoolean("RIO pins stable", m_bRioPinsStable);
+    SmartDashboard::PutBoolean("Limelight found", m_pLimelightFound);
     SmartDashboard::PutNumber("Battery voltage", batteryVoltage);
     SmartDashboard::PutNumber("Match time", matchTime.value());
     SmartDashboard::PutNumber("Shift time", shiftTime.value());
@@ -975,7 +971,7 @@ void YtaRobot::PneumaticSequence()
 /// @method YtaRobot::CameraSequence
 ///
 /// This method handles camera related behavior.  See the
-/// RobotCamera class for full details.
+/// camera classes for full details.
 ///
 ////////////////////////////////////////////////////////////////
 void YtaRobot::CameraSequence()
@@ -983,50 +979,14 @@ void YtaRobot::CameraSequence()
     if (m_pDriveController->GetButtonState(DRIVE_ALIGN_WITH_CAMERA_BUTTON))
     {
         m_bCameraAlignInProgress = true;
-        RobotCamera::SetLimelightPipeline(1);
-        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
-        RobotCamera::AutonomousCamera::AlignToTargetSwerve(m_pPigeon->GetYaw().GetValueAsDouble());
+        m_pLimelightCamera->AlignToTargetSwerve(m_LimelightDriveLambda, m_pPigeon->GetYaw().GetValue());
     }
     else
     {
         m_bCameraAlignInProgress = false;
-        RobotCamera::SetLimelightPipeline(0);
-        RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
     }
 
-    // 2026: Go no further
-    return;
-
-    static bool bFullProcessing = false;
-    
-    // @note: Use std::chrono if precise time control is needed.
-    
-    // Check for any change in camera
-    if (m_pDriveController->GetButtonState(SELECT_FRONT_CAMERA_BUTTON))
-    {
-        RobotCamera::SetCamera(RobotCamera::FRONT_USB);
-    }
-    else if (m_pDriveController->GetButtonState(SELECT_BACK_CAMERA_BUTTON))
-    {
-        RobotCamera::SetCamera(RobotCamera::BACK_USB);
-    }
-    else
-    {
-    }
-    
-    // Look for full processing to be enabled/disabled
-    if (m_pDriveController->DetectButtonChange(CAMERA_TOGGLE_FULL_PROCESSING_BUTTON))
-    {
-        // Change state first, because the default is set before this code runs
-        bFullProcessing = !bFullProcessing;
-        RobotCamera::SetFullProcessing(bFullProcessing);
-    }
-    
-    // Look for the displayed processed image to be changed
-    if (m_pDriveController->DetectButtonChange(CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON))
-    {
-        RobotCamera::ToggleCameraProcessedImage();
-    }
+    m_pLimelightCamera->UpdateSmartDashboard();
 }
 
 
@@ -1256,9 +1216,6 @@ void YtaRobot::DifferentialDriveControlSequence()
 void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
-
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::DRIVER_CAMERA);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
 
     // Turn the rainbow animation back on
     m_pLedController->SetAnimation(YtaLedController::LedAnimation::LED_RAINBOW_ANIMATION);

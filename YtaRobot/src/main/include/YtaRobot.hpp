@@ -38,6 +38,7 @@
 // C++ INCLUDES
 #include "DifferentialDrive.hpp"                            // for using differential drive
 #include "DriveConfiguration.hpp"                           // for information on the drive config
+#include "LimelightCamera.hpp"                              // for creating and interacting with limelight cameras
 #include "RobotUtils.hpp"                                   // for ASSERT, DEBUG_PRINTS
 #include "SwerveDrive.hpp"                                  // for using swerve drive
 #include "YtaController.hpp"                                // for controller interaction
@@ -271,9 +272,15 @@ private:
     // (none)
 
     // Camera
-    // Note: Only need to have a thread here and tie it to
-    // the RobotCamera class, which handles everything else.
-    std::thread                     m_CameraThread;
+    LimelightCamera *               m_pLimelightCamera;                     // The limelight camera object
+    bool                            m_pLimelightFound;                      // Indicates whether or not the limelight was found
+
+    // LimelightDriveLambda
+    // Lambda to drive the robot via swerve.
+    LimelightCamera::SwerveDriveLambdaType m_LimelightDriveLambda = [this](Translation2d translation, double rotation)
+    {
+        m_pSwerveDrive->SetModuleStates(translation, rotation, true, true);
+    };
     
     // Misc
     double                          m_ShooterMotorSpeed;                    // Keep track of the shooter motor speed
@@ -311,10 +318,6 @@ private:
     static const int                JOG_SWERVE_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                PLAY_MUSIC_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
     static const int                DRIVE_ALIGN_WITH_CAMERA_BUTTON          = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
-    static const int                CAMERA_TOGGLE_FULL_PROCESSING_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                CAMERA_TOGGLE_PROCESSED_IMAGE_BUTTON    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                SELECT_FRONT_CAMERA_BUTTON              = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
-    static const int                SELECT_BACK_CAMERA_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.NO_BUTTON;
 
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_FORWARD_SLOW_POV     = Yta::Controller::PovDirections::POV_UP;
     static const Yta::Controller::PovDirections  DRIVE_CONTROLS_SWERVE_REVERSE_SLOW_POV     = Yta::Controller::PovDirections::POV_DOWN;
