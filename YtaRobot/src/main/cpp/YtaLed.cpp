@@ -9,7 +9,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
-// <none>
+#include <cctype>               // for alphanumeric character checking
 
 // C INCLUDES
 // (none)

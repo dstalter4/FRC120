@@ -69,33 +69,33 @@ public:
     friend class YtaRobotTest;
 
     // MEMBER FUNCTIONS
-    
+
     // Base robot routines
     virtual void RobotInit() override;
     virtual void RobotPeriodic() override;
-    
+
     // Autonomous routines
     virtual void AutonomousInit() override;
     virtual void AutonomousPeriodic() override;
-    
+
     // Teleop routines
     virtual void TeleopInit() override;
     virtual void TeleopPeriodic() override;
-    
+
     // Test mode routines
     virtual void TestInit() override;
     virtual void TestPeriodic() override;
-    
+
     // Robot disabled routines
     virtual void DisabledInit() override;
     virtual void DisabledPeriodic() override;
-    
+
     // Constructor, destructor, copy, assignment
     YtaRobot();
     virtual ~YtaRobot() = default;
     YtaRobot(YtaRobot&& rhs) = default;
     YtaRobot& operator=(YtaRobot&& rhs) = default;
-      
+
 private:
 
     // TYPEDEFS
@@ -132,15 +132,15 @@ private:
 
     // Increments a variable to indicate the robot code is successfully running
     inline void HeartBeat();
-    
+
     // Checks for a robot state change and logs a message if so
     inline void CheckAndUpdateRobotMode(RobotMode robotMode);
 
     // Updates information on the smart dashboard for the drive team
     void UpdateSmartDashboard();
-    
+
     // Autonomous routines
-    // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this)!
+    // @todo: Make YtaRobotAutonomous a friend and move these out (requires accessor to *this, or lambdas)!
     void AutonomousPeriodicTimed();
     void AutonomousPeriodicCommand();
     void AutonomousCommon();
@@ -169,7 +169,7 @@ private:
 
     // Main sequence for drive motor control
     void SwerveDriveSequence();
-    void DifferentialDriveControlSequence();
+    void DifferentialDriveSequence();
 
     // Main sequence for LED control
     void LedSequence();
@@ -179,7 +179,7 @@ private:
 
     // Main sequence for controlling pneumatics
     void PneumaticSequence();
-    
+
     // Main sequence for vision processing
     void CameraSequence();
 
@@ -191,11 +191,11 @@ private:
     void CheckForManualAdjust();
 
     // MEMBER VARIABLES
-    
+
     // Autonomous
     SendableChooser<std::string>    m_AutonomousChooser;                    // Selects from the dashboard which auto routine to run
     SendableChooser<std::string>    m_AutonomousPositionChooser;            // Selects from the dashboard where the robot is located
-    
+
     // User Controls
     DriveControllerType *           m_pDriveController;                     // Drive controller
     AuxControllerType *             m_pAuxController;                       // Auxillary input controller
@@ -220,7 +220,7 @@ private:
             return m_RioCanBus;
         }
     };
-    
+
     // Swerve Drive
     Pigeon2 *                       m_pPigeon;                              // CTRE Pigeon2 IMU
     SwerveDrive *                   m_pSwerveDrive;                         // Swerve drive control
@@ -240,34 +240,33 @@ private:
     // LEDs
     YtaLedController *              m_pLedController;                       // Interfacing to the LEDs
 
-
     // Digital I/O
     DigitalOutput *                 m_pDebugOutput;                         // Debug assist output
-    
+
     // Analog I/O
     // (none)
 
     // PWM
     PWM *                           m_pHoodLeftServoActuator;              // Object for controlling the hood servo actuator on the left
     PWM *                           m_pHoodRightServoActuator;             // Object for controlling the hood servo actuator on the right
-    
+
     // Pneumatics
     Compressor *                    m_pCompressor;                          // Object to get info about the compressor
 
     // Solenoids
     // (none)
-    
+
     // Encoders
     CANcoder *                      m_pIntakeCanCoder;                      // Absolute encoder to monitor intake position
     CANcoder *                      m_pHoodCanCoder;                        // Absolute encoder to monitor hood position
-    
+
     // Timers
     Timer *                         m_pMatchModeTimer;                      // Times how long a particular mode (autonomous, teleop) is running
     Timer *                         m_pRobotProgramTimer;                   // Starts at robot program entry, free runs for program life time
-    
+
     // Accelerometer
     // (none)
-    
+
     // Gyro
     // (none)
 
@@ -281,7 +280,7 @@ private:
     {
         m_pSwerveDrive->SetModuleStates(translation, rotation, true, true);
     };
-    
+
     // Misc
     double                          m_ShooterMotorSpeed;                    // Keep track of the shooter motor speed
     double                          m_InjectorMotorSpeed;                   // Keep track of the injector motor speed
@@ -297,9 +296,9 @@ private:
     bool                            m_bRioPinsStable;                       // Indicates whether the RIO pin measurements (e.g. PWM) are stable
     bool                            m_bCameraAlignInProgress;               // Indicates if an automatic camera align is in progres
     uint32_t                        m_HeartBeat;                            // Incremental counter to indicate the robot code is executing
-    
+
     // CONSTS
-    
+
     // Joysticks/Buttons
     // Note: Don't forget to update the controller object typedefs if
     //       necessary when changing these types!
@@ -307,7 +306,7 @@ private:
     static const ControllerModels AUX_CONTROLLER_MODEL                          = ControllerModels::CUSTOM_XBOX;
     static constexpr const ControllerMappings * const DRIVE_CONTROLLER_MAPPINGS = Yta::Controller::Config::GetControllerMapping(DRIVE_CONTROLLER_MODEL);
     static constexpr const ControllerMappings * const AUX_CONTROLLER_MAPPINGS   = Yta::Controller::Config::GetControllerMapping(AUX_CONTROLLER_MODEL);
-    
+
     static const int                DRIVE_JOYSTICK_PORT                     = 0;
     static const int                AUX_JOYSTICK_PORT                       = 1;
 
@@ -381,17 +380,17 @@ private:
     // PWM Signals
     static const int                HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL    = 0;
     static const int                HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL   = 1;
-    
+
     // Relays
     // (none)
-    
+
     // Digital I/O Signals
     static const int                SENSOR_TEST_CODE_DIO_CHANNEL            = 6;
     static const int                DEBUG_OUTPUT_DIO_CHANNEL                = 7;
-    
+
     // Analog I/O Signals
     // (none)
-    
+
     // Solenoid Signals
     // (none)
 
@@ -475,7 +474,7 @@ void YtaRobot::CheckAndUpdateRobotMode(RobotMode robotMode)
                     "Test exited.",
                     "Disabled exited."
                 };
-    
+
     // Check for the mode to have changed
     if (m_RobotMode != robotMode)
     {

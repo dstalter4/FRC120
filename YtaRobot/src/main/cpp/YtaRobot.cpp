@@ -12,9 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
-#include <cctype>                       // for alphanumeric character checking
 #include <cstddef>                      // for nullptr
-#include <cstring>                      // for memset
 
 // C INCLUDES
 // (none)
@@ -76,13 +74,13 @@ YtaRobot::YtaRobot() :
     m_HeartBeat                         (0U)
 {
     RobotUtils::DisplayMessage("Robot constructor.");
-    
+
     // LiveWindow is not used
     LiveWindow::SetEnabled(false);
 
     // Signal logger is not used
     SignalLogger::EnableAutoLogging(false);
-    
+
     // Set the autonomous options
     // @todo: Update these outside the constructor?
     m_AutonomousChooser.SetDefaultOption(AUTO_ROUTINE_1_STRING, AUTO_ROUTINE_1_STRING);
@@ -337,7 +335,7 @@ void YtaRobot::ConfigureMotorControllers()
     canCoderConfig.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1.0_tr;
     //canCoderConfig.MagnetSensor.SensorDirection = InvertedValue::CounterClockwise_Positive;
     (void)m_pIntakeCanCoder->GetConfigurator().Apply(canCoderConfig);
-    
+
     // Configure the intake angle motor
     // Ratio is 50:1
     (void)m_pIntakeAngleMotor->GetMotorConfiguration()->MotorOutput.WithNeutralMode(NeutralModeValue::Brake);
@@ -399,7 +397,7 @@ void YtaRobot::InitialStateSetup()
     // @todo: Make this a dedicated function.
     m_pMatchModeTimer->Stop();
     m_pMatchModeTimer->Reset();
-    
+
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
     m_pLedController->SetAllianceColor(m_AllianceColor.value());
@@ -432,7 +430,7 @@ void YtaRobot::InitialStateSetup()
 void YtaRobot::TeleopInit()
 {
     RobotUtils::DisplayMessage("TeleopInit called.");
-    
+
     // Autonomous should have left things in a known state, but just in case, clear everything.
     CommandScheduler::GetInstance().CancelAll();
     InitialStateSetup();
@@ -466,7 +464,7 @@ void YtaRobot::TeleopPeriodic()
     }
     else
     {
-        DifferentialDriveControlSequence();
+        DifferentialDriveSequence();
     }
 
     IntakeSequence();
@@ -476,7 +474,7 @@ void YtaRobot::TeleopPeriodic()
     CheckForManualAdjust();
 
     //PneumaticSequence();
-    
+
     CameraSequence();
 
     // These only do things if their configs are enabled.
@@ -1137,7 +1135,7 @@ void YtaRobot::SwerveDriveSequence()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method YtaRobot::DifferentialDriveControlSequence
+/// @method YtaRobot::DifferentialDriveSequence
 ///
 /// This method contains the main workflow for drive control.
 /// It will gather input from the drive joystick and then filter
@@ -1146,7 +1144,7 @@ void YtaRobot::SwerveDriveSequence()
 /// will actually set the speed values.
 ///
 ////////////////////////////////////////////////////////////////
-void YtaRobot::DifferentialDriveControlSequence()
+void YtaRobot::DifferentialDriveSequence()
 {
     static DifferentialDrive::DriveControlInputs driveControlInputs;
     std::function<const DifferentialDrive::DriveControlInputs & ()> getDriveControlInputsLambda = [this]() -> const DifferentialDrive::DriveControlInputs &
