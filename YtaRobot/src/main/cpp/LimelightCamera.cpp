@@ -30,6 +30,7 @@
 ///
 ////////////////////////////////////////////////////////////////
 LimelightCamera::LimelightCamera(std::string cameraName) :
+    m_CameraName(cameraName),
     m_pCameraNetworkTable(nt::NetworkTableInstance::GetDefault().GetTable(cameraName)),
     m_VisionStrafePid(0.025, 0.02, 0.002),
     m_VisionRotatePid(0.025, 0.02, 0.002),
@@ -184,5 +185,6 @@ void LimelightCamera::AlignToTargetSwerve(SwerveDriveLambdaType swerveDriveLambd
 ////////////////////////////////////////////////////////////////
 void LimelightCamera::UpdateSmartDashboard()
 {
-    SmartDashboard::PutNumber(m_CameraName + "heartbeat", m_pCameraNetworkTable->GetNumber("hb", 0.0));
+    static const std::string LIMELIGHT_HEARTBEAT_STRING = m_CameraName + " heartbeat";
+    SmartDashboard::PutNumber(LIMELIGHT_HEARTBEAT_STRING, m_pCameraNetworkTable->GetNumber("hb", 0.0));
 }
