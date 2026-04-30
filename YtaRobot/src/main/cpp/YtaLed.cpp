@@ -24,18 +24,21 @@
 /// Constructor
 ///
 ////////////////////////////////////////////////////////////////
-YtaLedController::YtaLedController(uint32_t numLeds, int candleCanId, const CANBus & rCandleCanBus) :
-    m_AllianceColor(),
+YtaLedController::YtaLedController(uint32_t numLeds, int candleCanId, const CANBus & rCandleCanBus, GetAllianceLambdaType getAllianceLambda) :
+    m_GetAllianceLambda(getAllianceLambda),
     m_pCandle(new CANdle(candleCanId, rCandleCanBus)),
     m_LedStripSolidColor(0, (numLeds - 1)),
-    m_RainbowAnimation (0, (numLeds - 1))
+    m_RainbowAnimation (0, (numLeds - 1)),
+    m_EmptyAnimation(0)
 {
     // Alliance color must manually be set later because
     // it may not be known when constructors run.
 
     CANdleConfiguration candleConfig;
-    candleConfig.LED.StripType = StripTypeValue::RGBW;
+    candleConfig.LED.StripType = StripTypeValue::GRB;
     m_pCandle->GetConfigurator().Apply(candleConfig);
+
+    m_RainbowAnimation.FrameRate = 50_Hz;
 
     // Default behavior at construction is the rainbow animation
     m_pCandle->SetControl(m_RainbowAnimation);
@@ -424,7 +427,7 @@ void YtaLedController::BlinkMorseCodePattern()
     // Update the state of the LEDs
     if (bLedsOn)
     {
-        if (m_AllianceColor == DriverStation::Alliance::kRed)
+        if (m_GetAllianceLambda() == DriverStation::Alliance::kRed)
         {
             constexpr const RGBWColor RGBW_RED{255, 0, 0, 0};
             m_pCandle->SetControl(m_LedStripSolidColor.WithColor(RGBW_RED));

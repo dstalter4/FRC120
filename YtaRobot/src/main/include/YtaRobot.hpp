@@ -424,7 +424,7 @@ private:
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;
-    static const unsigned           NUMBER_OF_LEDS                          = 8;
+    static const unsigned           NUMBER_OF_LEDS                          = 51 + 8;
 
     static constexpr double         JOYSTICK_AXIS_INPUT_DEAD_BAND           =  0.10;
     static constexpr double         DRIVE_TRIM_UPPER_LIMIT                  =  0.05;

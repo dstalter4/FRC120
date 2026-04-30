@@ -48,7 +48,7 @@ YtaRobot::YtaRobot() :
     m_pShooterMotors                    (new TalonMotorGroup<TalonFX, TalonFXConfiguration>("Shooter motors", TWO_MOTORS, SHOOTER_MOTORS_CAN_START_ID, MotorGroupControlMode::FOLLOW_INVERSE, NeutralModeValue::Coast, m_RioCanBus)),
     m_pHoodMotor                        (new TalonFxMotorController(HOOD_MOTOR_CAN_ID, m_RioCanBus)),
     m_pHangMotor                        (new TalonFxMotorController(HANG_MOTOR_CAN_ID, m_RioCanBus)),
-    m_pLedController                    (new YtaLedController(CANDLE_CAN_ID, NUMBER_OF_LEDS, m_RioCanBus)),
+    m_pLedController                    (new YtaLedController(NUMBER_OF_LEDS, CANDLE_CAN_ID, m_RioCanBus, [this](){return m_AllianceColor.value();})),
     m_pDebugOutput                      (new DigitalOutput(DEBUG_OUTPUT_DIO_CHANNEL)),
     m_pHoodLeftServoActuator            (new PWM(HOOD_SERVO_LEFT_ACTUATOR_PWM_CHANNEL)),
     m_pHoodRightServoActuator           (new PWM(HOOD_SERVO_RIGHT_ACTUATOR_PWM_CHANNEL)),
@@ -400,7 +400,6 @@ void YtaRobot::InitialStateSetup()
 
     // Just in case constructor was called before these were set (likely the case)
     m_AllianceColor = DriverStation::GetAlliance();
-    m_pLedController->SetAllianceColor(m_AllianceColor.value());
 
     // Set the LEDs to the alliance color
     m_pLedController->SetLedsToAllianceColor();

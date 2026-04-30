@@ -33,7 +33,7 @@ using namespace ctre::phoenix6::signals;
 namespace Yta::Led::Config
 {
     // Only one of these options should be enabled at a time
-    static constexpr const bool MORSE_CODE_ENABLED = false;
+    static constexpr const bool MORSE_CODE_ENABLED = true;
     static constexpr const bool MARIO_KART_DRIFT_ENABLED = false;
 }
 
@@ -47,6 +47,8 @@ namespace Yta::Led::Config
 class YtaLedController
 {
 public:
+    typedef std::function<DriverStation::Alliance()> GetAllianceLambdaType;
+
     enum class LedAnimation
     {
         LED_NO_ANIMATION,
@@ -54,13 +56,7 @@ public:
     };
 
     // Constructor
-    YtaLedController(uint32_t numLeds, int candleCanId, const CANBus & rCandleCanBus);
-
-    // Set the alliance color
-    inline void SetAllianceColor(DriverStation::Alliance alliance)
-    {
-        m_AllianceColor = alliance;
-    }
+    YtaLedController(uint32_t numLeds, int candleCanId, const CANBus & rCandleCanBus, GetAllianceLambdaType getAllianceLambda);
 
     inline void SetLedsToAllianceColor();
     void SetAnimation(LedAnimation ledAnimation);
@@ -68,10 +64,11 @@ public:
     void BlinkMorseCodePattern();
 
 private:
-    DriverStation::Alliance m_AllianceColor;                    // The alliance color
+    GetAllianceLambdaType m_GetAllianceLambda;                  // Lambda to retrieve the alliance color
     CANdle * m_pCandle;                                         // Controls an RGB LED strip
     SolidColor m_LedStripSolidColor;                            // Used when setting the LEDs to RGB values
     RainbowAnimation m_RainbowAnimation;                        // Rainbow animation configuration (brightness, speed, # LEDs)
+    EmptyAnimation m_EmptyAnimation;                            // Empty animation to clear the configuration in a slot
     static constexpr const RGBWColor RGBW_OFF{0, 0, 0, 0};      // Common RGBWColor expression representing LEDs off
 };
 
@@ -85,7 +82,10 @@ private:
 ////////////////////////////////////////////////////////////////
 void YtaLedController::SetLedsToAllianceColor()
 {
-    switch (m_AllianceColor)
+    // If there is an active animation, it will conflict with the commands below
+    m_pCandle->SetControl(m_EmptyAnimation);
+
+    switch (m_GetAllianceLambda())
     {
         case DriverStation::Alliance::kRed:
         {
