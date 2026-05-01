@@ -405,7 +405,7 @@ void YtaRobot::InitialStateSetup()
     m_pLedController->SetLedsToAllianceColor();
 
     // Set the limelight priority ID
-    m_pLimelightCamera->SetPriorityId(LimelightCamera::TaggedFieldElement::ELEMENT_HUB_CENTER, m_AllianceColor.value());
+    //m_pLimelightCamera->SetPriorityId(LimelightCamera::TaggedFieldElement::ELEMENT_HUB_CENTER, m_AllianceColor.value());
 
     // Clear the debug output pin
     m_pDebugOutput->Set(false);
@@ -984,6 +984,7 @@ void YtaRobot::CameraSequence()
     }
 
     m_pLimelightCamera->UpdateSmartDashboard();
+    SmartDashboard::PutBoolean("Limelight align", m_bCameraAlignInProgress);
 }
 
 
