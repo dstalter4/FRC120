@@ -162,8 +162,47 @@ void YtaRobotTest::InitializeCommonPointers()
 /// Test code to try out for rapid prototyping.
 ///
 ////////////////////////////////////////////////////////////////
+#include "LinearServo.hpp"
 void YtaRobotTest::QuickTestCode()
 {
+    static LinearServo * pLinearServo1 = new LinearServo(7, LinearServo::StrokeOption::STROKE_OPTION_100_MM, LinearServo::GearOption::GEAR_OPTION_35_TO_1);
+    static LinearServo * pLinearServo2 = new LinearServo(8, LinearServo::StrokeOption::STROKE_OPTION_100_MM, LinearServo::GearOption::GEAR_OPTION_35_TO_1);
+    //static PWM * pLinearServo1 = new PWM(7);
+    //static PWM * pLinearServo2 = new PWM(8);
+    static units::length::millimeter_t actuatorPositionMm = 0.0_mm;
+    static double step = 0.0;
+    static bool bInit = false;
+    if (!bInit)
+    {
+        pLinearServo1->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
+        pLinearServo2->SetBounds(2000.0_us, 1800.0_us, 1500.0_us, 1200.0_us, 1000.0_us);
+        bInit = true;
+    }
+
+    if (YTA_ROBOT_OBJ()->m_pDriveController->DetectPovChange(Yta::Controller::PovDirections::POV_UP))
+    {
+        actuatorPositionMm += 10.0_mm;
+        step += 0.1;
+    }
+    else if (YTA_ROBOT_OBJ()->m_pDriveController->DetectPovChange(Yta::Controller::PovDirections::POV_DOWN))
+    {
+        actuatorPositionMm -= 10.0_mm;
+        step -= 0.1;
+    }
+    else
+    {
+    }
+
+    //pLinearServo1->SetPosition(step);
+    //pLinearServo2->SetPosition(step);
+
+    pLinearServo1->SetPosition(actuatorPositionMm);
+    pLinearServo1->UpdateCurrentPosition();
+
+    SmartDashboard::PutNumber("Actuator set point mm", actuatorPositionMm.value());
+    SmartDashboard::PutNumber("Actuator step", step);
+    SmartDashboard::PutNumber("Actuator position", pLinearServo1->GetCurrentPosition().value());
+    SmartDashboard::PutBoolean("Actuator finished", pLinearServo1->IsAtTargetPosition());
 }
 
 
