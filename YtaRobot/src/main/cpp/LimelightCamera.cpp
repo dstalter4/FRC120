@@ -102,6 +102,31 @@ void LimelightCamera::EnableLimelightPortForwarding(bool bEnableEthernetForwardi
 
 
 ////////////////////////////////////////////////////////////////
+/// @method LimelightCamera::TriggerRewindCapture
+///
+/// Triggers a rewind capture for later extraction and review.
+///
+////////////////////////////////////////////////////////////////
+void LimelightCamera::TriggerRewindCapture(units::time::second_t numberOfSeconds)
+{
+    // Read the rewind info
+    std::vector<double> currentArray;
+    currentArray = m_pCameraNetworkTable->GetNumberArray("capture_rewind", currentArray);
+
+    // Retrieve the current counter value
+    double counter = (currentArray.empty()) ? 0 : currentArray[0];
+
+    // Build the array to send back over to the limelight
+    static constexpr const double LIMELIGHT_REWIND_MAX_CAPTURE_TIME_S = 165.0;
+    std::array<double, 2> entries;
+    entries[0] = counter + 1;
+    entries[1] = std::min(numberOfSeconds.value(), LIMELIGHT_REWIND_MAX_CAPTURE_TIME_S);
+    m_pCameraNetworkTable->PutNumberArray("capture_rewind", entries);
+}
+
+
+
+////////////////////////////////////////////////////////////////
 /// @method LimelightCamera::SetPriorityId
 ///
 /// This method sets the priority ID for which April tag the

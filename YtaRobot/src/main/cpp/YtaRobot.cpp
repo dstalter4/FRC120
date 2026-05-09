@@ -1215,6 +1215,15 @@ void YtaRobot::DisabledInit()
 {
     RobotUtils::DisplayMessage("DisabledInit called.");
 
+    // The check against teleop robot mode is because it represents
+    // the last active mode before DisabledInit() was called.  Only
+    // save a capture in matches and from teleop.
+    constexpr units::time::second_t TELEOP_REWIND_TIME_S = 160.0_s;
+    if (DriverStation::IsFMSAttached() && (m_RobotMode == RobotMode::ROBOT_MODE_TELEOP))
+    {
+        m_pLimelightCamera->TriggerRewindCapture(TELEOP_REWIND_TIME_S);
+    }
+
     // Turn the rainbow animation back on
     m_pLedController->SetAnimation(YtaLedController::LedAnimation::LED_RAINBOW_ANIMATION);
 }

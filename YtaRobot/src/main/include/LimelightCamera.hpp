@@ -82,6 +82,9 @@ public:
     // Set the state of the limelight LED array
     inline void SetLedMode(LimelightLedMode ledMode);
 
+    // Triggers a limelight rewind capture
+    void TriggerRewindCapture(units::time::second_t numberOfSeconds);
+
     // Set the limelight mode
     void SetPriorityId(TaggedFieldElement fieldElement, DriverStation::Alliance alliance);
 
@@ -137,6 +140,10 @@ inline bool LimelightCamera::FindAndSetNetworkTable()
             break;
         }
     }
+
+    // Enable this here instead of the constructor in case the
+    // network table wasn't available when constructors ran.
+    m_pCameraNetworkTable->PutNumber("rewind_enable_set", 1);
 
     return bTableFound;
 }
