@@ -6,7 +6,7 @@
 /// Implementation of the YtaRobot test functions.  This keeps official stable
 /// robot code isolated.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -308,14 +308,15 @@ void YtaRobotTest::CtreSpeedControllerTest()
 
     // This approach is used instead of static objects in case calling
     // constructors at program startup create the TalonFX objects instead
-    // of first function invocation.  The TalonFX IDs may be invalid in
-    // some scenarios.
+    // of first function invocation.  If calling this test function, update
+    // the CAN IDs to be valid.
     if (!bCreatedObjs)
     {
-        pLeft1 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID);
-        pLeft2 = new TalonFX(YtaRobot::LEFT_DRIVE_MOTORS_CAN_START_ID + 1);
-        pRight1 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID);
-        pRight2 = new TalonFX(YtaRobot::RIGHT_DRIVE_MOTORS_CAN_START_ID + 1);
+        static const int INVALID_CAN_ID = 256;
+        pLeft1 = new TalonFX(INVALID_CAN_ID);
+        pLeft2 = new TalonFX(INVALID_CAN_ID);
+        pRight1 = new TalonFX(INVALID_CAN_ID);
+        pRight2 = new TalonFX(INVALID_CAN_ID);
         bCreatedObjs = true;
     }
  
@@ -400,8 +401,8 @@ void YtaRobotTest::RevSpeedControllerTest()
 ////////////////////////////////////////////////////////////////
 void YtaRobotTest::TankDrive()
 {
-    YTA_ROBOT_OBJ()->m_pLeftDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
-    YTA_ROBOT_OBJ()->m_pRightDriveMotors->Set(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
+    YTA_ROBOT_OBJ()->m_pDifferentialDrive->m_pLeftDriveMotors->SetDutyCycle(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(1) * -1.0);
+    YTA_ROBOT_OBJ()->m_pDifferentialDrive->m_pRightDriveMotors->SetDutyCycle(YTA_ROBOT_OBJ()->m_pDriveController->GetAxisValue(5) * -1.0);
 }
 
 
@@ -419,8 +420,7 @@ void YtaRobotTest::SwerveDriveTest()
     // Tests returning modules to absolute reference angles
     if (YTA_ROBOT_OBJ()->m_pDriveController->DetectButtonChange(4))
     {
-        // Not available yet
-        //YTA_ROBOT_OBJ()->m_pSwerveDrive->HomeModules();
+        pSwerveDrive->HomeModules();
     }
 
     // Dynamically switch between field relative and robot centric

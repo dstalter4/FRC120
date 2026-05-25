@@ -5,7 +5,7 @@
 /// @details
 /// Implements functionality for a swerve drive robot base.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef SWERVEDRIVE_HPP
@@ -27,8 +27,10 @@
 #include "SwerveConfig.hpp"                             // for swerve configuration and constants
 #include "NeoSwerveModule.hpp"                          // for interacting with a Neo swerve module
 #include "TalonFxSwerveModule.hpp"                      // for interacting with a TalonFX swerve module
+#include "ctre/phoenix6/CANBus.hpp"                     // for CANBus
 #include "ctre/phoenix6/Pigeon2.hpp"                    // for PigeonIMU
 
+using namespace ctre::phoenix6;
 using namespace frc;
 
 
@@ -42,7 +44,7 @@ class SwerveDrive
 {
 public:
     // Constructor
-    SwerveDrive(Pigeon2 * pPigeon);
+    SwerveDrive(Pigeon2 * pPigeon, const std::function<const CANBus&(std::string_view)>& rGetCanBusReferenceLambda);
 
     // Gets the current 2D pose from the swerve module states
     Pose2d GetPose();
@@ -98,6 +100,58 @@ public:
         }
     }
 
+
+    // The rest of the public declarations are intended for use by autonomous actions
+    enum class RobotTranslation
+    {
+        ROBOT_TRANSLATION_NONE,
+        ROBOT_TRANSLATION_FORWARD,
+        ROBOT_TRANSLATION_REVERSE
+    };
+
+    enum class RobotStrafe
+    {
+        ROBOT_STRAFE_NONE,
+        ROBOT_STRAFE_LEFT,
+        ROBOT_STRAFE_RIGHT
+    };
+
+    enum class RobotRotation
+    {
+        ROBOT_ROTATION_NONE,
+        ROBOT_ROTATION_CLOCKWISE,
+        ROBOT_ROTATION_COUNTER_CLOCKWISE
+    };
+
+    struct SwerveDirections
+    {
+      public:
+        SwerveDirections() : m_Translation(RobotTranslation::ROBOT_TRANSLATION_NONE), m_Strafe(RobotStrafe::ROBOT_STRAFE_NONE), m_Rotation(RobotRotation::ROBOT_ROTATION_NONE) {}
+        SwerveDirections(RobotTranslation translationDirection, RobotStrafe strafeDirection, RobotRotation rotationDirection) : m_Translation(translationDirection), m_Strafe(strafeDirection), m_Rotation(rotationDirection) {}
+
+        inline void SetSwerveDirections(RobotTranslation translationDirection, RobotStrafe strafeDirection, RobotRotation rotationDirection)
+        {
+            m_Translation = translationDirection;
+            m_Strafe = strafeDirection;
+            m_Rotation = rotationDirection;
+        }
+
+        inline RobotTranslation GetTranslation() { return m_Translation; }
+        inline RobotStrafe GetStrafe() { return m_Strafe; }
+        inline RobotRotation GetRotation() { return m_Rotation; }
+
+      private:
+        RobotTranslation m_Translation;
+        RobotStrafe m_Strafe;
+        RobotRotation m_Rotation;
+    };
+
+    // Autonomous drive for a specified time
+    void AutonomousDrive(SwerveDirections & rSwerveDirections, double translationSpeed, double strafeSpeed, double rotateSpeed, units::second_t time, bool bFieldRelative);
+
+    // Autonomous drive for a specified angle
+    void AutonomousRotateByGyro(RobotRotation robotRotation, double rotateDegrees, double rotateSpeed, bool bFieldRelative);
+
 private:
     wpi::array<SwerveModulePosition, SwerveConfig::NUM_SWERVE_DRIVE_MODULES> GetModulePositions();
 
@@ -109,13 +163,6 @@ private:
     // alliance station. As your robot turns to the left, your gyroscope angle should increase. By default, WPILib
     // gyros exhibit the opposite behavior, so you should negate the gyro angle.
     SwerveDriveOdometry<SwerveConfig::NUM_SWERVE_DRIVE_MODULES> m_Odometry;
-
-    // Config information on each swerve module.
-    // Fields are: Name, Position, Drive TalonFX CAN ID, Angle TalonFX CAN ID, CANCoder ID, Angle Offset
-    static constexpr const SwerveConfig::ModuleInformation FRONT_LEFT_MODULE_INFO = {"Front left", SwerveConfig::ModulePosition::FRONT_LEFT, 11, 12, 1, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation FRONT_RIGHT_MODULE_INFO = {"Front right", SwerveConfig::ModulePosition::FRONT_RIGHT, 13, 14, 2, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation BACK_LEFT_MODULE_INFO = {"Back left", SwerveConfig::ModulePosition::BACK_LEFT, 15, 16, 3, 0.0_deg};
-    static constexpr const SwerveConfig::ModuleInformation BACK_RIGHT_MODULE_INFO = {"Back right", SwerveConfig::ModulePosition::BACK_RIGHT, 17, 18, 4, 0.0_deg};
 
     SwerveDrive(const SwerveDrive &) = delete;
     SwerveDrive & operator=(const SwerveDrive &) = delete;

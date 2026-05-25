@@ -6,7 +6,7 @@
 /// Implements functionality for a TalonFX swerve module on a swerve drive
 /// robot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifndef TALONFXSWERVEMODULE_HPP
@@ -29,6 +29,7 @@
 #include "ctre/phoenix6/TalonFX.hpp"                    // for CTRE TalonFX API
 
 using namespace frc;
+using namespace ctre::phoenix6;
 using namespace ctre::phoenix6::configs;
 using namespace ctre::phoenix6::controls;
 using namespace ctre::phoenix6::hardware;
@@ -47,7 +48,7 @@ class TalonFxSwerveModule
 
 private:
     // Constructor
-    TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleInfo);
+    TalonFxSwerveModule(SwerveConfig::ModuleInformation moduleInfo, const std::function<const CANBus&(std::string_view)>& rGetCanBusReferenceLambda);
 
     // Points the module to zero degrees, which should be straight forward
     inline void HomeModule()
