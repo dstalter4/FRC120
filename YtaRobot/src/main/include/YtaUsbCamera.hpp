@@ -17,7 +17,6 @@
 // C INCLUDES
 #include "frc/smartdashboard/SmartDashboard.h"  // for smart dashboard support
 #include "frc/Timer.h"                          // for creating a Timer
-#include "networktables/NetworkTable.h"         // for interacting with network tables
 
 // C++ INCLUDES
 #include "RobotUtils.hpp"                       // for DisplayMessage()

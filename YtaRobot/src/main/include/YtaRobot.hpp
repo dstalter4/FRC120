@@ -16,8 +16,7 @@
 #define YTAROBOT_HPP
 
 // SYSTEM INCLUDES
-#include <cmath>                                            // for M_PI
-#include <thread>                                           // for std::thread
+// <none>
 
 // C INCLUDES
 #include "frc/Compressor.h"                                 // for retrieving info on the compressor
@@ -293,7 +292,6 @@ private:
     static const int                FIELD_RELATIVE_TOGGLE_BUTTON            = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUMPER;
     static const int                REZERO_SWERVE_BUTTON                    = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUMPER;
     static const int                LOCK_SWERVE_WHEELS_BUTTON               = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_BUTTON;
-    static const int                JOG_SWERVE_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_BUTTON;
     static const int                PLAY_MUSIC_BUTTON                       = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.LEFT_STICK_CLICK;
     static const int                DRIVE_ALIGN_WITH_CAMERA_BUTTON          = DRIVE_CONTROLLER_MAPPINGS->BUTTON_MAPPINGS.RIGHT_STICK_CLICK;
 
@@ -359,10 +357,6 @@ private:
     const std::string               AUTO_ROUTINE_3_STRING                   = "Autonomous routine 3";
     const std::string               AUTO_TEST_ROUTINE_STRING                = "Autonomous test routine";
 
-    static const int                ANGLE_90_DEGREES                        = 90;
-    static const int                ANGLE_180_DEGREES                       = 180;
-    static const int                ANGLE_360_DEGREES                       = 360;
-    static const int                POV_INPUT_TOLERANCE_VALUE               = 30;
     static const int                SCALE_TO_PERCENT                        = 100;
     static const unsigned           SINGLE_MOTOR                            = 1;
     static const unsigned           TWO_MOTORS                              = 2;

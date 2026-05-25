@@ -504,7 +504,7 @@ void DifferentialDrive::AutonomousDrive(RobotDirection direction, double speed, 
 /// Back drives the motors to abruptly stop the robot.
 ///
 ////////////////////////////////////////////////////////////////
-inline void DifferentialDrive::AutonomousBackDrive(RobotDirection currentDirection)
+void DifferentialDrive::AutonomousBackDrive(RobotDirection currentDirection)
 {
     double leftSpeed = COUNTERACT_COAST_MOTOR_SPEED;
     double rightSpeed = COUNTERACT_COAST_MOTOR_SPEED;
@@ -554,7 +554,7 @@ inline void DifferentialDrive::AutonomousBackDrive(RobotDirection currentDirecti
 /// a turn.
 ///
 ////////////////////////////////////////////////////////////////
-inline void DifferentialDrive::AutonomousBackDriveTurn(RobotDirection currentDirection)
+void DifferentialDrive::AutonomousBackDriveTurn(RobotDirection currentDirection)
 {
     double leftSpeed = COUNTERACT_COAST_MOTOR_SPEED;
     double rightSpeed = COUNTERACT_COAST_MOTOR_SPEED;
