@@ -29,12 +29,13 @@
 /// passing name, PID values, etc.)
 ///
 ////////////////////////////////////////////////////////////////
-LimelightCamera::LimelightCamera(std::string cameraName) :
+LimelightCamera::LimelightCamera(LimelightModel limelightModel, std::string cameraName) :
     m_CameraName(cameraName),
     m_pCameraNetworkTable(nt::NetworkTableInstance::GetDefault().GetTable(cameraName)),
-    m_VisionStrafePid(0.025, 0.02, 0.002),
-    m_VisionRotatePid(0.025, 0.02, 0.002),
-    m_TargetAprilTagId()
+    m_VisionStrafePid(DEFAULT_PID_CONTROLLER_P_VALUE, DEFAULT_PID_CONTROLLER_I_VALUE, DEFAULT_PID_CONTROLLER_D_VALUE),
+    m_VisionRotatePid(DEFAULT_PID_CONTROLLER_P_VALUE, DEFAULT_PID_CONTROLLER_I_VALUE, DEFAULT_PID_CONTROLLER_D_VALUE),
+    m_TargetAprilTagId(),
+    CAMERA_CONFIG(LIMELIGHT_CONFIGS[static_cast<uint32_t>(limelightModel)])
 {
     // Enable Ethernet port forwarding (but not USB)
     EnableLimelightPortForwarding(true, false, false);
@@ -44,12 +45,12 @@ LimelightCamera::LimelightCamera(std::string cameraName) :
     // continuous input across the Limelight field of view.
     m_VisionStrafePid.SetSetpoint(0.0);
     m_VisionStrafePid.SetTolerance(1.5);
-    m_VisionStrafePid.EnableContinuousInput(-27.0, 27.0);
+    m_VisionStrafePid.EnableContinuousInput((-CAMERA_CONFIG.HORIZONTAL_FOV_DEGREES / 2.0), (CAMERA_CONFIG.HORIZONTAL_FOV_DEGREES / 2.0));
 
     // Setting constants for the rotate vision PID controller.  Set point
     // is computed later based on the target tag.  Tolerance is one degree.
     // Enable a full 360 input range.
-    m_VisionRotatePid.SetSetpoint(40.0);
+    m_VisionRotatePid.SetSetpoint(0.0);
     m_VisionRotatePid.SetTolerance(1.0);
     m_VisionRotatePid.EnableContinuousInput(0.0, 360.0);
 }

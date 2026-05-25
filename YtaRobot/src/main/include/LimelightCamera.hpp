@@ -40,8 +40,16 @@ public:
 
     typedef std::function<void(Translation2d translation, double rotation)> SwerveDriveLambdaType;
 
-    // @todo: Add limelight model configuration data structure.
-    //        This could be used to set things like field of view angles, etc.
+    enum class LimelightModel : uint32_t
+    {
+        LIMELIGHT_1,
+        LIMELIGHT_2,
+        LIMELIGHT_2_PLUS,
+        LIMELIGHT_3,
+        LIMELIGHT_3G,
+        LIMELIGHT_3A,
+        LIMELIGHT_4,
+    };
 
     enum class TaggedFieldElement
     {
@@ -67,7 +75,7 @@ public:
     };
 
     // Constructor
-    LimelightCamera(std::string cameraName = "limelight");
+    LimelightCamera(LimelightModel limelightModel, std::string cameraName = "limelight");
 
     // Locates the network table and sets it for use by the object
     inline bool FindAndSetNetworkTable();
@@ -95,6 +103,24 @@ public:
 
 private:
 
+    struct LimelightConfig
+    {
+        const LimelightModel LIMELIGHT_MODEL;
+        const double HORIZONTAL_FOV_DEGREES;
+        const double VERTICAL_FOV_DEGREES;
+    };
+
+    static constexpr LimelightConfig LIMELIGHT_CONFIGS[] =
+    {
+        {LimelightModel::LIMELIGHT_1,       0.0, 0.0},
+        {LimelightModel::LIMELIGHT_2,       62.5, 48.9},
+        {LimelightModel::LIMELIGHT_2_PLUS,  62.5, 48.9},
+        {LimelightModel::LIMELIGHT_3,       62.5, 48.9},
+        {LimelightModel::LIMELIGHT_3G,      82.0, 56.2},
+        {LimelightModel::LIMELIGHT_3A,      54.5, 42.0},
+        {LimelightModel::LIMELIGHT_4,       82.0, 56.2}
+    };
+
     // Enable port forwarding for the limelight
     void EnableLimelightPortForwarding(bool bEnableEthernetForwarding, bool bEnableUsb0Forwarding, bool bEnableUsb1Forwarding);
 
@@ -104,6 +130,11 @@ private:
     PIDController                       m_VisionStrafePid;                      // PID controller for strafe control during automated vision targeting
     PIDController                       m_VisionRotatePid;                      // PID controller for rotation control during automated vision targeting
     int                                 m_TargetAprilTagId;                     // Track which AprilTag to target
+    const LimelightConfig               CAMERA_CONFIG;                          // The configuration for this camera instance
+
+    static constexpr double DEFAULT_PID_CONTROLLER_P_VALUE = 0.025;
+    static constexpr double DEFAULT_PID_CONTROLLER_I_VALUE = 0.02;
+    static constexpr double DEFAULT_PID_CONTROLLER_D_VALUE = 0.002;
 };
 
 

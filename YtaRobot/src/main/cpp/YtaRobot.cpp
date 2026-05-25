@@ -45,7 +45,7 @@ YtaRobot::YtaRobot() :
     m_pCompressor                       (new Compressor(PneumaticsModuleType::CTREPCM)),
     m_pMatchModeTimer                   (new Timer()),
     m_pRobotProgramTimer                (new Timer()),
-    m_pLimelightCamera                  (new LimelightCamera("limelight")),
+    m_pLimelightCamera                  (new LimelightCamera(LimelightCamera::LimelightModel::LIMELIGHT_3A, "limelight")),
     m_bLimelightFound                   (false),
     m_RobotMode                         (ROBOT_MODE_NOT_SET),
     m_AllianceColor                     (DriverStation::GetAlliance()),
