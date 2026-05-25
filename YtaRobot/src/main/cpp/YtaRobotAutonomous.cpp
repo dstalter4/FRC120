@@ -5,7 +5,7 @@
 /// @details
 /// Implementation of autonomous routines for YtaRobot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
@@ -17,7 +17,6 @@
 // C++ INCLUDES
 #include "YtaRobot.hpp"                         // for robot class declaration
 #include "YtaRobotAutonomous.hpp"               // for autonomous declarations
-#include "RobotCamera.hpp"                      // for interacting with cameras
 #include "RobotUtils.hpp"                       // for DisplayMessage()
 
 // NAMESPACE DATA
@@ -41,15 +40,6 @@ void YtaRobot::AutonomousInit()
     
     // Indicate the autonomous routine has not executed yet
     YtaRobotAutonomous::bAutonomousExecutionComplete = false;
-    
-    m_pSafetyTimer->Stop();
-    m_pSafetyTimer->Reset();
-    
-    // Autonomous needs full camera processing
-    RobotCamera::SetFullProcessing(true);
-    RobotCamera::SetLimelightMode(RobotCamera::LimelightMode::VISION_PROCESSOR);
-    RobotCamera::SetLimelightLedMode(RobotCamera::LimelightLedMode::PIPELINE);
-    RobotCamera::SetLimelightPipeline(0);
 
     if (YtaRobotAutonomous::USE_COMMAND_BASED_AUTONOMOUS)
     {
@@ -64,7 +54,7 @@ void YtaRobot::AutonomousInit()
         if (AutonomousCommand.has_value())
         {
             RobotUtils::DisplayMessage("Autonomous init - command scheduled.");
-            AutonomousCommand->Schedule();
+            CommandScheduler::GetInstance().Schedule(AutonomousCommand.value());
         }
         else
         {

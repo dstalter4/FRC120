@@ -1,82 +1,71 @@
 ////////////////////////////////////////////////////////////////////////////////
-/// @file   RobotCamera.hpp
+/// @file   YtaUsbCamera.cpp
 /// @author David Stalter
 ///
 /// @details
-/// A class designed to support camera functionality on the robot.
+/// A class designed to support USB camera functionality on the robot.
 ///
-/// Copyright (c) 2025 Youth Technology Academy
+/// Copyright (c) 2026 Youth Technology Academy
 ////////////////////////////////////////////////////////////////////////////////
 
 // SYSTEM INCLUDES
-// <none>
+#include <thread>                               // for thread management
 
 // C INCLUDES
-#include "networktables/NetworkTable.h"         // for network tables
-#include "networktables/NetworkTableInstance.h" // for network table instance
-#include "wpinet/PortForwarder.h"               // for port forwarding
+// (none)
 
 // C++ INCLUDES
-#include "RobotCamera.hpp"                      // for class declaration
+#include "YtaUsbCamera.hpp"                     // for class declaration
 #include "RobotUtils.hpp"                       // for DisplayMessage(), DisplayFormattedMessage()
-#include "YtaRobot.hpp"                         // for GetRobotInstance()
 
 // STATIC MEMBER DATA
-std::shared_ptr<nt::NetworkTable>               RobotCamera::m_pLimelightNetworkTable;
-RobotCamera::UsbCameraStorage                   RobotCamera::m_UsbCameras;
-RobotCamera::UsbCameraInfo *                    RobotCamera::m_pCurrentUsbCamera;
-cs::CvSource                                    RobotCamera::m_CameraOutput;
-int                                             RobotCamera::m_NumUsbCamerasPresent;
+YtaUsbCamera::UsbCameraStorage                  YtaUsbCamera::m_UsbCameras;
+YtaUsbCamera::UsbCameraInfo *                   YtaUsbCamera::m_pCurrentUsbCamera;
+cs::CvSource                                    YtaUsbCamera::m_CameraOutput;
+int                                             YtaUsbCamera::m_NumUsbCamerasPresent;
+bool                                            YtaUsbCamera::m_bDoFullProcessing;
+unsigned                                        YtaUsbCamera::m_CameraHeartBeat;
+const char *                                    YtaUsbCamera::CAMERA_OUTPUT_NAME = "Camera Output";
 
-cv::Mat                                         RobotCamera::m_SourceMat;
-cv::Mat                                         RobotCamera::m_ResizeOutputMat;
-cv::Mat                                         RobotCamera::m_HsvThresholdOutputMat; 
-cv::Mat                                         RobotCamera::m_ErodeOutputMat;
-cv::Mat                                         RobotCamera::m_ContoursMat;
-cv::Mat                                         RobotCamera::m_FilteredContoursMat;
-cv::Mat                                         RobotCamera::m_VisionTargetMat;
-cv::Mat *                                       RobotCamera::m_pDashboardMat;
+cv::Mat                                         YtaUsbCamera::m_SourceMat;
+cv::Mat                                         YtaUsbCamera::m_ResizeOutputMat;
+cv::Mat                                         YtaUsbCamera::m_HsvThresholdOutputMat; 
+cv::Mat                                         YtaUsbCamera::m_ErodeOutputMat;
+cv::Mat                                         YtaUsbCamera::m_ContoursMat;
+cv::Mat                                         YtaUsbCamera::m_FilteredContoursMat;
+cv::Mat                                         YtaUsbCamera::m_VisionTargetMat;
+cv::Mat *                                       YtaUsbCamera::m_pDashboardMat;
 
-std::vector<std::vector<cv::Point>>             RobotCamera::m_Contours;
-std::vector<std::vector<cv::Point>>             RobotCamera::m_FilteredContours;
+std::vector<std::vector<cv::Point>>             YtaUsbCamera::m_Contours;
+std::vector<std::vector<cv::Point>>             YtaUsbCamera::m_FilteredContours;
+std::vector<YtaUsbCamera::VisionTargetReport>   YtaUsbCamera::m_ContourTargetReports;
+YtaUsbCamera::VisionTargetReport                YtaUsbCamera::m_VisionTargetReport;
 
-std::vector<RobotCamera::VisionTargetReport>    RobotCamera::m_ContourTargetReports;
-RobotCamera::VisionTargetReport                 RobotCamera::m_VisionTargetReport;
-bool                                            RobotCamera::m_bThreadReleased;
-bool                                            RobotCamera::m_bDoFullProcessing;
-unsigned                                        RobotCamera::m_CameraHeartBeat;
-const char *                                    RobotCamera::CAMERA_OUTPUT_NAME = "Camera Output";
-
-Timer                                           RobotCamera::AutonomousCamera::m_AutoCameraTimer;
-double                                          RobotCamera::AutonomousCamera::m_IntegralSum = 0.0;
+Timer                                           YtaUsbCamera::AutonomousCamera::m_AutoCameraTimer;
+double                                          YtaUsbCamera::AutonomousCamera::m_IntegralSum;
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::AutonomousCamera::AlignToTarget
+/// @method YtaUsbCamera::AutonomousCamera::AlignToTarget
 ///
 /// This method tries to automatically align the robot to a
 /// target based on feedback from the camera.  It will execute
 /// until it finds the target or a safety timer expires.
 ///
 ////////////////////////////////////////////////////////////////
-bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors)
+bool YtaUsbCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, const bool bEnableMotors)
 {
-    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
     bool bTargetFound = false;
     m_AutoCameraTimer.Start();
 
     while (!bTargetFound && (m_AutoCameraTimer.Get() < MAX_CAMERA_SEARCH_TIME_S))
     {
-        // Reference: http://docs.limelightvision.io/en/latest/getting_started.html#basic-programming
-        double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
-        //double targetY = m_pLimelightNetworkTable->GetNumber("ty", 0.0);
-        //double targetArea = m_pLimelightNetworkTable->GetNumber("ta", 0.0);
-        //double targetSkew = m_pLimelightNetworkTable->GetNumber("ts", 0.0);
+        // These values need to be generated or come from the camera
+        double targetX = 0.0;
+        bool bTargetValid = false;
 
-        // 1 = target in view, 0 = target not in view
-        bool bTargetValid = static_cast<bool>(static_cast<int>(m_pLimelightNetworkTable->GetNumber("tv", 0.0)));
-
-        // Reference: http://docs.limelightvision.io/en/latest/cs_seeking.html
+        // These are computed to send to the drivetrain.  This has
+        // only ever been applied to differential drive, never swerve.
         double steeringAdjust = 0.0;
         double leftCommand = 0.0;
         double rightCommand = 0.0;
@@ -103,11 +92,10 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
         else
         {
             // We do see the target, execute aiming code
-
             double headingError = targetX;
 
-            m_IntegralSum += headingError;      // (heading error + last heading error);
-
+            // (heading error + last heading error);
+            m_IntegralSum += headingError;
             m_IntegralSum = RobotUtils::Limit(m_IntegralSum, INTEGRAL_SUM_LIMIT_VALUE, -INTEGRAL_SUM_LIMIT_VALUE);
 
             // Proportional-Integral controller
@@ -133,20 +121,10 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
             break;
         }
 
-        // min speed 0.25
-        // max 0.5
-        // hardcoding motor commands to test the motor controllers and direction
-        // leftCommand=0.5;
-        // rightCommand=0.5;
-
-        // stay above 0.2 commands (new falcon motors might be better)
-
         // Set motor speed
         if (bEnableMotors)
         {
-            // Steer the robot
-            pRobotObj->m_pLeftDriveMotors->Set(-leftCommand);
-            pRobotObj->m_pRightDriveMotors->Set(rightCommand);
+            // Steer the robot.  This needs a lambda to the motor control.
         }
 
         // Send useful information to smart dashboard.
@@ -155,10 +133,6 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
         SmartDashboard::PutNumber("Integral sum", m_IntegralSum);
         SmartDashboard::PutNumber("Target valid", bTargetValid);
     }
-
-    // Motors off
-    pRobotObj->m_pLeftDriveMotors->Set(0.0);
-    pRobotObj->m_pRightDriveMotors->Set(0.0);
 
     // Clean up the timer
     m_AutoCameraTimer.Stop();
@@ -170,51 +144,12 @@ bool RobotCamera::AutonomousCamera::AlignToTarget(SeekDirection seekDirection, c
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::AutonomousCamera::AlignToTargetSwerve
-///
-/// This method tries to automatically align the robot to a
-/// target based on feedback from the camera using swerve drive.
-///
-////////////////////////////////////////////////////////////////
-void RobotCamera::AutonomousCamera::AlignToTargetSwerve()
-{
-    // Make sure the robot object has been created (the thread will start running very early)
-    YtaRobot * pRobotObj = YtaRobot::GetRobotInstance();
-    if (pRobotObj == nullptr)
-    {
-        return;
-    }
-
-    // Get the x-axis target value
-    double targetX = m_pLimelightNetworkTable->GetNumber("tx", 0.0);
-
-    // tx is reported in degrees (LL2: -30:0:+30)
-    if ((targetX > 1.5) && (targetX < 30.0))
-    {
-        // Target is reported to the right, move right
-        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, -0.20_m}, 0.0, true, true);
-    }
-    else if ((targetX < -1.5) && (targetX > -30.0))
-    {
-        // Target is reported to the left, move left
-        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.20_m}, 0.0, true, true);
-    }
-    else
-    {
-        // No movement required
-        pRobotObj->m_pSwerveDrive->SetModuleStates({0.0_m, 0.0_m}, 0.0, true, true);
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method RobotCamera::UsbCameraInfo::UsbCameraInfo
+/// @method YtaUsbCamera::UsbCameraInfo::UsbCameraInfo
 ///
 /// Constructor for a UsbCameraInfo object.
 ///
 ////////////////////////////////////////////////////////////////
-RobotCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, const int xRes, const int yRes, const int fps) :
+YtaUsbCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, const int xRes, const int yRes, const int fps) :
     m_UsbCam(CameraServer::StartAutomaticCapture()),
     m_CamSink(CameraServer::GetVideo(m_UsbCam)),
     m_bIsPresent(true),
@@ -234,14 +169,14 @@ RobotCamera::UsbCameraInfo::UsbCameraInfo(const CameraType camType, int devNum, 
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::CreateConfiguredCameras
+/// @method YtaUsbCamera::CreateConfiguredCameras
 ///
 /// This method creates camera objects for configured cameras.
 /// It utilizes the static storage buffer in the class and
 /// placement new to properly construct the objects.
 ///
 ////////////////////////////////////////////////////////////////
-bool RobotCamera::CreateConfiguredCameras()
+bool YtaUsbCamera::CreateConfiguredCameras()
 {
     bool bAnyCameraPresent = false;
 
@@ -265,63 +200,12 @@ bool RobotCamera::CreateConfiguredCameras()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::LimelightThread
-///
-/// This method contains the workflow for using a limelight
-/// camera.
-///
-////////////////////////////////////////////////////////////////
-void RobotCamera::LimelightThread()
-{
-    // Indicate the thread has been started
-    RobotUtils::DisplayMessage("Limelight vision thread detached.");
-    
-    // Get the limelight network table
-    while (m_pLimelightNetworkTable.get() == nullptr)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
-        m_pLimelightNetworkTable = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
-    }
-
-    RobotUtils::DisplayMessage("Limelight network table found.");
-
-    // Wait for the robot program to release the thread
-    while (m_bThreadReleased == false)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
-    }
-
-    RobotUtils::DisplayMessage("Limelight thread released.");
-
-    // Enable port forwarding for the limelight while tethered via USB
-    const int LIMELIGHT_START_PORT = 5800;
-    const int LIMELIGHT_END_PORT = 5805;
-    for (int port = LIMELIGHT_START_PORT; port <= LIMELIGHT_END_PORT; port++)
-    {
-        wpi::PortForwarder::GetInstance().Add(port, "limelight.local", port);
-    }
-
-    // The limelight camera mode will be set by autonomous or teleop
-    // Set a limelight priority (e.g. for the April tags)
-    const uint32_t LIMELIGHT_PRIORITY = 1U;
-    m_pLimelightNetworkTable->PutNumber("priorityid", LIMELIGHT_PRIORITY);
-    
-    while (true)
-    {
-        // Be sure to relinquish the CPU when done
-        std::this_thread::sleep_for(std::chrono::milliseconds(CAMERA_THREAD_SLEEP_TIME_MS));
-    }
-}
-
-
-
-////////////////////////////////////////////////////////////////
-/// @method RobotCamera::VisionThread
+/// @method YtaUsbCamera::VisionThread
 ///
 /// This method contains the workflow of the main vision thread.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::VisionThread()
+void YtaUsbCamera::UsbVisionThread()
 {
     // Indicate the thread has been started
     RobotUtils::DisplayMessage("Vision thread detached.");
@@ -438,12 +322,12 @@ void RobotCamera::VisionThread()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::UpdateSmartDashboard
+/// @method YtaUsbCamera::UpdateSmartDashboard
 ///
 /// This method sends new data to the C++ Smart Dashboard.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::UpdateSmartDashboard()
+void YtaUsbCamera::UpdateSmartDashboard()
 {
     SmartDashboard::PutNumber("Camera HeartBeat",           m_CameraHeartBeat++);
     
@@ -472,13 +356,13 @@ void RobotCamera::UpdateSmartDashboard()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::ToggleCameraProcessedImage
+/// @method YtaUsbCamera::ToggleCameraProcessedImage
 ///
 /// Updates which stage of the image processing is sent to the
 /// dashboard.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::ToggleCameraProcessedImage()
+void YtaUsbCamera::ToggleCameraProcessedImage()
 {
     if (m_bDoFullProcessing)
     {
@@ -533,13 +417,13 @@ void RobotCamera::ToggleCameraProcessedImage()
     
     
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::ProcessImage
+/// @method YtaUsbCamera::ProcessImage
 ///
 /// Processes an image from the camera to try and identify
 /// vision targets.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::ProcessImage()
+void YtaUsbCamera::ProcessImage()
 {
     FilterImageHsv();
     ErodeImage();
@@ -550,13 +434,13 @@ void RobotCamera::ProcessImage()
     
     
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::FilterImageHsv
+/// @method YtaUsbCamera::FilterImageHsv
 ///
 /// Applies a color filter to the image based on Hue, Saturation
 /// and Value.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::FilterImageHsv()
+void YtaUsbCamera::FilterImageHsv()
 {
     // min/max values
     static double hsvThresholdHue[] = {0.0, 180.0};
@@ -588,12 +472,12 @@ void RobotCamera::FilterImageHsv()
     
     
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::ErodeImage
+/// @method YtaUsbCamera::ErodeImage
 ///
 /// Erodes an image.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::ErodeImage()
+void YtaUsbCamera::ErodeImage()
 {
     // Erode image
     // @param src input image
@@ -610,12 +494,12 @@ void RobotCamera::ErodeImage()
     
     
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::FindContours
+/// @method YtaUsbCamera::FindContours
 ///
 /// Finds the contours in an image.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::FindContours()
+void YtaUsbCamera::FindContours()
 {    
     // Find contours
     // @param image Source, an 8-bit single-channel image.
@@ -643,12 +527,12 @@ void RobotCamera::FindContours()
     
     
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::FilterContours
+/// @method YtaUsbCamera::FilterContours
 ///
 /// Filters the contours found by certain criteria.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::FilterContours()
+void YtaUsbCamera::FilterContours()
 {    
     const double FILTER_CONTOURS_MIN_WIDTH      = 0.0;
     const double FILTER_CONTOURS_MAX_WIDTH      = 1000.0;
@@ -746,14 +630,14 @@ void RobotCamera::FilterContours()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::FindReflectiveTapeTarget
+/// @method YtaUsbCamera::FindReflectiveTapeTarget
 ///
 /// This method iterates over the filtered contours and tries to
 /// identify the reflective tape target.  It will save off the
 /// appropriate contour if one that meets the criteria is found.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::FindReflectiveTapeTarget()
+void YtaUsbCamera::FindReflectiveTapeTarget()
 {
     if (m_ContourTargetReports.size() > 0)
     {
@@ -787,21 +671,35 @@ void RobotCamera::FindReflectiveTapeTarget()
 
 
 ////////////////////////////////////////////////////////////////
-/// @method RobotCamera::CalculateReflectiveTapeValues
+/// @method YtaUsbCamera::CalculateReflectiveTapeValues
 ///
 /// This method performs certain calculations on the best found
 /// contour.  It will primarily compute distances related to the
 /// vision target.
 ///
 ////////////////////////////////////////////////////////////////
-void RobotCamera::CalculateReflectiveTapeValues()
+void YtaUsbCamera::CalculateReflectiveTapeValues()
 {
     // If there is no vision target report available, don't proceed
     if (!m_VisionTargetReport.m_bIsValid)
     {
         return;
     }
-    
+
+    static constexpr double TARGET_WIDTH_INCHES             =  2.0;
+    static constexpr double TARGET_HEIGHT_INCHES            = 16.0;
+    static constexpr double TARGET_HEIGHT_FROM_GROUND       =  2.0;
+    //static constexpr double TARGET_MIN_AREA_PERCENT         = 0.0;
+    //static constexpr double TARGET_MAX_AREA_PERCENT         = 100.0;
+    //static constexpr double TARGET_RANGE_MIN                = 132.0;
+    //static constexpr double TARGET_RANGE_MAX                = 192.0;
+    //static constexpr double GROUND_DISTANCE_TOLERANCE       = 6.0;
+    static constexpr double CAMERA_FOV_DEGREES              = 50.0;
+    //static constexpr double CAMERA_DIAGONAL_FOV_DEGREES     = 78.0;
+    //static constexpr double CALIBRATED_CAMERA_ANGLE         = 21.5778173;
+    static constexpr double DEGREES_TO_RADIANS              = M_PI / 180.0;
+    //static constexpr double DECIMAL_TO_PERCENT              = 100.0;
+
     // d = (TargetWidthIn * CAMERA_X_RES) / (2 * TargetWidthPix * tan(1/2 * FOVAng))
     // d = (TargetHeightIn * CAMERA_Y_RES) / (2 * TargetHeightPix * tan(1/2 * FOVAng))
     m_VisionTargetReport.m_CameraDistanceX = (TARGET_WIDTH_INCHES * m_pCurrentUsbCamera->X_RESOLUTION) /
